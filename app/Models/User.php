@@ -8,6 +8,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 // JANGAN LUPA TAMBAHKAN INI
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -57,6 +58,14 @@ class User extends Authenticatable
         // 'division_id' adalah foreign key di tabel 'users'
         // 'id' adalah primary key di tabel 'divisions'
         return $this->belongsTo(Division::class, 'division_id', 'id');
+    }
+    // --- TAMBAHKAN FUNGSI INI ---
+    /**
+     * Relasi one-to-many: Satu User memiliki banyak data Absensi.
+     */
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class);
     }
     // --- BATAS TAMBAHAN ---
 

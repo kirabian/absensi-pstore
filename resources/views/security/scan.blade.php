@@ -31,12 +31,12 @@
                         {{-- 3. Form untuk menyimpan absensi, awalnya disembunyikan --}}
                         <form action="{{ route('security.attendance.store') }}" method="POST" enctype="multipart/form-data">
                             @csrf
-                            {{-- ID user akan diisi di sini oleh JS --}}
                             <input type="hidden" id="user_id" name="user_id">
 
                             <div class="form-group">
                                 <label>Ambil Foto (Wajib)</label>
-                                <input type="file" name="photo" class="form-control" accept="image/*" capture="user"
+                                {{-- 'capture="environment"' akan meminta kamera belakang di HP --}}
+                                <input type="file" name="photo" class="form-control" accept="image/*" capture="environment"
                                     required>
                             </div>
 

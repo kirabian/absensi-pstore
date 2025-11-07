@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Division;
 use App\Models\Attendance;
 use App\Models\AuditTeam;
+use App\Models\LateNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth; // Penting untuk mengambil user
 
@@ -58,6 +59,10 @@ class DashboardController extends Controller
             $data['myTeamCount'] = User::where('division_id', $user->division_id)
                 ->where('id', '!=', $user->id) // Jumlah teman satu tim
                 ->count();
+            // --- TAMBAHKAN BARIS INI ---
+            $data['activeLateStatus'] = LateNotification::where('user_id', $user->id)
+                ->where('is_active', true)
+                ->first();
         }
 
         // Kirim semua data ($data) yang sesuai ke view 'dashboard'

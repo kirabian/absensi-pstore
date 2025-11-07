@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ScanController;
+use App\Http\Controllers\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,3 +21,5 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::post('/get-user-by-qr', [ScanController::class, 'getUserByQr'])->name('api.get.user');
+
+Route::middleware('auth:sanctum')->post('/save-fcm-token', [NotificationController::class, 'saveToken'])->name('fcm.save.token');

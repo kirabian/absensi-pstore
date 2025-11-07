@@ -9,6 +9,9 @@ use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ScanController;
 use App\Http\Controllers\ProfileController; // <-- TAMBAHKAN INI
+use App\Http\Controllers\SelfAttendanceController;
+use App\Http\Controllers\TeamController;
+use App\Http\Controllers\AuditController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,11 +42,29 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:admin,audit'])->group(function () { // <-- DIUBAH DI SINI
         Route::resource('divisions', DivisionController::class);
         Route::resource('users', UserController::class);
+
+        Route::get('/verifikasi-absensi', [AuditController::class, 'showVerificationList'])->name('audit.verify.list');
+        Route::put('/verifikasi/setujui/{attendance}', [AuditController::class, 'approve'])->name('audit.approve');
+        Route::delete('/verifikasi/tolak/{attendance}', [AuditController::class, 'reject'])->name('audit.reject');
+
+        Route::get('/izin-telat', [AuditController::class, 'showLatePermissions'])->name('audit.late.list');
     });
 
     // --- Rute Khusus SECURITY ---
     Route::middleware(['role:security'])->group(function () {
         Route::get('/scan', [ScanController::class, 'scanPage'])->name('security.scan');
         Route::post('/scan/store', [ScanController::class, 'storeAttendance'])->name('security.attendance.store');
+    });
+
+    // --- Rute Khusus USER BIASA ---
+    Route::middleware(['role:user_biasa'])->group(function () {
+        Route::get('/absen-mandiri', [SelfAttendanceController::class, 'create'])->name('self.attend.create');
+        Route::post('/absen-mandiri', [SelfAttendanceController::class, 'store'])->name('self.attend.store');
+
+        Route::get('/tim-saya', [TeamController::class, 'index'])->name('my.team');
+
+        Route::post('/lapor-telat', [SelfAttendanceController::class, 'storeLateStatus'])->name('late.status.store');
+        // Kita pakai POST/DELETE untuk hapus, tapi form HTML hanya bisa POST
+        Route::post('/hapus-telat', [SelfAttendanceController::class, 'deleteLateStatus'])->name('late.status.delete');
     });
 });

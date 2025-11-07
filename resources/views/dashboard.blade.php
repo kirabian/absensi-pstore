@@ -162,7 +162,7 @@
         </div>
 
         {{-- ======================================================================= --}}
-        {{-- TAMPILAN UNTUK USER BIASA --}}
+        {{-- TAMPILAN UNTUK USER BIASA (SUDAH DIPERBARUI) --}}
         {{-- ======================================================================= --}}
     @elseif (auth()->user()->role == 'user_biasa')
         <div class="row">
@@ -171,10 +171,17 @@
                     <div class="card-body">
                         <h4 class="card-title">Status Absensi Hari Ini</h4>
 
+                        @if (session('success'))
+                            <div class="alert alert-success">{{ session('success') }}</div>
+                        @endif
+                        @if (session('error'))
+                            <div class="alert alert-danger">{{ session('error') }}</div>
+                        @endif
+
                         @if ($myAttendanceToday)
                             <div class="alert alert-success">
                                 <h5 class="mb-0">Anda Sudah Absen</h5>
-                                <p class="mb-0">Pada: {{ $myAttendanceToday->created_at->format('d M Y, H:i') }}</p>
+                                <p class="mb-0">Pada: {{ $myAttendanceToday->check_in_time->format('d M Y, H:i') }}</p>
                                 <p class="mb-0">Status:
                                     @if($myAttendanceToday->status == 'verified')
                                         <span class="badge badge-success">Terverifikasi</span>
@@ -183,11 +190,21 @@
                                     @endif
                                 </p>
                             </div>
+                        @elseif ($activeLateStatus)
+                            <div class="alert alert-warning">
+                                <h5>Anda Punya Laporan Telat Aktif:</h5>
+                                <p class="mb-1">"{{ $activeLateStatus->message }}"</p>
+                                <small>Dibuat: {{ $activeLateStatus->created_at->format('d M Y, H:i') }}</small>
+                            </div>
+                            <form action="{{ route('late.status.delete') }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn btn-danger">Hapus Laporan & Absen Sekarang</button>
+                            </form>
                         @else
-                            <div class="alert alert-danger">
+                            <div class="alert alert-info">
                                 <h5 class="mb-0">Anda Belum Absen Hari Ini.</h5>
                             </div>
-                            <a href="#" class="btn btn-primary">
+                            <a href="{{ route('self.attend.create') }}" class="btn btn-primary">
                                 <i class="mdi mdi-calendar-check"></i> Lakukan Absen Mandiri
                             </a>
                         @endif
@@ -215,25 +232,28 @@
             </div>
         </div>
 
-        {{-- Fitur Lapor Macet --}}
-        <div class="row">
-            <div class="col-12 grid-margin stretch-card">
-                <div class="card">
-                    <div class="card-body">
-                        <h4 class="card-title">Lapor Kendala (Macet, dll)</h4>
-                        <p class="card-description">Beri tahu tim Anda jika Anda ada kendala di perjalanan.</p>
-                        <form action="#" method="POST">
-                            @csrf
-                            <div class="form-group">
-                                <textarea class="form-control" name="message" rows="3"
-                                    placeholder="Contoh: Macet parah di Tol Cikampek, mungkin telat 30 menit."></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-warning">Kirim Laporan</button>
-                        </form>
+        {{-- Fitur Lapor Macet (HANYA TAMPIL JIKA BELUM ABSEN & BELUM LAPOR) --}}
+        @if (!$myAttendanceToday && !$activeLateStatus)
+            <div class="row">
+                <div class="col-12 grid-margin stretch-card">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4 class="card-title">Lapor Kendala (Macet, dll)</h4>
+                            <p class="card-description">Tidak bisa absen jika Anda punya laporan telat aktif.</p>
+                            <form action="{{ route('late.status.store') }}" method="POST">
+                                @csrf
+                                <div class="form-group">
+                                    <textarea class="form-control" name="message" rows="3"
+                                        placeholder="Contoh: Macet parah di Tol Cikampek, mungkin telat 30 menit."
+                                        required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-warning">Kirim Laporan Telat</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    @endif {{-- Penutup @if (auth()->user()->role == 'admin') --}}
+        @endif
+    @endif
 
 @endsection
