@@ -1,5 +1,6 @@
 <nav class="sidebar sidebar-offcanvas" id="sidebar">
     <ul class="nav">
+        {{-- Tombol Dashboard (Semua Role) --}}
         <li class="nav-item">
             <a class="nav-link" href="/">
                 <i class="mdi mdi-grid-large menu-icon"></i>
@@ -8,32 +9,14 @@
         </li>
 
         {{-- =================================== --}}
-        {{-- MENU UNTUK ADMIN --}}
+        {{-- MENU UNTUK SUPER ADMIN --}}
         {{-- =================================== --}}
-        @if (auth()->user()->role == 'admin')
-            <li class="nav-item nav-category">Menu Admin</li>
+        @if (auth()->user()->role == 'admin' && auth()->user()->branch_id == null)
+            <li class="nav-item nav-category">Menu Super Admin</li>
             <li class="nav-item">
-                <a class="nav-link" href="{{ route('divisions.index') }}">
-                    <i class="menu-icon mdi mdi-sitemap"></i>
-                    <span class="menu-title">Data Divisi</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ route('users.index') }}">
-                    <i class="menu-icon mdi mdi-account-group"></i>
-                    <span class="menu-title">Data User</span>
-                </a>
-            </li>
-            <li class="nav-item"> {{-- ADMIN BISA VERIFIKASI --}}
-                <a class="nav-link" href="{{ route('audit.verify.list') }}">
-                    <i class="menu-icon mdi mdi-checkbox-marked-outline"></i>
-                    <span class="menu-title">Verifikasi Absensi</span>
-                </a>
-            </li>
-            <li class="nav-item"> {{-- ADMIN BISA LIHAT IZIN --}}
-                <a class="nav-link" href="{{ route('audit.late.list') }}">
-                    <i class="menu-icon mdi mdi-clock-alert-outline"></i>
-                    <span class="menu-title">Izin Telat Masuk</span>
+                <a class="nav-link" href="{{ route('branches.index') }}">
+                    <i class="menu-icon mdi mdi-domain"></i>
+                    <span class="menu-title">Data Cabang</span>
                 </a>
             </li>
         @endif
@@ -41,11 +24,11 @@
 
 
         {{-- =================================== --}}
-        {{-- MENU UNTUK AUDIT --}}
+        {{-- MENU UNTUK ADMIN CABANG & AUDIT --}}
         {{-- =================================== --}}
-        @if (auth()->user()->role == 'audit')
-            <li class="nav-item nav-category">Menu Audit</li>
-            <li class="nav-item"> {{-- AUDIT HANYA BISA KELOLA USER & DIVISI --}}
+        @if ((auth()->user()->role == 'admin' && auth()->user()->branch_id != null) || auth()->user()->role == 'audit')
+            <li class="nav-item nav-category">Manajemen Tim</li>
+            <li class="nav-item">
                 <a class="nav-link" href="{{ route('divisions.index') }}">
                     <i class="menu-icon mdi mdi-sitemap"></i>
                     <span class="menu-title">Data Divisi</span>
@@ -57,13 +40,23 @@
                     <span class="menu-title">Data User</span>
                 </a>
             </li>
-            <li class="nav-item"> {{-- AUDIT BISA VERIFIKASI --}}
+        @endif
+        {{-- =================================== --}}
+
+
+        {{-- =================================== --}}
+        {{-- MENU KHUSUS VERIFIKASI --}}
+        {{-- =================================== --}}
+        @if (auth()->user()->role == 'admin' || auth()->user()->role == 'audit')
+            {{-- Kategori ini hanya muncul jika user adalah admin (super/cabang) ATAU audit --}}
+            <li class="nav-item nav-category">Verifikasi</li>
+            <li class="nav-item">
                 <a class="nav-link" href="{{ route('audit.verify.list') }}">
                     <i class="menu-icon mdi mdi-checkbox-marked-outline"></i>
                     <span class="menu-title">Verifikasi Absensi</span>
                 </a>
             </li>
-            <li class="nav-item"> {{-- AUDIT BISA LIHAT IZIN --}}
+            <li class="nav-item">
                 <a class="nav-link" href="{{ route('audit.late.list') }}">
                     <i class="menu-icon mdi mdi-clock-alert-outline"></i>
                     <span class="menu-title">Izin Telat Masuk</span>
@@ -88,9 +81,9 @@
         {{-- =================================== --}}
 
         {{-- =================================== --}}
-        {{-- MENU UNTUK USER BIASA --}}
+        {{-- MENU UNTUK LEADER & USER BIASA --}}
         {{-- =================================== --}}
-        @if (auth()->user()->role == 'user_biasa')
+        @if (auth()->user()->role == 'user_biasa' || auth()->user()->role == 'leader')
             <li class="nav-item nav-category">Menu User</li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('my.team') }}">

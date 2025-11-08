@@ -8,10 +8,11 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ScanController;
-use App\Http\Controllers\ProfileController; // <-- TAMBAHKAN INI
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SelfAttendanceController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\BranchController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,8 +39,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
-    // --- Rute Khusus ADMIN & AUDIT ---
-    Route::middleware(['role:admin,audit'])->group(function () { // <-- DIUBAH DI SINI
+    // --- Rute Khusus SUPER ADMIN (untuk kelola cabang) ---
+    Route::middleware(['role:admin'])->group(function () {
+        // Controller akan memfilter lagi apakah ini Super Admin (branch_id == null)
+        Route::resource('branches', BranchController::class);
+    });
+
+    // --- Rute Khusus ADMIN (Cabang) & AUDIT ---
+    Route::middleware(['role:admin,audit'])->group(function () {
         Route::resource('divisions', DivisionController::class);
         Route::resource('users', UserController::class);
 
@@ -56,15 +63,20 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/scan/store', [ScanController::class, 'storeAttendance'])->name('security.attendance.store');
     });
 
-    // --- Rute Khusus USER BIASA ---
-    Route::middleware(['role:user_biasa'])->group(function () {
+    // --- Rute Khusus LEADER & USER BIASA ---
+
+    // ======================================================
+    // --- INI ADALAH PERBAIKANNYA ---
+    // ======================================================
+    Route::middleware(['role:user_biasa,leader'])->group(function () {
+        // ======================================================
+
         Route::get('/absen-mandiri', [SelfAttendanceController::class, 'create'])->name('self.attend.create');
         Route::post('/absen-mandiri', [SelfAttendanceController::class, 'store'])->name('self.attend.store');
 
         Route::get('/tim-saya', [TeamController::class, 'index'])->name('my.team');
 
         Route::post('/lapor-telat', [SelfAttendanceController::class, 'storeLateStatus'])->name('late.status.store');
-        // Kita pakai POST/DELETE untuk hapus, tapi form HTML hanya bisa POST
         Route::post('/hapus-telat', [SelfAttendanceController::class, 'deleteLateStatus'])->name('late.status.delete');
     });
 });

@@ -6,12 +6,14 @@
             </button>
         </div>
         <div>
-            {{-- Arahkan logo ke Dashboard --}}
+            {{-- Arahkan logo ke Dashboard (sudah dengan style perbesaran logo) --}}
             <a class="navbar-brand brand-logo" href="{{ route('dashboard') }}">
-                <img src="{{ asset('assets/images/logo.svg') }}" alt="logo" />
+                <img src="{{ asset('assets/images/logo-pstore.png') }}" alt="logo"
+                    style="width: 150px; height: auto;" />
             </a>
             <a class="navbar-brand brand-logo-mini" href="{{ route('dashboard') }}">
-                <img src="{{ asset('assets/images/logo-mini.svg') }}" alt="logo" />
+                <img src="{{ asset('assets/images/logo-pstore.png') }}" alt="logo"
+                    style="width: 45px; height: auto;" />
             </a>
         </div>
     </div>
@@ -164,20 +166,33 @@
                     </a>
                 </div>
             </li>
-            <li class="nav-item dropdown d-none d-lg-block user-dropdown">
+
+            {{-- =================================== --}}
+            {{--       PERUBAHAN PROFIL DI SINI      --}}
+            {{-- =================================== --}}
+            <li class="nav-item dropdown user-dropdown">
                 <a class="nav-link" id="UserDropdown" href="#" data-bs-toggle="dropdown" aria-expanded="false">
-                    <img class="img-xs rounded-circle" src="{{ asset('assets/images/faces/face8.jpg') }}"
-                        alt="Profile image"> </a>
+
+                    {{-- MENGGANTI IMG DENGAN DIV INISIAL (KECIL) --}}
+                    <div class="profile-initial-nav">
+                        {{ getInitials(Auth::user()->name) }}
+                    </div>
+
+                </a>
                 <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="UserDropdown">
                     <div class="dropdown-header text-center">
-                        <img class="img-md rounded-circle" src="{{ asset('assets/images/faces/face8.jpg') }}"
-                            alt="Profile image">
+
+                        {{-- MENGGANTI IMG DENGAN DIV INISIAL (BESAR) --}}
+                        <div class="profile-initial-dropdown mb-2">
+                             {{ getInitials(Auth::user()->name) }}
+                        </div>
+
                         {{-- Dibuat Dinamis --}}
                         <p class="mb-1 mt-3 fw-semibold">{{ Auth::user()->name }}</p>
                         <p class="fw-light text-muted mb-0">{{ Auth::user()->email }}</p>
                     </div>
 
-                    {{-- Link "My Profile" Diperbaiki --}}
+                    {{-- Link "My Profile" --}}
                     <a href="{{ route('profile.edit') }}" class="dropdown-item"><i
                             class="dropdown-item-icon mdi mdi-account-outline text-primary me-2"></i> My Profile</a>
 
@@ -189,7 +204,7 @@
                     <a class="dropdown-item"><i
                             class="dropdown-item-icon mdi mdi-help-circle-outline text-primary me-2"></i> FAQ</a>
 
-                    {{-- Link "Sign Out" Diperbaiki --}}
+                    {{-- Link "Sign Out" --}}
                     <a href="{{ route('logout') }}" class="dropdown-item"><i
                             class="dropdown-item-icon mdi mdi-power text-primary me-2"></i>Sign Out</a>
                 </div>

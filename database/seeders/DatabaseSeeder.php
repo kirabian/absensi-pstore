@@ -6,24 +6,18 @@ use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     *
-     * @return void
-     */
     public function run()
     {
-        // Urutan ini SANGAT PENTING
+        // URUTAN INI SANGAT PENTING!
+        $this->call([
+            BranchSeeder::class,      // 1. Buat Cabang dulu
+            DivisionSeeder::class,    // 2. Buat Divisi (butuh Cabang)
+            UserSeeder::class,        // 3. Buat User (butuh Cabang & Divisi)
 
-        // 1. Buat Divisi dulu
-        $this->call(DivisionSeeder::class);
-
-        // 2. Buat User (karena butuh ID Divisi)
-        $this->call(UserSeeder::class);
-
-        // 3. Sisanya bebas, karena butuh ID User & Divisi
-        $this->call(AuditTeamSeeder::class);
-        $this->call(AttendanceSeeder::class);
-        $this->call(LateNotificationSeeder::class);
+            // Seeders lama Anda (butuh User & Divisi)
+            AuditTeamSeeder::class,
+            AttendanceSeeder::class,
+            LateNotificationSeeder::class,
+        ]);
     }
 }

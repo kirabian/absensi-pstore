@@ -37,8 +37,10 @@
                                     <th> Nama </th>
                                     <th> Email </th>
                                     <th> Role </th>
+                                    <th> Cabang </th> {{-- <-- KOLOM BARU --}}
                                     <th> Divisi </th>
-                                    <th> QR Code </th> {{-- <-- KOLOM BARU --}} <th> Aksi </th>
+                                    <th> QR Code </th>
+                                    <th> Aksi </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -48,35 +50,36 @@
                                         <td> {{ $user->name }} </td>
                                         <td> {{ $user->email }} </td>
                                         <td>
-                                            @if($user->role == 'admin')
-                                                <span class="badge badge-primary">Admin</span>
+                                            {{-- LOGIKA BADGE BARU --}}
+                                            @if($user->role == 'admin' && $user->branch_id == null)
+                                                <span class="badge badge-danger">Super Admin</span>
+                                            @elseif($user->role == 'admin' && $user->branch_id != null)
+                                                <span class="badge badge-primary">Admin Cabang</span>
                                             @elseif($user->role == 'audit')
                                                 <span class="badge badge-info">Audit</span>
+                                            @elseif($user->role == 'leader') {{-- <-- ROLE BARU --}}
+                                                <span class="badge badge-success">Leader</span>
                                             @elseif($user->role == 'security')
                                                 <span class="badge badge-warning">Security</span>
                                             @else
                                                 <span class="badge badge-secondary">User Biasa</span>
                                             @endif
                                         </td>
+                                        <td> {{ $user->branch->name ?? 'N/A' }} </td> {{-- <-- DATA BARU --}}
                                         <td> {{ $user->division->name ?? 'N/A' }} </td>
-
-                                        {{-- =================================== --}}
-                                        {{-- TOMBOL QR BARU --}}
-                                        {{-- =================================== --}}
                                         <td>
-                                            {{-- Pastikan user punya QR value sebelum tampilkan tombol --}}
                                             @if($user->qr_code_value)
-                                                <button type="button" class="btn btn-inverse-info btn-icon" data-bs-toggle="modal"
-                                                    data-bs-target="#qrModal" data-name="{{ $user->name }}"
-                                                    data-qr="{{ $user->qr_code_value }}">
+                                                <button type="button" class="btn btn-inverse-info btn-icon"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#qrModal"
+                                                        data-name="{{ $user->name }}"
+                                                        data-qr="{{ $user->qr_code_value }}">
                                                     <i class="mdi mdi-qrcode"></i>
                                                 </button>
                                             @else
                                                 N/A
                                             @endif
                                         </td>
-                                        {{-- =================================== --}}
-
                                         <td>
                                             <a href="{{ route('users.edit', $user->id) }}"
                                                 class="btn btn-inverse-warning btn-icon">
@@ -97,8 +100,8 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center">Belum ada data user.</td> {{-- <-- Ubah colspan jadi
-                                            7 --}} </tr>
+                                        <td colspan="8" class="text-center">Belum ada data user.</td> {{-- <-- Colspan jadi 8 --}}
+                                    </tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -110,7 +113,7 @@
 
 
     {{-- =================================== --}}
-    {{-- MODAL HTML BARU --}}
+    {{-- MODAL HTML BARU (QR Code) --}}
     {{-- =================================== --}}
     <div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">

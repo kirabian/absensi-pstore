@@ -18,7 +18,7 @@
     <!-- endinject -->
     <!-- Plugin css for this page -->
     <link rel="stylesheet" href="{{ asset('assets/vendors/datatables.net-bs4/dataTables.bootstrap4.css') }}">
-    <link rel="stylesheet" type="text/css" href="'{{ ('assets/js/select.dataTables.min.css') }}'">
+    <link rel="stylesheet" type="text/css" href="{{ asset('assets/js/select.dataTables.min.css') }}">
     <!-- End plugin css for this page -->
     <!-- inject:css -->
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
@@ -75,16 +75,14 @@
     <!-- inject:js -->
     <script src="{{ asset('assets/js/off-canvas.js') }}"></script>
     <script src="{{ asset('assets/js/template.js') }}"></script>
-    <script src="a{{ asset('assets/js/settings.js') }}"></script>
+    <script src="{{ asset('assets/js/settings.js') }}"></script>
     <script src="{{ asset('assets/js/hoverable-collapse.js') }}"></script>
     <script src="{{ asset('assets/js/todolist.js') }}"></script>
     <!-- endinject -->
     <!-- Custom js for this page-->
     <script src="{{ asset('assets/js/jquery.cookie.js') }}" type="text/javascript"></script>
     <script src="{{ asset('assets/js/dashboard.js') }}"></script>
-    <script src="{{ asset('assets/js/jquery.cookie.js') }}" type="text/javascript"></script>
-    <script src="{{ asset('assets.js/dashboard.js') }}"></script>
-    {{-- TAMBAHKAN BARIS INI JIKA BELUM ADA --}}
+    {{-- Selalu letakkan @stack('scripts') di PALING AKHIR --}}
     @stack('scripts')
     <!-- <script src="assets/js/Chart.roundedBarCharts.js"></script> -->
     <!-- End custom js for this page-->

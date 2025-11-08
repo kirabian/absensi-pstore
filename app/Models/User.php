@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-// JANGAN LUPA TAMBAHKAN INI
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -23,9 +22,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', // 'admin', 'audit', 'security', 'user_biasa'
+        'role',
         'division_id',
         'qr_code_value',
+        'branch_id', // <-- TAMBAHAN BARU
     ];
 
     /**
@@ -47,26 +47,27 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
-
-    // --- TAMBAHKAN FUNGSI INI ---
     /**
-     * Mendapatkan divisi tempat user ini berada.
-     * Ini adalah relasi 'belongsTo' (satu user memiliki satu divisi).
+     * Relasi ke Divisi.
      */
     public function division(): BelongsTo
     {
-        // 'division_id' adalah foreign key di tabel 'users'
-        // 'id' adalah primary key di tabel 'divisions'
         return $this->belongsTo(Division::class, 'division_id', 'id');
     }
-    // --- TAMBAHKAN FUNGSI INI ---
+
     /**
-     * Relasi one-to-many: Satu User memiliki banyak data Absensi.
+     * Relasi ke Cabang.
+     */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class, 'branch_id', 'id');
+    }
+
+    /**
+     * Relasi ke Absensi.
      */
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
     }
-    // --- BATAS TAMBAHAN ---
-
 }
