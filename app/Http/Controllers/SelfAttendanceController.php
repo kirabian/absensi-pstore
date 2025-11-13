@@ -6,25 +6,21 @@ use App\Models\Attendance;
 use App\Models\LateNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Traits\SendFcmNotification; // <-- 1. IMPORT TRAIT NOTIFIKASI
+use App\Traits\SendFcmNotification;
 
 class SelfAttendanceController extends Controller
 {
-    use SendFcmNotification; // <-- 2. GUNAKAN TRAIT NOTIFIKASI
+    use SendFcmNotification;
 
-    /**
-     * Menampilkan halaman form absen mandiri.
-     */
     public function create()
     {
-        // Cek apakah sudah absen hari ini
         $todayAttendance = Attendance::where('user_id', Auth::id())
             ->whereDate('check_in_time', today())
             ->first();
 
-        // Cek apakah ada laporan telat aktif
         $activeLateStatus = LateNotification::where('user_id', Auth::id())
             ->where('is_active', true)
+            ->whereDate('created_at', today())
             ->first();
 
         if ($todayAttendance) {
@@ -38,9 +34,6 @@ class SelfAttendanceController extends Controller
         return view('user_biasa.absen');
     }
 
-    /**
-     * Menyimpan data absen mandiri (foto + lokasi).
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -49,78 +42,70 @@ class SelfAttendanceController extends Controller
             'longitude' => 'required',
         ]);
 
-        $user = Auth::user(); // <-- Ambil data user untuk notif
+        $user = Auth::user();
 
-        // Cek lagi jika sudah absen atau masih lapor telat
         $alreadyAttended = Attendance::where('user_id', $user->id)->whereDate('check_in_time', today())->exists();
-        $lateStatusActive = LateNotification::where('user_id', $user->id)->where('is_active', true)->exists();
+        $lateStatusActive = LateNotification::where('user_id', $user->id)
+            ->where('is_active', true)
+            ->whereDate('created_at', today())
+            ->exists();
 
         if ($alreadyAttended || $lateStatusActive) {
             return redirect()->route('dashboard')->with('error', 'Gagal absen. Anda mungkin sudah absen atau laporan telat masih aktif.');
         }
 
-        // Simpan foto ke 'storage/app/public/foto_mandiri'
         $path = $request->file('photo')->store('public/foto_mandiri');
 
         Attendance::create([
             'user_id' => $user->id,
+            'branch_id' => $user->branch_id, // <-- **INI PERBAIKAN PENTING #1**
             'check_in_time' => now(),
-            'status' => 'pending_verification', // <-- Sesuai permintaan Anda
+            'status' => 'pending_verification',
             'photo_path' => $path,
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
         ]);
 
-        // --- 3. KIRIM NOTIFIKASI ---
         $title = "Verifikasi Absensi";
         $body = $user->name . " telah absen mandiri dan perlu verifikasi.";
-        $this->sendNotificationToRoles(['admin', 'audit'], $title, $body);
-        // -----------------------------
+        $this->sendNotificationToBranchRoles(['admin', 'audit'], $user->branch_id, $title, $body);
 
         return redirect()->route('dashboard')->with('success', 'Berhasil absen mandiri. Menunggu verifikasi Audit.');
     }
 
-    /**
-     * Menyimpan laporan telat.
-     */
     public function storeLateStatus(Request $request)
     {
         $request->validate([
             'message' => 'required|string|max:255',
         ]);
 
-        $user = Auth::user(); // <-- Ambil data user untuk notif
+        $user = Auth::user();
 
-        // Nonaktifkan laporan lama jika ada
         LateNotification::where('user_id', $user->id)->update(['is_active' => false]);
 
-        // Buat laporan baru
         LateNotification::create([
             'user_id' => $user->id,
+            'branch_id' => $user->branch_id, // <-- **INI PERBAIKAN PENTING #2**
             'message' => $request->message,
             'is_active' => true,
         ]);
 
-        // --- 3. KIRIM NOTIFIKASI ---
         $title = "Izin Telat Masuk";
         $body = $user->name . " dari Divisi " . ($user->division->name ?? 'N/A') . " izin telat.";
-        $this->sendNotificationToRoles(['admin', 'audit'], $title, $body);
-        // -----------------------------
+        $this->sendNotificationToBranchRoles(['admin', 'audit'], $user->branch_id, $title, $body);
 
-        return redirect()->route('dashboard')->with('success', 'Laporan telat terkirim. Anda bisa absen setelah menghapus laporan ini.');
+        return redirect()->route('dashboard')->with('success', 'Laporan telat terkirim.');
     }
 
-    /**
-     * Menghapus laporan telat (saat tiba di kantor).
-     */
     public function deleteLateStatus()
     {
         $notification = LateNotification::where('user_id', Auth::id())
             ->where('is_active', true)
+            ->whereDate('created_at', today())
             ->first();
 
         if ($notification) {
-            $notification->delete(); // Hapus laporannya
+            $notification->delete();
             return redirect()->route('dashboard')->with('success', 'Laporan telat dihapus. Anda sekarang bisa absen.');
         }
 

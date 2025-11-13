@@ -68,7 +68,7 @@ Route::middleware(['auth'])->group(function () {
     // ======================================================
     // --- INI ADALAH PERBAIKANNYA ---
     // ======================================================
-    Route::middleware(['role:user_biasa,leader'])->group(function () {
+    Route::middleware(['role:user_biasa,leader,audit'])->group(function () {
         // ======================================================
 
         Route::get('/absen-mandiri', [SelfAttendanceController::class, 'create'])->name('self.attend.create');

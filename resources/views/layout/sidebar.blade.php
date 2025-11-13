@@ -24,9 +24,9 @@
 
 
         {{-- =================================== --}}
-        {{-- MENU UNTUK ADMIN CABANG & AUDIT --}}
+        {{-- MENU UNTUK ADMIN CABANG --}}
         {{-- =================================== --}}
-        @if ((auth()->user()->role == 'admin' && auth()->user()->branch_id != null) || auth()->user()->role == 'audit')
+        @if (auth()->user()->role == 'admin' && auth()->user()->branch_id != null)
             <li class="nav-item nav-category">Manajemen Tim</li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('divisions.index') }}">
@@ -45,10 +45,9 @@
 
 
         {{-- =================================== --}}
-        {{-- MENU KHUSUS VERIFIKASI --}}
+        {{-- MENU KHUSUS VERIFIKASI (Admin & Audit) --}}
         {{-- =================================== --}}
         @if (auth()->user()->role == 'admin' || auth()->user()->role == 'audit')
-            {{-- Kategori ini hanya muncul jika user adalah admin (super/cabang) ATAU audit --}}
             <li class="nav-item nav-category">Verifikasi</li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('audit.verify.list') }}">
@@ -81,10 +80,10 @@
         {{-- =================================== --}}
 
         {{-- =================================== --}}
-        {{-- MENU UNTUK LEADER & USER BIASA --}}
+        {{-- MENU UNTUK LEADER, USER, & AUDIT --}}
         {{-- =================================== --}}
-        @if (auth()->user()->role == 'user_biasa' || auth()->user()->role == 'leader')
-            <li class="nav-item nav-category">Menu User</li>
+        @if (auth()->user()->role == 'user_biasa' || auth()->user()->role == 'leader' || auth()->user()->role == 'audit')
+            <li class="nav-item nav-category">Menu Pengguna</li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('my.team') }}">
                     <i class="menu-icon mdi mdi-account-multiple-outline"></i>

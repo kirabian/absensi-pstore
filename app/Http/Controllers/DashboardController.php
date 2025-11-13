@@ -8,7 +8,7 @@ use App\Models\Attendance;
 use App\Models\AuditTeam;
 use App\Models\LateNotification;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; // Penting untuk mengambil user
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
@@ -17,39 +17,56 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        $user = Auth::user(); // Ambil user yang sedang login
-        $data = []; // Ini adalah data yang akan kita kirim ke view
+        $user = Auth::user();
+        $data = [];
+        $branch_id = $user->branch_id; // Ambil branch_id user
+
+        // ======================================================
+        // LOGIKA BARU: Tentukan query dasar berdasarkan cabang
+        // ======================================================
+        $attendanceQuery = Attendance::query();
+        $userQuery = User::query();
+        $divisionQuery = Division::query();
+        $lateQuery = LateNotification::query();
+
+        if ($user->role != 'admin' || $branch_id != null) {
+            // Jika BUKAN Super Admin (yaitu Admin Cabang, Audit, Security, Leader, User)
+            // Filter semua query berdasarkan cabang user
+            $attendanceQuery->where('branch_id', $branch_id);
+            $userQuery->where('branch_id', $branch_id);
+            $divisionQuery->where('branch_id', $branch_id);
+            $lateQuery->where('branch_id', $branch_id);
+        }
+        // Jika Super Admin (role 'admin' dan branch_id null), dia dapat semua data (tanpa filter).
+        // ======================================================
+
 
         if ($user->role == 'admin') {
-            // --- Data untuk ADMIN ---
-            $data['totalUsers'] = User::count();
-            $data['totalDivisions'] = Division::count();
-            $data['attendancesToday'] = Attendance::whereDate('check_in_time', today())->count();
-            $data['pendingVerifications'] = Attendance::where('status', 'pending_verification')->count();
+            // --- Data untuk ADMIN (Super ATAU Cabang) ---
+            $data['totalUsers'] = $userQuery->count();
+            $data['totalDivisions'] = $divisionQuery->count();
+            $data['attendancesToday'] = $attendanceQuery->whereDate('check_in_time', today())->count();
+            $data['pendingVerifications'] = $attendanceQuery->where('status', 'pending_verification')->count();
         } elseif ($user->role == 'audit') {
-            // --- Data untuk AUDIT ---
+            // --- Data untuk AUDIT (Logika Baru) ---
 
-            // 1. Ambil ID divisi yang dia audit
-            $myDivisionIds = AuditTeam::where('user_id', $user->id)->pluck('division_id');
-            // 2. Ambil ID user yang ada di divisi tersebut
-            $myUserIds = User::whereIn('division_id', $myDivisionIds)->pluck('id');
+            // 1. "Anggota Tim" = Semua user & leader di cabang ini
+            $data['myTeamMembers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])->count();
 
-            $data['myTeamMembers'] = $myUserIds->count();
-            $data['pendingVerifications'] = Attendance::whereIn('user_id', $myUserIds)
-                ->where('status', 'pending_verification')
-                ->count();
-            $data['attendancesToday'] = Attendance::whereIn('user_id', $myUserIds)
-                ->whereDate('check_in_time', today())
-                ->count();
+            // 2. "Perlu Verifikasi" = Semua pending di cabang ini
+            $data['pendingVerifications'] = $attendanceQuery->where('status', 'pending_verification')->count();
+
+            // 3. "Absen Hari Ini" = Semua absen di cabang ini hari ini
+            $data['attendancesToday'] = $attendanceQuery->whereDate('check_in_time', today())->count();
         } elseif ($user->role == 'security') {
-            // --- Data untuk SECURITY ---
+            // --- Data untuk SECURITY (Logika Baru) ---
             $data['myScansToday'] = Attendance::where('scanned_by_user_id', $user->id)
                 ->whereDate('check_in_time', today())
                 ->count();
-            $data['totalUsers'] = User::where('role', 'user_biasa')->count(); // Total user yg bisa di-scan
-
-        } elseif ($user->role == 'user_biasa') {
-            // --- Data untuk USER BIASA (INI YANG MEMPERBAIKI ERROR ANDA) ---
+            // Total user yg bisa di-scan DI CABANG INI
+            $data['totalUsers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])->count();
+        } elseif ($user->role == 'user_biasa' || $user->role == 'leader') {
+            // --- Data untuk USER BIASA & LEADER (Logika ini sudah benar) ---
             $data['myAttendanceToday'] = Attendance::where('user_id', $user->id)
                 ->whereDate('check_in_time', today())
                 ->first();
@@ -57,15 +74,15 @@ class DashboardController extends Controller
                 ->where('status', 'pending_verification')
                 ->count();
             $data['myTeamCount'] = User::where('division_id', $user->division_id)
-                ->where('id', '!=', $user->id) // Jumlah teman satu tim
+                ->where('id', '!=', $user->id)
                 ->count();
-            // --- TAMBAHKAN BARIS INI ---
+
             $data['activeLateStatus'] = LateNotification::where('user_id', $user->id)
                 ->where('is_active', true)
+                ->whereDate('created_at', today())
                 ->first();
         }
 
-        // Kirim semua data ($data) yang sesuai ke view 'dashboard'
         return view('dashboard', $data);
     }
 }

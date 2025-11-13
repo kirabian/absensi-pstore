@@ -1,117 +1,66 @@
-@extends('layout.master')
+<?php
 
-@section('title')
-    Pindai Absensi
-@endsection
+namespace App\Http\Controllers;
 
-@section('content')
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">Pemindai QR Code</h4>
-                    {{-- 1. Ini adalah 'kotak' untuk menampilkan kamera --}}
-                    <div id="qr-reader" style="width: 100%;"></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">Data User</h4>
+use App\Models\User;
+use App\Models\Attendance;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Traits\SendFcmNotification;
 
-                    {{-- 2. Area ini awalnya kosong, akan diisi oleh JavaScript --}}
-                    <div id="user-info" style="display:none;">
-                        <p><strong>Nama:</strong> <span id="user-name"></span></p>
-                        <p><strong>Email:</strong> <span id="user-email"></span></p>
-                        <p><strong>Divisi:</strong> <span id="user-division"></span></p>
+class ScanController extends Controller
+{
+    use SendFcmNotification;
 
-                        <hr>
+    public function scanPage()
+    {
+        return view('security.scan'); // Pastikan nama view ini benar
+    }
 
-                        {{-- 3. Form untuk menyimpan absensi, awalnya disembunyikan --}}
-                        <form action="{{ route('security.attendance.store') }}" method="POST" enctype="multipart/form-data">
-                            @csrf
-                            <input type="hidden" id="user_id" name="user_id">
+    public function getUserByQr(Request $request)
+    {
+        $request->validate(['qr_code' => 'required|string']);
+        $security = Auth::user();
 
-                            <div class="form-group">
-                                <label>Ambil Foto (Wajib)</label>
-                                {{-- 'capture="environment"' akan meminta kamera belakang di HP --}}
-                                <input type="file" name="photo" class="form-control" accept="image/*" capture="environment"
-                                    required>
-                            </div>
+        $user = User::where('qr_code_value', $request->qr_code)
+            ->where('branch_id', $security->branch_id)
+            ->with('division')
+            ->first();
 
-                            <button type="submit" class="btn btn-primary">Simpan Absensi</button>
-                        </form>
-                    </div>
-
-                    {{-- Pesan jika user tidak ditemukan --}}
-                    <div id="user-not-found" class="alert alert-danger" style="display:none;">
-                        User tidak ditemukan!
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-@endsection
-
-@push('scripts')
-    {{-- 4. Import Library Scanner --}}
-    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
-
-    <script>
-        function onScanSuccess(decodedText, decodedResult) {
-            // 'decodedText' adalah isi dari QR Code (qr_code_value)
-            console.log(`Scan berhasil: ${decodedText}`);
-
-            // Matikan scanner
-            html5QrcodeScanner.clear();
-
-            // Kirim 'decodedText' ke server Laravel kita
-            fetchUserData(decodedText);
+        if ($user) {
+            return response()->json([
+                'user' => $user,
+                'division_name' => $user->division->name ?? null
+            ]);
+        } else {
+            return response()->json(['error' => 'User not found or not in this branch'], 404);
         }
+    }
 
-        function onScanError(errorMessage) {
-            // handle scan error
-        }
+    public function storeAttendance(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
 
-        // 5. Inisialisasi scanner
-        var html5QrcodeScanner = new Html5QrcodeScanner(
-            "qr-reader", { fps: 10, qrbox: 250 });
-        html5QrcodeScanner.render(onScanSuccess, onScanError);
+        $path = $request->file('photo')->store('public/foto_security');
+        $user = User::find($request->user_id);
 
+        Attendance::create([
+            'user_id' => $user->id,
+            'branch_id' => $user->branch_id, // <-- **INI PERBAIKAN PENTING #3**
+            'check_in_time' => now(),
+            'status' => 'verified',
+            'photo_path' => $path,
+            'scanned_by_user_id' => Auth::id(),
+        ]);
 
-        // 6. FUNGSI AJAX UNTUK BERTANYA KE LARAVEL
-        function fetchUserData(qrCode) {
-            // Kirim request ke route 'api.get.user'
-            fetch('{{ route("api.get.user") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}' // Penting untuk keamanan
-                },
-                body: JSON.stringify({ qr_code: qrCode })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        // Tampilkan pesan error jika user tidak ada
-                        document.getElementById('user-not-found').style.display = 'block';
-                    } else {
-                        // Jika user ada, isi datanya dan tampilkan form
-                        document.getElementById('user-name').innerText = data.user.name;
-                        document.getElementById('user-email').innerText = data.user.email;
-                        document.getElementById('user-division').innerText = data.division_name ?? 'N/A';
-                        document.getElementById('user_id').value = data.user.id;
+        $title = "Absensi Masuk (Security)";
+        $body = $user->name . " telah diabsen masuk oleh Security.";
+        $this->sendNotificationToBranchRoles(['admin', 'audit'], $user->branch_id, $title, $body);
 
-                        document.getElementById('user-info').style.display = 'block';
-                        document.getElementById('user-not-found').style.display = 'none';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    document.getElementById('user-not-found').style.display = 'block';
-                });
-        }
-
-    </script>
-@endpush
+        return redirect()->route('security.scan')
+            ->with('success', 'Absensi berhasil dicatat!');
+    }
+}

@@ -12,8 +12,7 @@
                     style="width: 150px; height: auto;" />
             </a>
             <a class="navbar-brand brand-logo-mini" href="{{ route('dashboard') }}">
-                <img src="{{ asset('assets/images/logo-pstore.png') }}" alt="logo"
-                    style="width: 45px; height: auto;" />
+                <img src="{{ asset('assets/images/logo-pstore.png') }}" alt="logo" style="width: 45px; height: auto;" />
             </a>
         </div>
     </div>
@@ -21,67 +20,27 @@
         <ul class="navbar-nav">
             <li class="nav-item fw-semibold d-none d-lg-block ms-0">
                 {{-- Dibuat Dinamis --}}
-                <h1 class="welcome-text">@yield('heading'), <span
-                        class="text-black fw-bold">{{ Auth::user()->name }}</span></h1>
-                <h3 class="welcome-sub-text">{{ Auth::user()->role }}</h3>
+                <h1 class="welcome-text">@yield('heading')</h1>
+                <h3 class="welcome-sub-text">{{ Auth::user()->role }} - {{ Auth::user()->division->name ?? 'N/A' }}</h3>
             </li>
         </ul>
         <ul class="navbar-nav ms-auto">
-            <li class="nav-item dropdown d-none d-lg-block">
-                <a class="nav-link dropdown-bordered dropdown-toggle dropdown-toggle-split" id="messageDropdown"
-                    href="#" data-bs-toggle="dropdown" aria-expanded="false"> Select Category </a>
-                <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list pb-0"
-                    aria-labelledby="messageDropdown">
-                    <a class="dropdown-item py-3">
-                        <p class="mb-0 fw-medium float-start">Select category</p>
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item preview-item">
-                        <div class="preview-item-content flex-grow py-2">
-                            <p class="preview-subject ellipsis fw-medium text-dark">Bootstrap Bundle </p>
-                            <p class="fw-light small-text mb-0">This is a Bundle featuring 16 unique dashboards</p>
-                        </div>
-                    </a>
-                    <a class="dropdown-item preview-item">
-                        <div class="preview-item-content flex-grow py-2">
-                            <p class="preview-subject ellipsis fw-medium text-dark">Angular Bundle</p>
-                            <p class="fw-light small-text mb-0">Everything you’ll ever need for your Angular projects
-                            </p>
-                        </div>
-                    </a>
-                    <a class="dropdown-item preview-item">
-                        <div class="preview-item-content flex-grow py-2">
-                            <p class="preview-subject ellipsis fw-medium text-dark">VUE Bundle</p>
-                            <p class="fw-light small-text mb-0">Bundle of 6 Premium Vue Admin Dashboard</p>
-                        </div>
-                    </a>
-                    <a class="dropdown-item preview-item">
-                        <div class="preview-item-content flex-grow py-2">
-                            <p class="preview-subject ellipsis fw-medium text-dark">React Bundle</p>
-                            <p class="fw-light small-text mb-0">Bundle of 8 Premium React Admin Dashboard</p>
-                        </div>
-                    </a>
-                </div>
-            </li>
+            {{-- Fullscreen Button --}}
             <li class="nav-item d-none d-lg-block">
                 <a class="nav-link" href="javascript:void(0)" onclick="toggleFullScreen()">
                     <i class="mdi mdi-fullscreen"></i> Fullscreen
                 </a>
             </li>
-            <li class="nav-item d-none d-lg-block">
-                <div id="datepicker-popup" class="input-group date datepicker navbar-date-picker">
-                    <span class="input-group-addon input-group-prepend border-right">
-                        <span class="icon-calendar input-group-text calendar-icon"></span>
-                    </span>
-                    <input type="text" class="form-control">
-                </div>
-            </li>
+
+            {{-- Search --}}
             <li class="nav-item">
                 <form class="search-form" action="#">
                     <i class="icon-search"></i>
                     <input type="search" class="form-control" placeholder="Search Here" title="Search here">
                 </form>
             </li>
+
+            {{-- Notifications --}}
             <li class="nav-item dropdown">
                 <a class="nav-link count-indicator" id="notificationDropdown" href="#" data-bs-toggle="dropdown">
                     <i class="icon-bell"></i>
@@ -122,6 +81,8 @@
                     </a>
                 </div>
             </li>
+
+            {{-- Messages --}}
             <li class="nav-item dropdown">
                 <a class="nav-link count-indicator" id="countDropdown" href="#" data-bs-toggle="dropdown"
                     aria-expanded="false">
@@ -167,46 +128,43 @@
                 </div>
             </li>
 
-            {{-- =================================== --}}
-            {{--       PERUBAHAN PROFIL DI SINI      --}}
-            {{-- =================================== --}}
+            {{-- User Profile --}}
             <li class="nav-item dropdown user-dropdown">
                 <a class="nav-link" id="UserDropdown" href="#" data-bs-toggle="dropdown" aria-expanded="false">
-
-                    {{-- MENGGANTI IMG DENGAN DIV INISIAL (KECIL) --}}
                     <div class="profile-initial-nav">
                         {{ getInitials(Auth::user()->name) }}
                     </div>
-
                 </a>
                 <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="UserDropdown">
                     <div class="dropdown-header text-center">
-
-                        {{-- MENGGANTI IMG DENGAN DIV INISIAL (BESAR) --}}
                         <div class="profile-initial-dropdown mb-2">
-                             {{ getInitials(Auth::user()->name) }}
+                            {{ getInitials(Auth::user()->name) }}
                         </div>
-
-                        {{-- Dibuat Dinamis --}}
                         <p class="mb-1 mt-3 fw-semibold">{{ Auth::user()->name }}</p>
                         <p class="fw-light text-muted mb-0">{{ Auth::user()->email }}</p>
+                        <small class="text-muted">{{ Auth::user()->role }} -
+                            {{ Auth::user()->division->name ?? 'N/A' }}</small>
                     </div>
 
                     {{-- Link "My Profile" --}}
-                    <a href="{{ route('profile.edit') }}" class="dropdown-item"><i
-                            class="dropdown-item-icon mdi mdi-account-outline text-primary me-2"></i> My Profile</a>
+                    <a href="{{ route('profile.edit') }}" class="dropdown-item">
+                        <i class="dropdown-item-icon mdi mdi-account-outline text-primary me-2"></i> My Profile
+                    </a>
 
-                    <a class="dropdown-item"><i
-                            class="dropdown-item-icon mdi mdi-message-text-outline text-primary me-2"></i> Messages</a>
-                    <a class="dropdown-item"><i
-                            class="dropdown-item-icon mdi mdi-calendar-check-outline text-primary me-2"></i>
-                        Activity</a>
-                    <a class="dropdown-item"><i
-                            class="dropdown-item-icon mdi mdi-help-circle-outline text-primary me-2"></i> FAQ</a>
+                    <a class="dropdown-item">
+                        <i class="dropdown-item-icon mdi mdi-message-text-outline text-primary me-2"></i> Messages
+                    </a>
+                    <a class="dropdown-item">
+                        <i class="dropdown-item-icon mdi mdi-calendar-check-outline text-primary me-2"></i> Activity
+                    </a>
+                    <a class="dropdown-item">
+                        <i class="dropdown-item-icon mdi mdi-help-circle-outline text-primary me-2"></i> FAQ
+                    </a>
 
                     {{-- Link "Sign Out" --}}
-                    <a href="{{ route('logout') }}" class="dropdown-item"><i
-                            class="dropdown-item-icon mdi mdi-power text-primary me-2"></i>Sign Out</a>
+                    <a href="{{ route('logout') }}" class="dropdown-item">
+                        <i class="dropdown-item-icon mdi mdi-power text-primary me-2"></i>Sign Out
+                    </a>
                 </div>
             </li>
         </ul>
@@ -245,3 +203,83 @@
         }
     }
 </script>
+
+<style>
+    .profile-initial-nav {
+        width: 40px;
+        height: 40px;
+        background: #000;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .profile-initial-nav:hover {
+        background: #333;
+        transform: scale(1.05);
+    }
+
+    .profile-initial-dropdown {
+        width: 60px;
+        height: 60px;
+        background: #000;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 18px;
+        margin: 0 auto;
+    }
+
+    .navbar-brand img {
+        transition: transform 0.3s ease;
+    }
+
+    .navbar-brand:hover img {
+        transform: scale(1.05);
+    }
+
+    .nav-link {
+        transition: color 0.3s ease;
+    }
+
+    .nav-link:hover {
+        color: #000 !important;
+    }
+
+    .dropdown-menu {
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .dropdown-item {
+        border-radius: 6px;
+        margin: 2px 8px;
+        transition: all 0.3s ease;
+    }
+
+    .dropdown-item:hover {
+        background: #f8f9fa;
+        color: #000;
+    }
+
+    .search-form .form-control {
+        border-radius: 20px;
+        border: 2px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+
+    .search-form .form-control:focus {
+        border-color: #000;
+        box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+    }
+</style>

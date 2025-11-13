@@ -9,12 +9,24 @@ class LateNotification extends Model
 {
     use HasFactory;
 
-    // Nama tabel otomatis 'late_notifications'
-    // Primary key otomatis 'id'
-
     protected $fillable = [
         'user_id',
         'message',
         'is_active',
     ];
+
+    /**
+     * Casting attributes
+     */
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    /**
+     * Relasi ke User
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }
