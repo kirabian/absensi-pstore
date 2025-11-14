@@ -42,6 +42,33 @@ return [
             'visibility' => 'public',
         ],
 
+        'foto_mandiri' => [
+            'driver' => 'local',
+            'root' => public_path('storage/foto_mandiri'),
+            'url' => env('APP_URL') . '/storage/foto_mandiri',
+            'visibility' => 'public',
+        ],
+
+        'inventory_photos' => [
+            'driver' => 'local',
+            'root' => public_path('storage/inventory_photos'),
+            'url' => env('APP_URL') . '/storage/inventory_photos',
+            'visibility' => 'public',
+        ],
+
+        'ktp_photos' => [
+            'driver' => 'local',
+            'root' => public_path('storage/ktp_photos'),
+            'url' => env('APP_URL') . '/storage/ktp_photos',
+            'visibility' => 'public',
+        ],
+
+        'profile_photos' => [
+            'driver' => 'local',
+            'root' => public_path('storage/profile_photos'),
+            'url' => env('APP_URL') . '/storage/profile_photos',
+            'visibility' => 'public',
+        ],
 
         's3' => [
             'driver' => 's3',
@@ -68,6 +95,7 @@ return [
     */
 
     'links' => [
+        // Bisa tetap untuk legacy public disk
         public_path('storage') => storage_path('app/public'),
     ],
 
