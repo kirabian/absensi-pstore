@@ -14,9 +14,9 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Alias for storage
+    # Alias storage langsung di public
     RewriteCond %{REQUEST_URI} ^/storage/(.*)$
-    RewriteRule ^storage/(.*)$ ../storage/app/public/$1 [L]
+    RewriteRule ^storage/(.*)$ storage/$1 [L]
 
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
