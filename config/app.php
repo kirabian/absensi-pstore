@@ -67,7 +67,8 @@ return [
     |
     */
 
-    'asset_url' => env('ASSET_URL', env('APP_URL').'/assets'),
+    'asset_url' => env('ASSET_URL', null),
+
 
     /*
     |--------------------------------------------------------------------------
