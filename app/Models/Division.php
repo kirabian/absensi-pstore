@@ -9,10 +9,20 @@ class Division extends Model
 {
     use HasFactory;
 
-    // Nama tabel otomatis 'divisions', jadi tidak perlu $table
-    // Primary key otomatis 'id', jadi tidak perlu $primaryKey
-
     protected $fillable = [
         'name',
+        'branch_id',
     ];
+
+    // Relasi ke Branch
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    // Relasi ke User
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
 }

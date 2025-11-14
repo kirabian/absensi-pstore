@@ -1,3 +1,8 @@
+@php
+    // TAMBAHKAN INI DI ATAS untuk memanggil helper Storage
+    use Illuminate\Support\Facades\Storage;
+@endphp
+
 <nav class="navbar default-layout col-lg-12 col-12 p-0 fixed-top d-flex align-items-top flex-row w-100">
     <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-start">
         <div class="me-3">
@@ -52,33 +57,7 @@
                         <p class="mb-0 fw-medium float-start">You have 4 new notifications </p>
                         <span class="badge badge-pill badge-primary float-end">View all</span>
                     </a>
-                    <a class="dropdown-item preview-item py-3">
-                        <div class="preview-thumbnail">
-                            <i class="mdi mdi-alert m-auto text-primary"></i>
-                        </div>
-                        <div class="preview-item-content">
-                            <h6 class="preview-subject fw-normal text-dark mb-1">Application Error</h6>
-                            <p class="fw-light small-text mb-0"> Just now </p>
-                        </div>
-                    </a>
-                    <a class="dropdown-item preview-item py-3">
-                        <div class="preview-thumbnail">
-                            <i class="mdi mdi-lock-outline m-auto text-primary"></i>
-                        </div>
-                        <div class="preview-item-content">
-                            <h6 class="preview-subject fw-normal text-dark mb-1">Settings</h6>
-                            <p class="fw-light small-text mb-0"> Private message </p>
-                        </div>
-                    </a>
-                    <a class="dropdown-item preview-item py-3">
-                        <div class="preview-thumbnail">
-                            <i class="mdi mdi-airballoon m-auto text-primary"></i>
-                        </div>
-                        <div class="preview-item-content">
-                            <h6 class="preview-subject fw-normal text-dark mb-1">New user registration</h6>
-                            <p class="fw-light small-text mb-0"> 2 days ago </p>
-                        </div>
-                    </a>
+                    {{-- ... (item notifikasi) ... --}}
                 </div>
             </li>
 
@@ -94,52 +73,46 @@
                         <p class="mb-0 fw-medium float-start">You have 7 unread mails </p>
                         <span class="badge badge-pill badge-primary float-end">View all</span>
                     </a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item preview-item">
-                        <div class="preview-thumbnail">
-                            <img src="{{ asset('assets/images/faces/face10.jpg') }}" alt="image"
-                                class="img-sm profile-pic">
-                        </div>
-                        <div class="preview-item-content flex-grow py-2">
-                            <p class="preview-subject ellipsis fw-medium text-dark">Marian Garner </p>
-                            <p class="fw-light small-text mb-0"> The meeting is cancelled </p>
-                        </div>
-                    </a>
-                    <a class="dropdown-item preview-item">
-                        <div class="preview-thumbnail">
-                            <img src="{{ asset('assets/images/faces/face12.jpg') }}" alt="image"
-                                class="img-sm profile-pic">
-                        </div>
-                        <div class="preview-item-content flex-grow py-2">
-                            <p class="preview-subject ellipsis fw-medium text-dark">David Grey </p>
-                            <p class="fw-light small-text mb-0"> The meeting is cancelled </p>
-                        </div>
-                    </a>
-                    <a class="dropdown-item preview-item">
-                        <div class="preview-thumbnail">
-                            <img src="{{ asset('assets/images/faces/face1.jpg') }}" alt="image"
-                                class="img-sm profile-pic">
-                        </div>
-                        <div class="preview-item-content flex-grow py-2">
-                            <p class="preview-subject ellipsis fw-medium text-dark">Travis Jenkins </p>
-                            <p class="fw-light small-text mb-0"> The meeting is cancelled </p>
-                        </div>
-                    </a>
+                    {{-- ... (item pesan) ... --}}
                 </div>
             </li>
 
             {{-- User Profile --}}
             <li class="nav-item dropdown user-dropdown">
                 <a class="nav-link" id="UserDropdown" href="#" data-bs-toggle="dropdown" aria-expanded="false">
-                    <div class="profile-initial-nav">
-                        {{ getInitials(Auth::user()->name) }}
-                    </div>
+                    
+                    {{-- =================================== --}}
+                    {{--   LOGIKA FOTO/INISIAL (KECIL)   --}}
+                    {{-- =================================== --}}
+                    @if (Auth::user()->profile_photo_path)
+                        {{-- JIKA FOTO ADA, tampilkan foto --}}
+                        <img class="img-xs rounded-circle" src="{{ Storage::url(Auth::user()->profile_photo_path) }}" alt="Profile image">
+                    @else
+                        {{-- JIKA TIDAK, tampilkan inisial --}}
+                        <div class="profile-initial-nav">
+                            {{ getInitials(Auth::user()->name) }}
+                        </div>
+                    @endif
+                    {{-- =================================== --}}
+
                 </a>
                 <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="UserDropdown">
                     <div class="dropdown-header text-center">
-                        <div class="profile-initial-dropdown mb-2">
-                            {{ getInitials(Auth::user()->name) }}
-                        </div>
+
+                        {{-- =================================== --}}
+                        {{--   LOGIKA FOTO/INISIAL (BESAR)   --}}
+                        {{-- =================================== --}}
+                        @if (Auth::user()->profile_photo_path)
+                            {{-- JIKA FOTO ADA, tampilkan foto --}}
+                            <img class="img-md rounded-circle" src="{{ Storage::url(Auth::user()->profile_photo_path) }}" alt="Profile image" style="width: 60px; height: 60px; object-fit: cover;">
+                        @else
+                            {{-- JIKA TIDAK, tampilkan inisial --}}
+                            <div class="profile-initial-dropdown mb-2">
+                                {{ getInitials(Auth::user()->name) }}
+                            </div>
+                        @endif
+                        {{-- =================================== --}}
+
                         <p class="mb-1 mt-3 fw-semibold">{{ Auth::user()->name }}</p>
                         <p class="fw-light text-muted mb-0">{{ Auth::user()->email }}</p>
                         <small class="text-muted">{{ Auth::user()->role }} -
@@ -150,7 +123,6 @@
                     <a href="{{ route('profile.edit') }}" class="dropdown-item">
                         <i class="dropdown-item-icon mdi mdi-account-outline text-primary me-2"></i> My Profile
                     </a>
-
                     <a class="dropdown-item">
                         <i class="dropdown-item-icon mdi mdi-message-text-outline text-primary me-2"></i> Messages
                     </a>
@@ -204,6 +176,11 @@
     }
 </script>
 
+{{-- 
+    CATATAN: 
+    Menaruh <style> di file .blade.php tidak disarankan. 
+    Lebih baik pindahkan kode CSS di bawah ini ke file 'public/assets/css/style.css' Anda 
+--}}
 <style>
     .profile-initial-nav {
         width: 40px;

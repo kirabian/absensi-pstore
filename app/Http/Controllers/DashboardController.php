@@ -50,8 +50,8 @@ class DashboardController extends Controller
         } elseif ($user->role == 'audit') {
             // --- Data untuk AUDIT (Logika Baru) ---
 
-            // 1. "Anggota Tim" = Semua user & leader di cabang ini
-            $data['myTeamMembers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])->count();
+            // 1. "Anggota Tim" = Semua user_biasa & leader di cabang ini
+            $data['myTeamMembers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])->count(); // KEMBALI ke user_biasa
 
             // 2. "Perlu Verifikasi" = Semua pending di cabang ini
             $data['pendingVerifications'] = $attendanceQuery->where('status', 'pending_verification')->count();
@@ -64,9 +64,9 @@ class DashboardController extends Controller
                 ->whereDate('check_in_time', today())
                 ->count();
             // Total user yg bisa di-scan DI CABANG INI
-            $data['totalUsers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])->count();
-        } elseif ($user->role == 'user_biasa' || $user->role == 'leader') {
-            // --- Data untuk USER BIASA & LEADER (Logika ini sudah benar) ---
+            $data['totalUsers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])->count(); // KEMBALI ke user_biasa
+        } elseif ($user->role == 'user_biasa' || $user->role == 'leader') { // KEMBALI ke user_biasa
+            // --- Data untuk USER BIASA & LEADER ---
             $data['myAttendanceToday'] = Attendance::where('user_id', $user->id)
                 ->whereDate('check_in_time', today())
                 ->first();

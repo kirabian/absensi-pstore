@@ -9,9 +9,9 @@
         </li>
 
         {{-- =================================== --}}
-        {{-- MENU UNTUK SUPER ADMIN --}}
+        {{--     MENU UNTUK SUPER ADMIN        --}}
         {{-- =================================== --}}
-        @if (auth()->user()->role == 'admin' && auth()->user()->branch_id == null)
+        @if (auth()->user()->role == 'super_admin')
             <li class="nav-item nav-category">Menu Super Admin</li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('branches.index') }}">
@@ -24,9 +24,9 @@
 
 
         {{-- =================================== --}}
-        {{-- MENU UNTUK ADMIN CABANG --}}
+        {{--   MENU UNTUK SUPER ADMIN & AUDIT   --}}
         {{-- =================================== --}}
-        @if (auth()->user()->role == 'admin' && auth()->user()->branch_id != null)
+        @if (auth()->user()->role == 'super_admin' || auth()->user()->role == 'audit')
             <li class="nav-item nav-category">Manajemen Tim</li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('divisions.index') }}">
@@ -45,11 +45,11 @@
 
 
         {{-- =================================== --}}
-        {{-- MENU KHUSUS VERIFIKASI (Admin & Audit) --}}
+        {{--   MENU KHUSUS VERIFIKASI (Super Admin & Audit) --}}
         {{-- =================================== --}}
-        @if (auth()->user()->role == 'admin' || auth()->user()->role == 'audit')
+        @if (auth()->user()->role == 'super_admin' || auth()->user()->role == 'audit')
             <li class="nav-item nav-category">Verifikasi</li>
-            <li class="nav-item">
+            <li class="nav-item"> 
                 <a class="nav-link" href="{{ route('audit.verify.list') }}">
                     <i class="menu-icon mdi mdi-checkbox-marked-outline"></i>
                     <span class="menu-title">Verifikasi Absensi</span>
@@ -66,7 +66,7 @@
 
 
         {{-- =================================== --}}
-        {{-- MENU UNTUK SECURITY --}}
+        {{--     MENU UNTUK SECURITY         --}}
         {{-- =================================== --}}
         @if (auth()->user()->role == 'security')
             <li class="nav-item nav-category">Menu Security</li>
@@ -80,12 +80,12 @@
         {{-- =================================== --}}
 
         {{-- =================================== --}}
-        {{-- MENU UNTUK LEADER, USER, & AUDIT --}}
+        {{--     MENU UNTUK LEADER, user_biasa, & AUDIT --}}
         {{-- =================================== --}}
         @if (auth()->user()->role == 'user_biasa' || auth()->user()->role == 'leader' || auth()->user()->role == 'audit')
             <li class="nav-item nav-category">Menu Pengguna</li>
             <li class="nav-item">
-                <a class="nav-link" href="{{ route('my.team') }}">
+                <a class="nav-link" href="{{ route('my.team') }}"> 
                     <i class="menu-icon mdi mdi-account-multiple-outline"></i>
                     <span class="menu-title">Tim Saya</span>
                 </a>

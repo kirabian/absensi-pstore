@@ -1,34 +1,33 @@
 @extends('layout.master')
-
 @section('title')
     Edit User
 @endsection
-
 @section('heading')
     Edit User: {{ $user->name }}
 @endsection
 
 @section('content')
-<div class="row">
-    <div class="col-12 grid-margin stretch-card">
-        <div class="card">
-            <div class="card-body">
-                <h4 class="card-title">Form Edit User</h4>
+@if ($errors->any())
+    <div class="alert alert-danger">
+        <ul>
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
 
-                @if ($errors->any())
-                    <div class="alert alert-danger">
-                        <ul>
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-
-                <form class="forms-sample" action="{{ route('users.update', $user->id) }}" method="POST">
-                    @csrf
-                    @method('PUT')
-
+<form class="forms-sample" action="{{ route('users.update', $user->id) }}" method="POST">
+    @csrf
+    @method('PUT')
+    
+    <div class="row">
+        {{-- KARTU DATA LOGIN & ROLE --}}
+        <div class="col-md-6 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Data Login & Role</h4>
+                    
                     <div class="form-group">
                         <label for="name">Nama Lengkap</label>
                         <input type="text" class="form-control" id="name" name="name" value="{{ old('name', $user->name) }}" required>
@@ -46,16 +45,37 @@
                         <label for="password_confirmation">Konfirmasi Password</label>
                         <input type="password" class="form-control" id="password_confirmation" name="password_confirmation">
                     </div>
+                    <div class="form-group">
+                        <label for="role">Role</label>
+                        <select class="form-control" id="role" name="role" required>
+                            <option value="super_admin" {{ old('role', $user->role) == 'super_admin' ? 'selected' : '' }}>Super Admin</option>
+                            <option value="audit" {{ old('role', $user->role) == 'audit' ? 'selected' : '' }}>Audit</option>
+                            <option value="leader" {{ old('role', $user->role) == 'leader' ? 'selected' : '' }}>Leader</option>
+                            <option value="security" {{ old('role', $user->role) == 'security' ? 'selected' : '' }}>Security</option>
+                            <option value="karyawan" {{ old('role', $user->role) == 'karyawan' ? 'selected' : '' }}>Karyawan</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                    {{-- DROPDOWN CABANG (BARU) --}}
+        {{-- KARTU DATA KARYAWAN & SOSMED --}}
+        <div class="col-md-6 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Data Karyawan & Kontak</h4>
+                    
+                    <div class="form-group">
+                        <label for="hire_date">Tanggal Masuk PStore</label>
+                        <input type="date" class="form-control" id="hire_date" name="hire_date" value="{{ old('hire_date', $user->hire_date ? $user->hire_date->format('Y-m-d') : '') }}">
+                    </div>
+
                     <div class="form-group">
                         <label for="branch_id">Cabang</label>
-                        {{-- Jika Admin Cabang, dia tidak bisa pindah cabang user --}}
-                        @if (Auth::user()->role == 'admin' && Auth::user()->branch_id != null)
+                        @if ($branches->count() == 1 && Auth::user()->branch_id != null)
                             <input type="text" class="form-control" value="{{ $branches->first()->name }}" readonly>
                             <input type="hidden" name="branch_id" value="{{ $branches->first()->id }}">
                         @else
-                        {{-- Jika Super Admin, dia bisa pindah-pindah --}}
                             <select class="form-control" id="branch_id" name="branch_id">
                                 <option value="">Super Admin (Tidak Punya Cabang)</option>
                                 @foreach ($branches as $branch)
@@ -64,39 +84,46 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <small class="text-muted">Pilih "Super Admin" jika role-nya 'admin' dan dia bisa melihat semua cabang.</small>
+                            <small class="text-muted">Pilih "Super Admin" jika role-nya 'super_admin'.</small>
                         @endif
                     </div>
-
-                    <div class="form-group">
-                        <label for="role">Role</label>
-                        <select class="form-control" id="role" name="role" required>
-                            <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>Admin (Cabang atau Super)</option>
-                            <option value="audit" {{ old('role', $user->role) == 'audit' ? 'selected' : '' }}>Audit</option>
-                            <option value="leader" {{ old('role', $user->role) == 'leader' ? 'selected' : '' }}>Leader</option> {{-- <-- ROLE BARU --}}
-                            <option value="security" {{ old('role', $user->role) == 'security' ? 'selected' : '' }}>Security</option>
-                            <option value="user_biasa" {{ old('role', $user->role) == 'user_biasa' ? 'selected' : '' }}>User Biasa</option>
-                        </select>
-                    </div>
-
+                    
                     <div class="form-group">
                         <label for="division_id">Divisi / Tim</label>
                         <select class="form-control" id="division_id" name="division_id">
-                            <option value="">-- Pilih Divisi (jika user/leader/audit) --</option>
+                            <option value="">-- Pilih Divisi --</option>
                             @foreach ($divisions as $division)
                                 <option value="{{ $division->id }}" {{ old('division_id', $user->division_id) == $division->id ? 'selected' : '' }}>
                                     {{ $division->name }} (Cabang: {{ $division->branch->name ?? 'N/A' }})
                                 </option>
                             @endforeach
                         </select>
-                        <small class="text-muted">Pilih divisi yang sesuai dengan cabang user.</small>
                     </div>
 
-                    <button type="submit" class="btn btn-primary me-2">Update</button>
-                    <a href="{{ route('users.index') }}" class="btn btn-light">Batal</a>
-                </form>
+                    <h5 class="mt-4">Info Kontak (Opsional)</h5>
+                    <div class="form-group">
+                        <label for="whatsapp">Nomor WhatsApp</label>
+                        <input type="text" class="form-control" id="whatsapp" name="whatsapp" placeholder="62812..." value="{{ old('whatsapp', $user->whatsapp) }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="instagram">Instagram</label>
+                        <input type="text" class="form-control" id="instagram" name="instagram" placeholder="username" value="{{ old('instagram', $user->instagram) }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="tiktok">TikTok</label>
+                        <input type="text" class="form-control" id="tiktok" name="tiktok" placeholder="username" value="{{ old('tiktok', $user->tiktok) }}">
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>
-</div>
+    
+    <div class="row">
+        <div class="col-12 text-center">
+            <button type="submit" class="btn btn-primary me-2">Update User</button>
+            <a href="{{ route('users.index') }}" class="btn btn-light">Batal</a>
+        </div>
+    </div>
+</form>
 @endsection
