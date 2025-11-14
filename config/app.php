@@ -56,7 +56,18 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
-    'asset_url' => env('ASSET_URL', null),
+    /*
+    |--------------------------------------------------------------------------
+    | Asset URL
+    |--------------------------------------------------------------------------
+    |
+    | This URL is used by the asset() helper to properly generate URLs for
+    | assets located outside the default public folder. You can point
+    | this to your custom assets folder.
+    |
+    */
+
+    'asset_url' => env('ASSET_URL', env('APP_URL').'/assets'),
 
     /*
     |--------------------------------------------------------------------------
@@ -165,10 +176,6 @@ return [
         Illuminate\View\ViewServiceProvider::class,
 
         /*
-         * Package Service Providers...
-         */
-
-        /*
          * Application Service Providers...
          */
         App\Providers\AppServiceProvider::class,
@@ -191,7 +198,7 @@ return [
     */
 
     'aliases' => Facade::defaultAliases()->merge([
-        // ...
+        // Tambahkan alias custom jika perlu
     ])->toArray(),
 
 ];
