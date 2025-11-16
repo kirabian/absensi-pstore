@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
-use App\Models\User; 
+use App\Models\User;
 use App\Models\WorkHistory;
 use App\Models\Inventory;
 
@@ -18,10 +18,10 @@ class ProfileController extends Controller
      */
     public function edit()
     {
-        $user = Auth::user(); 
-        $workHistories = $user->workHistories; 
+        $user = Auth::user();
+        $workHistories = $user->workHistories;
         $inventories = $user->inventories()->latest()->get();
-        
+
         return view('profile.edit', compact('user', 'workHistories', 'inventories'));
     }
 
@@ -31,11 +31,11 @@ class ProfileController extends Controller
     public function update(Request $request)
     {
         /** @var \App\Models\User $user */
-        $user = Auth::user(); 
+        $user = Auth::user();
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => ['required','string','email','max:255', Rule::unique('users')->ignore($user->id)],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => 'nullable|string|min:8|confirmed',
             'whatsapp' => 'nullable|string|max:20',
             'instagram' => 'nullable|string|max:100',
@@ -45,17 +45,23 @@ class ProfileController extends Controller
         ]);
 
         $data = $request->only([
-            'name', 'email', 'whatsapp', 'instagram', 'tiktok', 'facebook', 'linkedin'
+            'name',
+            'email',
+            'whatsapp',
+            'instagram',
+            'tiktok',
+            'facebook',
+            'linkedin'
         ]);
 
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
         }
-        
+
         $user->update($data);
 
         return redirect()->route('profile.edit')
-                         ->with('success', 'Profil Anda berhasil diperbarui.');
+            ->with('success', 'Profil Anda berhasil diperbarui.');
     }
 
     /**
@@ -71,16 +77,17 @@ class ProfileController extends Controller
         $user = Auth::user();
 
         // Hapus foto lama jika ada
+        // Hapus foto lama jika ada
         if ($user->profile_photo_path) {
-            Storage::delete($user->profile_photo_path);
+            Storage::disk('public')->delete($user->profile_photo_path); // <-- INI BENAR
         }
-        
+
         // Simpan foto baru
         $path = $request->file('profile_photo')->store('profile_photos', 'public');
         $user->update(['profile_photo_path' => $path]);
-        
+
         return redirect()->route('profile.edit')
-                         ->with('success', 'Foto profil berhasil di-upload.');
+            ->with('success', 'Foto profil berhasil di-upload.');
     }
 
     /**
@@ -91,7 +98,7 @@ class ProfileController extends Controller
         $request->validate([
             'ktp_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048', // 2MB
         ]);
-        
+
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
@@ -100,11 +107,11 @@ class ProfileController extends Controller
             $path = $request->file('ktp_photo')->store('ktp_photos', 'public');
             $user->update(['ktp_photo_path' => $path]);
             return redirect()->route('profile.edit')
-                             ->with('success', 'KTP berhasil di-upload.');
+                ->with('success', 'KTP berhasil di-upload.');
         }
 
         return redirect()->route('profile.edit')
-                         ->with('error', 'KTP sudah pernah di-upload dan tidak bisa diubah.');
+            ->with('error', 'KTP sudah pernah di-upload dan tidak bisa diubah.');
     }
 
     /**
@@ -121,7 +128,7 @@ class ProfileController extends Controller
         }
 
         return redirect()->route('profile.edit')
-                         ->with('success', 'Foto profil dihapus.');
+            ->with('success', 'Foto profil dihapus.');
     }
 
     /**
@@ -167,7 +174,6 @@ class ProfileController extends Controller
 
             return redirect()->route('profile.edit')
                 ->with('success', 'Inventaris berhasil ditambahkan.');
-
         } catch (\Exception $e) {
             return redirect()->route('profile.edit')
                 ->with('error', 'Gagal menambahkan inventaris: ' . $e->getMessage());
@@ -199,7 +205,6 @@ class ProfileController extends Controller
 
             return redirect()->route('profile.edit')
                 ->with('success', 'Inventaris berhasil dihapus.');
-
         } catch (\Exception $e) {
             return redirect()->route('profile.edit')
                 ->with('error', 'Gagal menghapus inventaris: ' . $e->getMessage());

@@ -42,7 +42,7 @@
                 <h4 class="card-title">Foto Profil</h4>
                 
                 @if ($user->profile_photo_path)
-                    <img src="{{ Storage::url($user->profile_photo_path) }}" alt="foto profil" class="img-lg rounded-circle mb-3">
+                    <img src="{{ asset('storage/' . $user->profile_photo_path) }}" alt="foto profil" class="img-lg rounded-circle mb-3">
                 @else
                     <div class="profile-initial-dropdown mb-3" style="margin: 0 auto; background-color: #007bff; width: 100px; height: 100px; line-height: 100px; font-size: 40px;">
                         {{ getInitials($user->name) }}
@@ -85,7 +85,7 @@
                 <h4 class="card-title">Data KTP</h4>
                 @if ($user->ktp_photo_path)
                     <p>KTP sudah ter-upload.</p>
-                    <a href="{{ Storage::url($user->ktp_photo_path) }}" target="_blank" class="btn btn-secondary btn-sm">
+                    <a href="{{ asset('storage/' . $user->ktp_photo_path) }}" ... >" target="_blank" class="btn btn-secondary btn-sm">
                         Lihat KTP
                     </a>
                     <small class="d-block text-muted mt-2">Hubungi Admin jika ada kesalahan data.</small>
