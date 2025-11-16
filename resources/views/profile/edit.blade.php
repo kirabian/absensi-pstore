@@ -37,7 +37,7 @@
                 <h4 class="card-title">Foto Profil</h4>
                 
                 @if ($user->profile_photo_path)
-                    <<img src="{{ url('storage_new/profile_photos/' . $user->profile_photo_path) }}" alt="Profil" class="img-lg rounded-circle mb-3">
+                    <<img src="{{ url('public/storage_new/profile_photos/' . $user->profile_photo_path) }}" alt="Profil" class="img-lg rounded-circle mb-3">
                 @else
                     <div class="profile-initial-dropdown mb-3" style="margin: 0 auto; background-color: #007bff; width: 100px; height: 100px; line-height: 100px; font-size: 40px;">
                         {{ getInitials($user->name) }}

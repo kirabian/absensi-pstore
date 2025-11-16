@@ -44,8 +44,8 @@ return [
 
         'profile_photos' => [
             'driver' => 'local',
-            'root' => public_path('storage_new/profile_photos'), // folder fisik di public
-            'url' => env('APP_URL') . '/storage_new/profile_photos', // url akses
+            'root' => public_path('public/storage_new/profile_photos'), // folder fisik di public
+            'url' => env('APP_URL') . 'public/storage_new/profile_photos', // url akses
             'visibility' => 'public',
         ],
 
