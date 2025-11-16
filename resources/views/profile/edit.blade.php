@@ -520,6 +520,8 @@
     <script>
         @if ($user->qr_code_value)
             const qrValue = "{{ $user->qr_code_value }}";
+
+            // TEST
             
             // Gambar QR Code kecil di halaman
             new QRCode(document.getElementById("qrcode-display"), {
