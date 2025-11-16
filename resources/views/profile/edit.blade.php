@@ -1,7 +1,12 @@
 @extends('layout.master')
 
-@section('title', 'Profil Saya')
-@section('heading', 'Profil Saya')
+@section('title')
+    Profil Saya
+@endsection
+
+@section('heading')
+    Profil Saya
+@endsection
 
 @section('content')
 
@@ -30,14 +35,14 @@
 @endif
 
 <div class="row">
-    {{-- KOLOM KIRI --}}
+    {{-- KOLOM KIRI (Profil, KTP, QR) --}}
     <div class="col-lg-4 grid-margin stretch-card">
         <div class="card">
             <div class="card-body text-center">
                 <h4 class="card-title">Foto Profil</h4>
                 
                 @if ($user->profile_photo_path)
-                    <<img src="{{ url('public/storage_new/profile_photos/' . $user->profile_photo_path) }}" alt="Profil" class="img-lg rounded-circle mb-3">
+                    <img src="{{ asset('storage/' . $user->profile_photo_path) }}" alt="foto profil" class="img-lg rounded-circle mb-3">
                 @else
                     <div class="profile-initial-dropdown mb-3" style="margin: 0 auto; background-color: #007bff; width: 100px; height: 100px; line-height: 100px; font-size: 40px;">
                         {{ getInitials($user->name) }}
@@ -46,6 +51,7 @@
                 
                 <p class="card-description">{{ $user->name }}</p>
                 
+                {{-- Form Ganti Foto Profil - FIXED --}}
                 <form action="{{ route('profile.photo.update') }}" method="POST" enctype="multipart/form-data" class="mb-2">
                     @csrf
                     @method('PUT')
@@ -53,6 +59,7 @@
                     <input type="file" name="profile_photo" id="profile_photo" class="d-none" accept="image/jpeg,image/png,image/jpg" onchange="this.form.submit()">
                 </form>
 
+                {{-- Tombol Hapus Foto --}}
                 @if ($user->profile_photo_path)
                     <form action="{{ route('profile.photo.delete') }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus foto profil?')">
                         @csrf
@@ -78,7 +85,7 @@
                 <h4 class="card-title">Data KTP</h4>
                 @if ($user->ktp_photo_path)
                     <p>KTP sudah ter-upload.</p>
-                    <a href="{{ Storage::url($user->ktp_photo_path) }}" target="_blank" class="btn btn-secondary btn-sm">
+                    <a href="{{ asset('storage/' . $user->ktp_photo_path) }}" target="_blank" class="btn btn-secondary btn-sm">
                         Lihat KTP
                     </a>
                     <small class="d-block text-muted mt-2">Hubungi Admin jika ada kesalahan data.</small>
@@ -96,7 +103,7 @@
         </div>
     </div>
 
-    {{-- KOLOM KANAN --}}
+    {{-- KOLOM KANAN (Edit Info) --}}
     <div class="col-lg-8 grid-margin stretch-card">
         <div class="card">
             <div class="card-body">
@@ -177,7 +184,7 @@
     </div>
 </div>
 
-{{-- RIWAYAT PEKERJAAN --}}
+{{-- SECTION RIWAYAT PEKERJAAN --}}
 <div class="row mt-4">
     <div class="col-12 grid-margin stretch-card">
         <div class="card">
@@ -218,9 +225,15 @@
                                             $years = $diff->y;
                                             $months = $diff->m;
                                         @endphp
-                                        @if($years > 0) {{ $years }} tahun @endif
-                                        @if($months > 0) {{ $months }} bulan @endif
-                                        @if($years == 0 && $months == 0) < 1 bulan @endif
+                                        @if($years > 0)
+                                            {{ $years }} tahun
+                                        @endif
+                                        @if($months > 0)
+                                            {{ $months }} bulan
+                                        @endif
+                                        @if($years == 0 && $months == 0)
+                                            < 1 bulan
+                                        @endif
                                     </td>
                                     <td>
                                         <form action="{{ route('profile.work-history.destroy', $history->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus riwayat ini?')">
@@ -246,7 +259,7 @@
     </div>
 </div>
 
-{{-- INVENTARIS --}}
+{{-- SECTION INVENTARIS --}}
 <div class="row mt-4">
     <div class="col-12 grid-margin stretch-card">
         <div class="card">
@@ -277,7 +290,7 @@
                                 <tr>
                                     <td>
                                         @if($item->item_photo_path)
-                                            <img src="{{ Storage::url($item->item_photo_path) }}" alt="item" style="width: 50px; height: 50px; object-fit: cover;">
+                                            <img src="{{ asset('storage/' . $item->item_photo_path) }}" alt="item" style="width: 50px; height: 50px; object-fit: cover;">
                                         @else
                                             <span class="badge badge-secondary">No Photo</span>
                                         @endif
@@ -311,6 +324,41 @@
                                         </form>
                                     </td>
                                 </tr>
+
+                                {{-- Modal Detail Inventaris --}}
+                                <div class="modal fade" id="viewInventoryModal{{ $item->id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Detail Inventaris: {{ $item->item_name }}</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        @if($item->item_photo_path)
+                                                            <img src="{{ asset('storage/' . $item->item_photo_path) }}" alt="item" class="img-fluid mb-3">
+                                                        @endif
+                                                        <p><strong>Nama Barang:</strong> {{ $item->item_name }}</p>
+                                                        <p><strong>Kategori:</strong> {{ ucfirst($item->category) }}</p>
+                                                        <p><strong>Serial Number:</strong> {{ $item->serial_number ?? '-' }}</p>
+                                                        <p><strong>Tanggal Terima:</strong> {{ \Carbon\Carbon::parse($item->received_date)->format('d M Y') }}</p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <p><strong>Kondisi:</strong> {{ ucfirst(str_replace('_', ' ', $item->condition)) }}</p>
+                                                        <p><strong>Deskripsi:</strong></p>
+                                                        <p>{{ $item->description ?? 'Tidak ada deskripsi' }}</p>
+                                                        @if($item->document_path)
+                                                            <a href="{{ asset('storage/' . $item->document_path) }}" target="_blank" class="btn btn-secondary btn-sm mt-2">
+                                                                <i class="mdi mdi-file-document"></i> Lihat Dokumen
+                                                            </a>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 @endforeach
                             </tbody>
                         </table>
@@ -323,7 +371,134 @@
     </div>
 </div>
 
-{{-- MODAL QR CODE --}}
+{{-- Modal Tambah Riwayat Pekerjaan --}}
+<div class="modal fade" id="addWorkHistoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tambah Riwayat Perpindahan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('profile.work-history.store') }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="alert alert-info alert-sm">
+                        <i class="mdi mdi-information"></i> <small>Catat perpindahan divisi atau promosi jabatan Anda di perusahaan ini.</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="position">Jabatan *</label>
+                        <input type="text" class="form-control" id="position" name="position" placeholder="Contoh: Staff Marketing" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="department">Divisi/Departemen *</label>
+                        <input type="text" class="form-control" id="department" name="department" placeholder="Contoh: Marketing & Sales" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="start_date">Tanggal Mulai *</label>
+                                <input type="date" class="form-control" id="start_date" name="start_date" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="end_date">Tanggal Selesai</label>
+                                <input type="date" class="form-control" id="end_date" name="end_date">
+                                <small class="text-muted">Kosongkan jika masih di posisi ini</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- Modal Tambah Inventaris --}}
+<div class="modal fade" id="addInventoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tambah Inventaris</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('profile.inventory.store') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="item_name">Nama Barang *</label>
+                                <input type="text" class="form-control" id="item_name" name="item_name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="category">Kategori *</label>
+                                <select class="form-control" id="category" name="category" required>
+                                    <option value="">Pilih Kategori</option>
+                                    <option value="elektronik">Elektronik</option>
+                                    <option value="perkantoran">Perkantoran</option>
+                                    <option value="kendaraan">Kendaraan</option>
+                                    <option value="lainnya">Lainnya</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="serial_number">Serial Number</label>
+                                <input type="text" class="form-control" id="serial_number" name="serial_number">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="received_date">Tanggal Terima *</label>
+                                <input type="date" class="form-control" id="received_date" name="received_date" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="condition">Kondisi *</label>
+                        <select class="form-control" id="condition" name="condition" required>
+                            <option value="">Pilih Kondisi</option>
+                            <option value="baik">Baik</option>
+                            <option value="rusak_ringan">Rusak Ringan</option>
+                            <option value="rusak_berat">Rusak Berat</option>
+                            <option value="perbaikan">Dalam Perbaikan</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Deskripsi</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="item_photo">Foto Barang (Max 5MB)</label>
+                        <input type="file" class="form-control" id="item_photo" name="item_photo" accept="image/*">
+                    </div>
+                    <div class="form-group">
+                        <label for="document">Dokumen Pendukung (PDF, DOC, DOCX - Max 10MB)</label>
+                        <input type="file" class="form-control" id="document" name="document" accept=".pdf,.doc,.docx">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- Modal QR Code (Sama seperti sebelumnya) --}}
 <div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
@@ -337,30 +512,35 @@
         </div>
     </div>
 </div>
+@endsection
 
-{{-- Scripts QR Code --}}
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-<script>
-@if ($user->qr_code_value)
-    const qrValue = "{{ $user->qr_code_value }}";
+    {{-- Import library QR Code --}}
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script>
+        @if ($user->qr_code_value)
+            const qrValue = "{{ $user->qr_code_value }}";
 
-    new QRCode(document.getElementById("qrcode-display"), {
-        text: qrValue,
-        width: 128,
-        height: 128,
-    });
+            // TEST
+            
+            // Gambar QR Code kecil di halaman
+            new QRCode(document.getElementById("qrcode-display"), {
+                text: qrValue,
+                width: 128,
+                height: 128,
+            });
 
-    var qrModal = document.getElementById('qrModal');
-    qrModal.addEventListener('show.bs.modal', function () {
-        var qrContainer = document.getElementById('qrcode-container-modal');
-        qrContainer.innerHTML = ''; 
-        new QRCode(qrContainer, {
-            text: qrValue,
-            width: 400,
-            height: 400,
-        });
-    });
-@endif
-</script>
+            // Gambar QR Code besar saat modal dibuka
+            var qrModal = document.getElementById('qrModal');
+            qrModal.addEventListener('show.bs.modal', function (event) {
+                var qrContainer = document.getElementById('qrcode-container-modal');
+                qrContainer.innerHTML = ''; 
+                new QRCode(qrContainer, {
+                    text: qrValue,
+                    width: 400,
+                    height: 400,
+                });
+            });
+        @endif
+    </script>
 @endpush
