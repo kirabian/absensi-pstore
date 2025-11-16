@@ -85,7 +85,7 @@
                 <h4 class="card-title">Data KTP</h4>
                 @if ($user->ktp_photo_path)
                     <p>KTP sudah ter-upload.</p>
-                    <a href="{{ asset('storage/' . $user->ktp_photo_path) }}" target="_blank" class="btn btn-secondary btn-sm">
+                    <a href="{{ Storage::url($user->ktp_photo_path) }}" target="_blank" class="btn btn-secondary btn-sm">
                         Lihat KTP
                     </a>
                     <small class="d-block text-muted mt-2">Hubungi Admin jika ada kesalahan data.</small>
