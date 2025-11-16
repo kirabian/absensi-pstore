@@ -82,8 +82,11 @@ class ProfileController extends Controller
         }
 
         // Simpan foto baru
-        $path = $request->file('profile_photo')->store('profile_photos', 'public');
+        $path = $request->file('profile_photo')->getClientOriginalName();
+        $request->file('profile_photo')->move(public_path('storage_new/profile_photos'), $path);
+
         $user->update(['profile_photo_path' => $path]);
+
 
         return redirect()->route('profile.edit')
             ->with('success', 'Foto profil berhasil di-upload.');

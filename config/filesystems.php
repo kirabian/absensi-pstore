@@ -38,21 +38,15 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL') . '/storage_new',  // ini sudah sesuai
+            'url' => env('APP_URL') . '/storage', // default laravel
             'visibility' => 'public',
         ],
 
-
-
-        's3' => [
-            'driver' => 's3',
-            'key' => env('AWS_ACCESS_KEY_ID'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'region' => env('AWS_DEFAULT_REGION'),
-            'bucket' => env('AWS_BUCKET'),
-            'url' => env('AWS_URL'),
-            'endpoint' => env('AWS_ENDPOINT'),
-            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+        'profile_photos' => [
+            'driver' => 'local',
+            'root' => public_path('storage_new/profile_photos'), // folder fisik di public
+            'url' => env('APP_URL') . '/storage_new/profile_photos', // url akses
+            'visibility' => 'public',
         ],
 
     ],
