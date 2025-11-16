@@ -38,9 +38,10 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL') . '/storage', // <-- PASTIKAN SEPERTI INI
+            'url' => env('APP_URL') . '/storage_new',
             'visibility' => 'public',
         ],
+
 
         's3' => [
             'driver' => 's3',
