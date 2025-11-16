@@ -19,7 +19,7 @@ class ProfileController extends Controller
     public function edit()
     {
         $user = Auth::user();
-        $workHistories = $user->workHistories;
+        $workHistories = $user->workHistories()->latest()->get();
         $inventories = $user->inventories()->latest()->get();
 
         return view('profile.edit', compact('user', 'workHistories', 'inventories'));
@@ -77,9 +77,8 @@ class ProfileController extends Controller
         $user = Auth::user();
 
         // Hapus foto lama jika ada
-        // Hapus foto lama jika ada
         if ($user->profile_photo_path) {
-            Storage::disk('public')->delete($user->profile_photo_path); // <-- INI BENAR
+            Storage::disk('public')->delete($user->profile_photo_path);
         }
 
         // Simpan foto baru
@@ -209,5 +208,44 @@ class ProfileController extends Controller
             return redirect()->route('profile.edit')
                 ->with('error', 'Gagal menghapus inventaris: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Menyimpan riwayat pekerjaan
+     */
+    public function storeWorkHistory(Request $request)
+    {
+        $request->validate([
+            'position' => 'required|string|max:255',
+            'department' => 'required|string|max:255',
+            'start_date' => 'required|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
+
+        WorkHistory::create([
+            'user_id' => Auth::id(),
+            'position' => $request->position,
+            'department' => $request->department,
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+        ]);
+
+        return redirect()->route('profile.edit')
+            ->with('success', 'Riwayat pekerjaan berhasil ditambahkan.');
+    }
+
+    /**
+     * Menghapus riwayat pekerjaan
+     */
+    public function destroyWorkHistory(WorkHistory $workHistory)
+    {
+        if ($workHistory->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $workHistory->delete();
+
+        return redirect()->route('profile.edit')
+            ->with('success', 'Riwayat pekerjaan berhasil dihapus.');
     }
 }
