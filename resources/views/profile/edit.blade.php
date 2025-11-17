@@ -36,38 +36,47 @@
 
 <div class="row">
     {{-- KOLOM KIRI (Profil, KTP, QR) --}}
-    <div class="col-lg-4 grid-margin stretch-card">
-        <div class="card">
-            <div class="card-body text-center">
-                <h4 class="card-title">Foto Profil</h4>
-                
-                @if ($user->profile_photo_path)
-                    <img src="{{ asset('storage/' . $user->profile_photo_path) }}" alt="foto profil" class="img-lg rounded-circle mb-3">
-                @else
-                    <div class="profile-initial-dropdown mb-3" style="margin: 0 auto; background-color: #007bff; width: 100px; height: 100px; line-height: 100px; font-size: 40px;">
-                        {{ getInitials($user->name) }}
-                    </div>
-                @endif
-                
-                <p class="card-description">{{ $user->name }}</p>
-                
-                {{-- Form Ganti Foto Profil - FIXED --}}
-                <form action="{{ route('profile.photo.update') }}" method="POST" enctype="multipart/form-data" class="mb-2">
-                    @csrf
-                    @method('PUT')
-                    <label for="profile_photo" class="btn btn-primary btn-sm">Upload Foto Baru</label>
-                    <input type="file" name="profile_photo" id="profile_photo" class="d-none" accept="image/jpeg,image/png,image/jpg" onchange="this.form.submit()">
-                </form>
+  <div class="col-lg-4 grid-margin stretch-card">
+    <div class="card">
+        <div class="card-body text-center">
+            <h4 class="card-title">Foto Profil</h4>
+            
+            {{-- Tampilkan Foto Profil --}}
+            @if ($user->profile_photo_path)
+                @php
+                    $photoUrl = Storage::url($user->profile_photo_path);
+                @endphp
+                <img src="{{ $photoUrl }}" alt="foto profil" class="img-lg rounded-circle mb-3" 
+                     style="width: 150px; height: 150px; object-fit: cover;">
+            @else
+                {{-- Tampilkan Inisial jika tidak ada foto --}}
+                <div class="profile-initial-dropdown mb-3" 
+                     style="margin: 0 auto; background-color: #007bff; width: 150px; height: 150px; line-height: 150px; font-size: 40px; border-radius: 50%; color: white; font-weight: bold;">
+                    {{ getInitials($user->name) }}
+                </div>
+            @endif
+            
+            <p class="card-description">{{ $user->name }}</p>
+            
+            {{-- Form Ganti Foto Profil --}}
+            <form action="{{ route('profile.photo.update') }}" method="POST" enctype="multipart/form-data" class="mb-2">
+                @csrf
+                @method('PUT')
+                <label for="profile_photo" class="btn btn-primary btn-sm">Upload Foto Baru</label>
+                <input type="file" name="profile_photo" id="profile_photo" class="d-none" 
+                       accept="image/jpeg,image/png,image/jpg" onchange="this.form.submit()">
+            </form>
 
-                {{-- Tombol Hapus Foto --}}
-                @if ($user->profile_photo_path)
-                    <form action="{{ route('profile.photo.delete') }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus foto profil?')">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-outline-danger btn-sm">Hapus Foto</button>
-                    </form>
-                @endif
-            </div>
+            {{-- Tombol Hapus Foto --}}
+            @if ($user->profile_photo_path)
+                <form action="{{ route('profile.photo.delete') }}" method="POST" 
+                      onsubmit="return confirm('Yakin ingin menghapus foto profil?')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-outline-danger btn-sm">Hapus Foto</button>
+                </form>
+            @endif
+        </div>
             
             <hr>
 

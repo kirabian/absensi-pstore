@@ -68,18 +68,18 @@ class ProfileController extends Controller
      * Update HANYA foto profil.
      */
     public function updatePhoto(Request $request)
-    {
-        $request->validate([
-            'profile_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048', // 2MB
-        ]);
+{
+    $request->validate([
+        'profile_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048', // 2MB
+    ]);
 
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
+    /** @var \App\Models\User $user */
+    $user = Auth::user();
 
-        // Hapus foto lama jika ada
+    try {
         // Hapus foto lama jika ada
         if ($user->profile_photo_path) {
-            Storage::disk('public')->delete($user->profile_photo_path); // <-- INI BENAR
+            Storage::disk('public')->delete($user->profile_photo_path);
         }
 
         // Simpan foto baru
@@ -88,7 +88,12 @@ class ProfileController extends Controller
 
         return redirect()->route('profile.edit')
             ->with('success', 'Foto profil berhasil di-upload.');
+
+    } catch (\Exception $e) {
+        return redirect()->route('profile.edit')
+            ->with('error', 'Gagal mengupload foto: ' . $e->getMessage());
     }
+}
 
     /**
      * Update HANYA KTP (sekali upload).
