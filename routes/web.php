@@ -71,9 +71,12 @@ Route::middleware(['auth'])->group(function () {
     // --- Rute Khusus SECURITY ---
     // --- Rute Khusus SECURITY ---
     Route::middleware(['role:security'])->group(function () {
-        Route::get('/scan', [ScanController::class, 'scanPage'])->name('security.scan');
-        Route::post('/scan/check-qr', [ScanController::class, 'getUserByQr'])->name('security.scan.check');
-        Route::post('/scan/store', [ScanController::class, 'storeAttendance'])->name('security.attendance.store');
+        Route::get('/scan', [ScanController::class, 'scanPage'])
+        ->name('security.scan');
+        Route::post('/scan/check-qr', [ScanController::class, 'getUserByQr'])
+        ->name('security.scan.check');
+        Route::post('/scan/store', [ScanController::class, 'storeAttendance'])
+        ->name('security.attendance.store');
     });
 
     // --- Rute Khusus USER_BIASA, LEADER, & AUDIT ---
