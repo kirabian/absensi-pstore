@@ -5,16 +5,14 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Login - PStore Absensi</title>
-    
-    <!-- PERBAIKAN: Gunakan path langsung tanpa 'assets/' karena folder assets sudah di public -->
-    <link rel="stylesheet" href="/vendors/feather/feather.css">
-    <link rel="stylesheet" href="/vendors/mdi/css/materialdesignicons.min.css">
-    <link rel="stylesheet" href="/vendors/ti-icons/css/themify-icons.css">
-    <link rel="stylesheet" href="/vendors/typicons/typicons.css">
-    <link rel="stylesheet" href="/vendors/simple-line-icons/css/simple-line-icons.css">
-    <link rel="stylesheet" href="/vendors/css/vendor.bundle.base.css">
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="shortcut icon" href="/images/favicon.png" />
+    <link rel="stylesheet" href="{{ asset('assets/vendors/feather/feather.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/vendors/mdi/css/materialdesignicons.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/vendors/ti-icons/css/themify-icons.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/vendors/typicons/typicons.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/vendors/simple-line-icons/css/simple-line-icons.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/vendors/css/vendor.bundle.base.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+    <link rel="shortcut icon" href="{{ asset('assets/images/favicon.png') }}" />
 
     <style>
         .auth-page {
@@ -227,31 +225,6 @@
         .border-bottom {
             border-bottom: 2px solid #000 !important;
         }
-
-        /* Loading state */
-        .btn-loading {
-            position: relative;
-            color: transparent !important;
-        }
-
-        .btn-loading::after {
-            content: '';
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: 20px;
-            height: 20px;
-            margin: -10px 0 0 -10px;
-            border: 2px solid #ffffff;
-            border-radius: 50%;
-            border-right-color: transparent;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
     </style>
 </head>
 
@@ -280,7 +253,8 @@
                                 <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
                                     <i class="mdi mdi-alert-circle-outline me-2"></i>
                                     {{ $message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                        aria-label="Close"></button>
                                 </div>
                             @enderror
 
@@ -288,11 +262,12 @@
                                 <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
                                     <i class="mdi mdi-check-circle-outline me-2"></i>
                                     {{ session('status') }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                        aria-label="Close"></button>
                                 </div>
                             @endif
 
-                            <form class="pt-3" action="{{ route('login.submit') }}" method="POST" id="loginForm">
+                            <form class="pt-3" action="{{ route('login.submit') }}" method="POST">
                                 @csrf
                                 <div class="form-group mb-3">
                                     <div class="input-group">
@@ -318,7 +293,7 @@
                                 </div>
 
                                 <div class="mb-4">
-                                    <button type="submit" class="btn btn-login w-100" id="submitBtn">
+                                    <button type="submit" class="btn btn-login w-100">
                                         <i class="mdi mdi-login me-2"></i>
                                         MASUK SISTEM
                                     </button>
@@ -349,8 +324,7 @@
         </div>
     </div>
 
-    <!-- PERBAIKAN: Gunakan path langsung untuk JavaScript juga -->
-    <script src="/vendors/js/vendor.bundle.base.js"></script>
+    <script src="{{ asset('assets/vendors/js/vendor.bundle.base.js') }}"></script>
     <script>
         function togglePassword() {
             const passwordInput = document.getElementById('password');
@@ -368,10 +342,9 @@
         }
 
         // Add loading state to form
-        document.getElementById('loginForm').addEventListener('submit', function (e) {
-            const btn = document.getElementById('submitBtn');
-            btn.innerHTML = 'Memproses...';
-            btn.classList.add('btn-loading');
+        document.querySelector('form').addEventListener('submit', function (e) {
+            const btn = this.querySelector('button[type="submit"]');
+            btn.innerHTML = '<i class="mdi mdi-loading mdi-spin me-2"></i>Memproses...';
             btn.disabled = true;
         });
 
@@ -384,17 +357,6 @@
 
             input.addEventListener('blur', function () {
                 this.parentElement.parentElement.classList.remove('focused');
-            });
-        });
-
-        // Auto remove alerts after 5 seconds
-        document.addEventListener('DOMContentLoaded', function() {
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(alert => {
-                setTimeout(() => {
-                    const bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
-                }, 5000);
             });
         });
     </script>
