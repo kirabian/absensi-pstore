@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\SendFcmNotification;
+use Illuminate\Support\Facades\Log;
 
 class ScanController extends Controller
 {
@@ -19,34 +20,51 @@ class ScanController extends Controller
 
     public function getUserByQr(Request $request)
     {
-        $request->validate(['qr_code' => 'required|string']);
-        $security = Auth::user();
+        try {
+            $request->validate(['qr_code' => 'required|string']);
+            $security = Auth::user();
 
-        $user = User::where('qr_code_value', $request->qr_code)
-            ->where('branch_id', $security->branch_id)
-            ->with('division')
-            ->first();
+            // Cek user berdasarkan QR dan Cabang Security
+            $user = User::where('qr_code_value', $request->qr_code)
+                ->where('branch_id', $security->branch_id) // Hanya bisa scan orang di cabang sendiri
+                ->with('division')
+                ->first();
 
-        if ($user) {
-            return response()->json([
-                'user' => $user,
-                'division_name' => $user->division->name ?? null
-            ]);
+            if ($user) {
+                // Cek apakah user sudah absen hari ini (Opsional, biar tidak double)
+                $alreadyAbsen = Attendance::where('user_id', $user->id)
+                    ->whereDate('created_at', today())
+                    ->exists();
+
+                return response()->json([
+                    'status' => 'success',
+                    'user' => $user,
+                    'division_name' => $user->division->name ?? '-',
+                    'already_absen' => $alreadyAbsen
+                ]);
+            }
+
+            return response()->json(['status' => 'error', 'message' => 'Karyawan tidak ditemukan atau beda cabang.'], 404);
+
+        } catch (\Exception $e) {
+            Log::error("Error Scan QR: " . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => 'Server Error: ' . $e->getMessage()], 500);
         }
-
-        return response()->json(['error' => 'User not found or not in this branch'], 404);
     }
 
     public function storeAttendance(Request $request)
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
-            'photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            // Validasi photo wajib ada
+            'photo' => 'required|image|mimes:jpeg,png,jpg|max:4048',
         ]);
 
         try {
+            $user = User::findOrFail($request->user_id);
+            
+            // Simpan Foto ke storage public
             $path = $request->file('photo')->store('foto_security', 'public');
-            $user = User::find($request->user_id);
 
             Attendance::create([
                 'user_id' => $user->id,
@@ -57,17 +75,22 @@ class ScanController extends Controller
                 'scanned_by_user_id' => Auth::id(),
             ]);
 
-            // Sementara comment notifikasi dulu
-            // $title = "Absensi Masuk (Security)";
-            // $body = $user->name . " telah diabsen masuk oleh Security.";
-            // $this->sendNotificationToBranchRoles(['admin', 'audit'], $user->branch_id, $title, $body);
+            // Kirim Notifikasi
+            $title = "Absensi Masuk (Security)";
+            $body = $user->name . " telah diabsen masuk oleh Security.";
+            // Gunakan try catch khusus notif agar jika notif gagal, absen tetap masuk
+            try {
+                $this->sendNotificationToBranchRoles(['admin', 'audit'], $user->branch_id, $title, $body);
+            } catch (\Exception $ex) {
+                // Silent fail untuk notifikasi
+            }
 
             return redirect()->route('security.scan')
-                ->with('success', 'Absensi berhasil dicatat!');
+                ->with('success', 'Berhasil! Absensi ' . $user->name . ' tercatat.');
 
         } catch (\Exception $e) {
             return redirect()->route('security.scan')
-                ->with('error', 'Error: ' . $e->getMessage());
+                ->with('error', 'Gagal menyimpan absen: ' . $e->getMessage());
         }
     }
 }
