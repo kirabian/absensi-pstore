@@ -2,65 +2,91 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\Attendance;
 use Illuminate\Http\Request;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use App\Traits\SendFcmNotification;
 
 class ScanController extends Controller
 {
-    use SendFcmNotification;
-
-    public function scanPage()
+    /**
+     * Middleware: HANYA izinkan Security.
+     * Role lain (Admin, Audit, dll) akan ditolak.
+     */
+    public function __construct()
     {
-        return view('security.scan'); // Pastikan nama view ini benar
+        $this->middleware(function ($request, $next) {
+            $user = Auth::user();
+            
+            // LOGIKA BARU: Cek ketat hanya string 'security'
+            if ($user->role !== 'security') {
+                abort(403, 'Akses ditolak. Hanya Security yang boleh melakukan scan.');
+            }
+            
+            return $next($request);
+        });
     }
 
-    public function getUserByQr(Request $request)
+    /**
+     * Menampilkan View Scanner (Kamera)
+     */
+    public function index()
     {
-        $request->validate(['qr_code' => 'required|string']);
-        $security = Auth::user();
-
-        $user = User::where('qr_code_value', $request->qr_code)
-            ->where('branch_id', $security->branch_id)
-            ->with('division')
-            ->first();
-
-        if ($user) {
-            return response()->json([
-                'user' => $user,
-                'division_name' => $user->division->name ?? null
-            ]);
-        } else {
-            return response()->json(['error' => 'User not found or not in this branch'], 404);
-        }
+        return view('scan.index');
     }
 
-    public function storeAttendance(Request $request)
+    /**
+     * Proses Validasi Data QR Code via AJAX
+     */
+    public function validateScan(Request $request)
     {
+        // 1. Validasi input
         $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'qr_code' => 'required|string'
         ]);
 
-        $path = $request->file('photo')->store('public/foto_security');
-        $user = User::find($request->user_id);
+        $qrValue = $request->qr_code;
+        $securityUser = Auth::user(); // Pasti security karena sudah lolos middleware
 
-        Attendance::create([
-            'user_id' => $user->id,
-            'branch_id' => $user->branch_id, // <-- **INI PERBAIKAN PENTING #3**
-            'check_in_time' => now(),
-            'status' => 'verified',
-            'photo_path' => $path,
-            'scanned_by_user_id' => Auth::id(),
+        // 2. Cari User Karyawan berdasarkan QR Code
+        $userScanned = User::with(['division', 'branch'])
+                           ->where('qr_code_value', $qrValue)
+                           ->first();
+
+        // 3. Jika User Tidak Ditemukan
+        if (!$userScanned) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'QR Code tidak terdaftar.'
+            ], 404);
+        }
+
+        // 4. Validasi Cabang (Security Cabang A gaboleh scan Karyawan Cabang B)
+        // Security pasti punya branch_id (sesuai logika store user Anda), tapi kita jaga-jaga cek null.
+        if ($securityUser->branch_id != null) {
+            if ($securityUser->branch_id != $userScanned->branch_id) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'GAGAL: Karyawan ini dari cabang berbeda (' . ($userScanned->branch->name ?? 'Pusat') . ').',
+                ], 403);
+            }
+        }
+
+        // 5. Jika Validasi Sukses
+        // (Opsional) Insert ke tabel attendance di sini
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Scan Valid!',
+            'data' => [
+                'name' => $userScanned->name,
+                'role' => ucfirst($userScanned->role),
+                'division' => $userScanned->division->name ?? '-',
+                'branch' => $userScanned->branch->name ?? 'Pusat',
+                // Tampilkan foto jika ada, jika tidak pakai avatar default
+                'photo' => $userScanned->profile_photo_path 
+                            ? asset('storage/' . $userScanned->profile_photo_path) 
+                            : 'https://ui-avatars.com/api/?name='.urlencode($userScanned->name).'&background=random'
+            ]
         ]);
-
-        $title = "Absensi Masuk (Security)";
-        $body = $user->name . " telah diabsen masuk oleh Security.";
-        $this->sendNotificationToBranchRoles(['admin', 'audit'], $user->branch_id, $title, $body);
-
-        return redirect()->route('security.scan')
-            ->with('success', 'Absensi berhasil dicatat!');
     }
 }

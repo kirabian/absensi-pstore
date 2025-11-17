@@ -70,14 +70,9 @@ Route::middleware(['auth'])->group(function () {
 
     // --- Rute Khusus SECURITY ---
     Route::middleware(['auth', 'role:security'])->group(function () {
-        // Halaman Scan
-        Route::get('/scan', [ScanController::class, 'scanPage'])->name('security.scan');
-
-        // PROSES 1: Cek QR Code (AJAX) - INI YANG KURANG
-        Route::post('/scan/get-user', [ScanController::class, 'getUserByQr'])->name('security.get.user');
-
-        // PROSES 2: Simpan Absen (Submit Form)
-        Route::post('/scan/store', [ScanController::class, 'storeAttendance'])->name('security.attendance.store');
+        // --- ROUTE UNTUK SECURITY (SCANNER) ---
+        Route::get('/scan-qr', [ScanController::class, 'index'])->name('scan.index');
+        Route::post('/scan-qr/validate', [ScanController::class, 'validateScan'])->name('scan.validate');
     });
 
     // --- Rute Khusus USER_BIASA, LEADER, & AUDIT ---
