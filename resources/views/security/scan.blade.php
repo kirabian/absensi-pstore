@@ -9,132 +9,167 @@
     <style>
         body {
             background-color: #f8f9fa;
-            padding-top: 20px;
+            padding: 0;
+            margin: 0;
         }
-        .scanner-wrapper {
-            max-width: 500px;
-            margin: 0 auto;
+        .scanner-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
-        #reader {
-            width: 100%;
-            height: 400px;
-            border: 2px dashed #ccc;
-            border-radius: 10px;
-            background: #f8f9fa;
+        .scanner-header {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .scanner-body {
+            flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #6c757d;
+            padding: 20px;
+            background: #000;
+        }
+        #reader {
+            width: 100%;
+            max-width: 800px;
+            height: 80vh;
+            border: 3px solid #fff;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(255,255,255,0.2);
+            overflow: hidden;
         }
         #reader video {
-            border-radius: 8px;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+            border-radius: 12px;
         }
-        .scan-placeholder {
+        .scanner-footer {
+            background: #343a40;
+            color: white;
+            padding: 15px;
             text-align: center;
-            padding: 20px;
         }
-        .card {
-            border: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        .result-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .result-card {
+            background: white;
             border-radius: 15px;
+            padding: 30px;
+            max-width: 400px;
+            text-align: center;
+            animation: popIn 0.5s ease-out;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .user-photo {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #28a745;
+            margin: 0 auto 15px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="scanner-wrapper">
-                    <div class="card">
-                        <div class="card-header bg-danger text-white text-center py-3">
-                            <h4 class="mb-0">🔒 SECURITY SCANNER</h4>
-                        </div>
-                        <div class="card-body p-4">
-                            {{-- Info --}}
-                            <div class="alert alert-info text-center">
-                                <strong>Pindai QR Code Karyawan</strong><br>
-                                <small>Pastikan kamera telah diizinkan dan pencahayaan cukup</small>
-                            </div>
+    <div class="scanner-container">
+        {{-- Header --}}
+        <div class="scanner-header text-center">
+            <h2 class="mb-1">🔒 SECURITY SCANNER</h2>
+            <p class="mb-0">Arahkan kamera ke QR Code karyawan</p>
+        </div>
 
-                            {{-- Area Kamera --}}
-                            <div id="reader">
-                                <div class="scan-placeholder">
-                                    <div class="spinner-border text-primary mb-3" role="status">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </div>
-                                    <p>Memuat kamera...</p>
-                                </div>
-                            </div>
+        {{-- Scanner Area --}}
+        <div class="scanner-body">
+            <div id="reader"></div>
+        </div>
 
-                            {{-- Area Hasil Scan --}}
-                            <div id="result-area" class="mt-4" style="display: none;">
-                                <div class="alert" id="alert-box"></div>
-                                
-                                {{-- Card Detail Karyawan --}}
-                                <div id="user-detail" class="card mt-3" style="display: none;">
-                                    <div class="card-body">
-                                        <div class="d-flex align-items-center">
-                                            <img id="user-photo" src="" class="rounded-circle me-3" width="70" height="70" style="object-fit: cover; border: 3px solid #28a745;">
-                                            <div class="flex-grow-1">
-                                                <h5 class="card-title mb-1" id="user-name">-</h5>
-                                                <p class="card-text mb-1 text-muted">
-                                                    <small><span id="user-role">-</span> • <span id="user-div">-</span></small>
-                                                </p>
-                                                <span class="badge bg-success" id="user-branch">-</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- Tombol Manual --}}
-                            <div class="text-center mt-4">
-                                <button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">
-                                    ↻ Restart Scanner
-                                </button>
-                                <a href="{{ route('dashboard') }}" class="btn btn-secondary btn-sm ms-2">
-                                    ← Kembali
-                                </a>
-                            </div>
-                        </div>
+        {{-- Footer --}}
+        <div class="scanner-footer">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <small>Pastikan QR Code dalam frame kamera</small>
+                    </div>
+                    <div class="col-auto">
+                        <a href="{{ route('dashboard') }}" class="btn btn-outline-light btn-sm">
+                            ← Kembali ke Dashboard
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- Load Library HTML5-QRCode --}}
+    {{-- Result Overlay --}}
+    <div class="result-overlay" id="resultOverlay">
+        <div class="result-card">
+            <div id="resultContent">
+                {{-- Content akan diisi oleh JavaScript --}}
+            </div>
+            <button class="btn btn-primary mt-3" onclick="closeResult()">
+                Scan Lagi
+            </button>
+        </div>
+    </div>
+
+    {{-- Load Library --}}
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         let html5QrcodeScanner = null;
+        let isProcessing = false;
 
         function onScanSuccess(decodedText, decodedResult) {
-            console.log('QR Code scanned:', decodedText);
+            // Prevent multiple scans
+            if (isProcessing) return;
+            isProcessing = true;
             
-            // Pause scanner
+            console.log('QR Code detected:', decodedText);
+            
+            // Pause scanner immediately
             if (html5QrcodeScanner) {
                 html5QrcodeScanner.pause();
             }
 
-            // Tampilkan loading
-            const resultArea = document.getElementById('result-area');
-            const alertBox = document.getElementById('alert-box');
-            
-            resultArea.style.display = 'block';
-            alertBox.className = 'alert alert-warning';
-            alertBox.innerHTML = '<strong>⏳ Memproses...</strong>';
+            // Process the scan
+            processQRCode(decodedText);
+        }
 
-            // Kirim request ke Controller
+        function processQRCode(qrCode) {
+            // Show loading
+            showResult(`
+                <div class="text-center">
+                    <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+                    <h4>Memproses QR Code...</h4>
+                    <p>Mohon tunggu</p>
+                </div>
+            `);
+
+            // Send to server
             fetch("{{ route('security.validate') }}", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "X-CSRF-TOKEN": csrfToken
                 },
-                body: JSON.stringify({ qr_code: decodedText })
+                body: JSON.stringify({ qr_code: qrCode })
             })
             .then(response => {
                 if (!response.ok) {
@@ -143,79 +178,107 @@
                 return response.json();
             })
             .then(data => {
-                console.log('Response:', data);
+                console.log('Server response:', data);
                 
                 if (data.status === 'success') {
-                    // SUKSES
-                    alertBox.className = 'alert alert-success';
-                    alertBox.innerHTML = `<strong>✅ BERHASIL!</strong> ${data.message}`;
+                    // SUCCESS - Show user data
+                    showResult(`
+                        <div class="text-success">
+                            <div class="mb-3">
+                                <i class="fas fa-check-circle" style="font-size: 3rem;"></i>
+                            </div>
+                            <h4 class="text-success">✅ BERHASIL</h4>
+                            <p><strong>${data.message}</strong></p>
+                        </div>
+                        <div class="mt-4 p-3 bg-light rounded">
+                            <img src="${data.data.photo}" class="user-photo" alt="Photo">
+                            <h5 class="mt-2">${data.data.name}</h5>
+                            <p class="mb-1">
+                                <strong>${data.data.role}</strong> - ${data.data.division}
+                            </p>
+                            <span class="badge bg-success">${data.data.branch}</span>
+                        </div>
+                        <div class="mt-3 text-muted small">
+                            Data telah tersimpan secara otomatis
+                        </div>
+                    `);
                     
-                    // Isi data
-                    document.getElementById('user-name').innerText = data.data.name;
-                    document.getElementById('user-role').innerText = data.data.role;
-                    document.getElementById('user-div').innerText = data.data.division;
-                    document.getElementById('user-branch').innerText = data.data.branch;
-                    document.getElementById('user-photo').src = data.data.photo;
-                    document.getElementById('user-detail').style.display = 'block';
+                    // Data sudah otomatis tersimpan di server
+                    // Tidak perlu action tambahan
+                    
                 } else {
-                    // GAGAL
-                    alertBox.className = 'alert alert-danger';
-                    alertBox.innerHTML = `<strong>❌ GAGAL!</strong> ${data.message}`;
-                    document.getElementById('user-detail').style.display = 'none';
+                    // ERROR
+                    showResult(`
+                        <div class="text-danger">
+                            <div class="mb-3">
+                                <i class="fas fa-times-circle" style="font-size: 3rem;"></i>
+                            </div>
+                            <h4 class="text-danger">❌ GAGAL</h4>
+                            <p>${data.message}</p>
+                        </div>
+                    `);
                 }
-
-                // Resume setelah 4 detik
-                setTimeout(() => {
-                    resultArea.style.display = 'none';
-                    if (html5QrcodeScanner) {
-                        html5QrcodeScanner.resume();
-                    }
-                }, 4000);
             })
             .catch(err => {
-                console.error('Fetch Error:', err);
-                alertBox.className = 'alert alert-danger';
-                alertBox.innerHTML = `<strong>❌ ERROR!</strong> Gagal terhubung ke server.`;
-                document.getElementById('user-detail').style.display = 'none';
-                
+                console.error('Error:', err);
+                showResult(`
+                    <div class="text-danger">
+                        <div class="mb-3">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 3rem;"></i>
+                        </div>
+                        <h4 class="text-danger">⚠️ ERROR</h4>
+                        <p>Terjadi kesalahan sistem</p>
+                        <small class="text-muted">${err.message}</small>
+                    </div>
+                `);
+            })
+            .finally(() => {
+                // Reset processing flag after delay
                 setTimeout(() => {
-                    resultArea.style.display = 'none';
-                    if (html5QrcodeScanner) {
-                        html5QrcodeScanner.resume();
-                    }
-                }, 3000);
+                    isProcessing = false;
+                }, 2000);
             });
         }
 
+        function showResult(content) {
+            document.getElementById('resultContent').innerHTML = content;
+            document.getElementById('resultOverlay').style.display = 'flex';
+        }
+
+        function closeResult() {
+            document.getElementById('resultOverlay').style.display = 'none';
+            
+            // Resume scanner
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.resume().then(() => {
+                    console.log('Scanner resumed');
+                }).catch(err => {
+                    console.error('Failed to resume scanner:', err);
+                });
+            }
+        }
+
         function onScanFailure(error) {
-            // Biarkan kosong, tidak usah log error terus menerus
+            // Biarkan kosong, tidak usah log error terus
         }
 
         // Initialize scanner
         document.addEventListener('DOMContentLoaded', function() {
-            // Cek apakah browser support
-            if (!Html5Qrcode.getCameras) {
-                document.getElementById('reader').innerHTML = `
-                    <div class="scan-placeholder text-danger">
-                        <p>❌ Browser tidak mendukung QR Scanner</p>
-                        <small>Gunakan Chrome, Firefox, atau Safari versi terbaru</small>
-                    </div>
-                `;
-                return;
-            }
-
-            // Dapatkan list kamera
             Html5Qrcode.getCameras().then(cameras => {
                 if (cameras && cameras.length) {
-                    // Start scanner dengan kamera belakang jika ada
-                    const cameraId = cameras.length > 1 ? cameras[1].id : cameras[0].id;
+                    // Use back camera if available, otherwise use first camera
+                    const cameraId = cameras.length > 1 ? cameras[cameras.length - 1].id : cameras[0].id;
                     
                     html5QrcodeScanner = new Html5QrcodeScanner(
                         "reader", 
                         { 
                             fps: 10, 
-                            qrbox: { width: 250, height: 250 },
-                            aspectRatio: 1.0
+                            qrbox: { 
+                                width: 280, 
+                                height: 280 
+                            },
+                            aspectRatio: 1.0,
+                            focusMode: "continuous"
                         }, 
                         false
                     );
@@ -224,26 +287,52 @@
                     
                 } else {
                     document.getElementById('reader').innerHTML = `
-                        <div class="scan-placeholder text-danger">
-                            <p>❌ Kamera tidak ditemukan</p>
-                            <small>Pastikan kamera terhubung dan diizinkan</small>
+                        <div class="text-center text-white p-5">
+                            <h4>❌ Kamera tidak ditemukan</h4>
+                            <p>Pastikan kamera terhubung dan diizinkan</p>
                         </div>
                     `;
                 }
             }).catch(err => {
-                console.error('Camera Error:', err);
+                console.error('Camera access error:', err);
                 document.getElementById('reader').innerHTML = `
-                    <div class="scan-placeholder text-danger">
-                        <p>❌ Gagal mengakses kamera</p>
-                        <small>Izinkan akses kamera di browser settings</small>
-                        <br><br>
-                        <button class="btn btn-warning btn-sm" onclick="location.reload()">
+                    <div class="text-center text-white p-5">
+                        <h4>❌ Gagal mengakses kamera</h4>
+                        <p>Izinkan akses kamera di browser settings</p>
+                        <button class="btn btn-warning mt-3" onclick="location.reload()">
                             Coba Lagi
                         </button>
                     </div>
                 `;
             });
         });
+
+        // Handle page visibility change (tab switch)
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && html5QrcodeScanner) {
+                // Pause when tab is hidden
+                html5QrcodeScanner.pause();
+            } else if (!document.hidden && html5QrcodeScanner) {
+                // Resume when tab is visible
+                html5QrcodeScanner.resume();
+            }
+        });
+    </script>
+
+    {{-- Font Awesome for icons --}}
+    <script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+    <script>
+        // Fallback for FontAwesome
+        if (!document.querySelector('i.fas')) {
+            // If FontAwesome not loaded, use text icons
+            const style = document.createElement('style');
+            style.textContent = `
+                .fa-check-circle:before { content: "✅"; }
+                .fa-times-circle:before { content: "❌"; }
+                .fa-exclamation-triangle:before { content: "⚠️"; }
+            `;
+            document.head.appendChild(style);
+        }
     </script>
 </body>
 </html>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Attendance; // TAMBAHKAN INI
 use Illuminate\Support\Facades\Auth;
 
 class ScanController extends Controller
@@ -67,12 +68,41 @@ class ScanController extends Controller
             ], 403);
         }
 
+        // === SIMPAN DATA ABSENSI ===
+        try {
+            $attendance = Attendance::create([
+                'user_id' => $userScanned->id,
+                'scan_by' => $securityUser->id,
+                'scan_time' => now(),
+                'date' => now()->toDateString(),
+                'time' => now()->toTimeString(),
+                'branch_id' => $userScanned->branch_id,
+                'status' => 'present',
+                'type' => 'scan',
+                'verified' => true,
+            ]);
+
+            \Illuminate\Support\Facades\Log::info('Attendance recorded successfully', [
+                'attendance_id' => $attendance->id,
+                'user_scanned' => $userScanned->id,
+                'security_user' => $securityUser->id
+            ]);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to save attendance: ' . $e->getMessage());
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal menyimpan data absensi.'
+            ], 500);
+        }
+
         // Response sukses
         \Illuminate\Support\Facades\Log::info('Scan successful', ['scanned_user' => $userScanned->id]);
         
         return response()->json([
             'status' => 'success',
-            'message' => 'Scan Valid!',
+            'message' => 'Scan Valid! Data absensi telah disimpan.',
             'data' => [
                 'name' => $userScanned->name,
                 'role' => $userScanned->role,
@@ -80,7 +110,9 @@ class ScanController extends Controller
                 'branch' => $userScanned->branch->name ?? 'Pusat',
                 'photo' => $userScanned->profile_photo_path 
                             ? asset('storage/' . $userScanned->profile_photo_path) 
-                            : 'https://ui-avatars.com/api/?name=' . urlencode($userScanned->name) . '&background=random'
+                            : 'https://ui-avatars.com/api/?name=' . urlencode($userScanned->name) . '&background=random',
+                'scan_time' => now()->format('H:i:s'),
+                'scan_date' => now()->format('d-m-Y')
             ]
         ]);
     }
