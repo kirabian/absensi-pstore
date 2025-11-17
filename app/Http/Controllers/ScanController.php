@@ -14,16 +14,8 @@ class ScanController extends Controller
      */
     public function __construct()
     {
-        $this->middleware(function ($request, $next) {
-            $user = Auth::user();
-            
-            // LOGIKA BARU: Cek ketat hanya string 'security'
-            if ($user->role !== 'security') {
-                abort(403, 'Akses ditolak. Hanya Security yang boleh melakukan scan.');
-            }
-            
-            return $next($request);
-        });
+        $this->middleware('auth');
+        $this->middleware('role:security');
     }
 
     /**
@@ -45,7 +37,7 @@ class ScanController extends Controller
         ]);
 
         $qrValue = $request->qr_code;
-        $securityUser = Auth::user(); // Pasti security karena sudah lolos middleware
+        $securityUser = Auth::user();
 
         // 2. Cari User Karyawan berdasarkan QR Code
         $userScanned = User::with(['division', 'branch'])
@@ -61,7 +53,6 @@ class ScanController extends Controller
         }
 
         // 4. Validasi Cabang (Security Cabang A gaboleh scan Karyawan Cabang B)
-        // Security pasti punya branch_id (sesuai logika store user Anda), tapi kita jaga-jaga cek null.
         if ($securityUser->branch_id != null) {
             if ($securityUser->branch_id != $userScanned->branch_id) {
                 return response()->json([
@@ -72,8 +63,6 @@ class ScanController extends Controller
         }
 
         // 5. Jika Validasi Sukses
-        // (Opsional) Insert ke tabel attendance di sini
-        
         return response()->json([
             'status' => 'success',
             'message' => 'Scan Valid!',
@@ -82,7 +71,6 @@ class ScanController extends Controller
                 'role' => ucfirst($userScanned->role),
                 'division' => $userScanned->division->name ?? '-',
                 'branch' => $userScanned->branch->name ?? 'Pusat',
-                // Tampilkan foto jika ada, jika tidak pakai avatar default
                 'photo' => $userScanned->profile_photo_path 
                             ? asset('storage/' . $userScanned->profile_photo_path) 
                             : 'https://ui-avatars.com/api/?name='.urlencode($userScanned->name).'&background=random'
