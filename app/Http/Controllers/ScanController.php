@@ -9,13 +9,11 @@ use Illuminate\Support\Facades\Auth;
 class ScanController extends Controller
 {
     /**
-     * Middleware: HANYA izinkan Security.
-     * Role lain (Admin, Audit, dll) akan ditolak.
+     * Constructor dengan middleware
      */
     public function __construct()
     {
-        $this->middleware('auth');
-        $this->middleware('role:security');
+        $this->middleware(['auth', 'role:security']);
     }
 
     /**
@@ -31,50 +29,62 @@ class ScanController extends Controller
      */
     public function validateScan(Request $request)
     {
-        // 1. Validasi input
-        $request->validate([
-            'qr_code' => 'required|string'
-        ]);
+        try {
+            // 1. Validasi input
+            $validated = $request->validate([
+                'qr_code' => 'required|string|min:1'
+            ]);
 
-        $qrValue = $request->qr_code;
-        $securityUser = Auth::user();
+            $qrValue = $validated['qr_code'];
+            $securityUser = Auth::user();
 
-        // 2. Cari User Karyawan berdasarkan QR Code
-        $userScanned = User::with(['division', 'branch'])
-                           ->where('qr_code_value', $qrValue)
-                           ->first();
+            // 2. Cari User Karyawan berdasarkan QR Code
+            $userScanned = User::with(['division', 'branch'])
+                            ->where('qr_code_value', $qrValue)
+                            ->first();
 
-        // 3. Jika User Tidak Ditemukan
-        if (!$userScanned) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'QR Code tidak terdaftar.'
-            ], 404);
-        }
-
-        // 4. Validasi Cabang (Security Cabang A gaboleh scan Karyawan Cabang B)
-        if ($securityUser->branch_id != null) {
-            if ($securityUser->branch_id != $userScanned->branch_id) {
+            // 3. Jika User Tidak Ditemukan
+            if (!$userScanned) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'GAGAL: Karyawan ini dari cabang berbeda (' . ($userScanned->branch->name ?? 'Pusat') . ').',
-                ], 403);
+                    'message' => 'QR Code tidak terdaftar.'
+                ], 404);
             }
-        }
 
-        // 5. Jika Validasi Sukses
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Scan Valid!',
-            'data' => [
-                'name' => $userScanned->name,
-                'role' => ucfirst($userScanned->role),
-                'division' => $userScanned->division->name ?? '-',
-                'branch' => $userScanned->branch->name ?? 'Pusat',
-                'photo' => $userScanned->profile_photo_path 
-                            ? asset('storage/' . $userScanned->profile_photo_path) 
-                            : 'https://ui-avatars.com/api/?name='.urlencode($userScanned->name).'&background=random'
-            ]
-        ]);
+            // 4. Validasi Cabang
+            if ($securityUser->branch_id && $userScanned->branch_id) {
+                if ($securityUser->branch_id != $userScanned->branch_id) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'GAGAL: Karyawan ini dari cabang berbeda (' . ($userScanned->branch->name ?? 'Pusat') . ').',
+                    ], 403);
+                }
+            }
+
+            // 5. Jika Validasi Sukses
+            $photoUrl = $userScanned->profile_photo_path 
+                ? asset('storage/' . $userScanned->profile_photo_path) 
+                : 'https://ui-avatars.com/api/?name='.urlencode($userScanned->name).'&background=random';
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Scan Valid!',
+                'data' => [
+                    'name' => $userScanned->name,
+                    'role' => ucfirst($userScanned->role),
+                    'division' => $userScanned->division->name ?? '-',
+                    'branch' => $userScanned->branch->name ?? 'Pusat',
+                    'photo' => $photoUrl
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Scan Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan sistem.'
+            ], 500);
+        }
     }
 }
