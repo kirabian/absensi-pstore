@@ -5,10 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Attendance;
-
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
 
 class ScanController extends Controller
 {
@@ -143,78 +140,4 @@ class ScanController extends Controller
             ]
         ]);
     }
-    // Tambahkan method ini di ScanController
-public function completeAttendance(Request $request)
-{
-    \Illuminate\Support\Facades\Log::info('Complete attendance request', ['user' => Auth::id()]);
-
-    $request->validate([
-        'user_data' => 'required|array',
-        'selfie_photo' => 'required|string'
-    ]);
-
-    try {
-        $userData = $request->user_data;
-        
-        // Cari user berdasarkan data yang dikirim
-        $user = User::where('name', $userData['name'])
-                   ->where('role', $userData['role'])
-                   ->first();
-
-        if (!$user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Data user tidak valid'
-            ], 404);
-        }
-
-        // Process selfie photo
-        $selfiePath = null;
-        if ($request->selfie_photo) {
-            $image = $request->selfie_photo;
-            $image = str_replace('data:image/jpeg;base64,', '', $image);
-            $image = str_replace(' ', '+', $image);
-            $imageName = 'selfie_' . time() . '_' . Str::slug($user->name) . '.jpg';
-            $selfiePath = 'attendance-selfies/' . $imageName;
-            
-            \Storage::disk('public')->put($selfiePath, base64_decode($image));
-        }
-
-        // Update the latest attendance record for this user
-        $attendance = Attendance::where('user_id', $user->id)
-                              ->whereDate('check_in_time', today())
-                              ->latest()
-                              ->first();
-
-        if ($attendance) {
-            $attendance->update([
-                'photo_path' => $selfiePath,
-                'status' => 'completed'
-            ]);
-
-            \Illuminate\Support\Facades\Log::info('Attendance completed with selfie', [
-                'attendance_id' => $attendance->id,
-                'user_id' => $user->id,
-                'selfie_path' => $selfiePath
-            ]);
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Absensi berhasil diselesaikan dengan foto selfie.'
-            ]);
-        } else {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Data absensi tidak ditemukan'
-            ], 404);
-        }
-
-    } catch (\Exception $e) {
-        \Illuminate\Support\Facades\Log::error('Complete attendance failed: ' . $e->getMessage());
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Gagal menyelesaikan absensi: ' . $e->getMessage()
-        ], 500);
-    }
-}
 }

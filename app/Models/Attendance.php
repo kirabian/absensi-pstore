@@ -11,7 +11,7 @@ class Attendance extends Model
 
     protected $fillable = [
         'user_id',
-        'branch_id', // TAMBAHKAN INI - SANGAT PENTING!
+        'branch_id',
         'check_in_time',
         'status',
         'photo_path',
@@ -74,10 +74,51 @@ class Attendance extends Model
     }
 
     /**
+     * Scope untuk absensi berdasarkan scanner (security)
+     */
+    public function scopeScannedBy($query, $securityId)
+    {
+        return $query->where('scanned_by_user_id', $securityId);
+    }
+
+    /**
+     * Scope untuk absensi yang belum diverifikasi
+     */
+    public function scopeUnverified($query)
+    {
+        return $query->whereNull('verified_by_user_id');
+    }
+
+    /**
      * Cek apakah sudah absen hari ini
      */
     public static function hasUserAttendedToday($userId)
     {
         return static::forUser($userId)->today()->exists();
+    }
+
+    /**
+     * Verifikasi absensi oleh audit
+     */
+    public function verify($auditUserId)
+    {
+        $this->verified_by_user_id = $auditUserId;
+        return $this->save();
+    }
+
+    /**
+     * Get formatted check in time
+     */
+    public function getFormattedCheckInTimeAttribute()
+    {
+        return $this->check_in_time->format('H:i:s');
+    }
+
+    /**
+     * Get formatted check in date
+     */
+    public function getFormattedCheckInDateAttribute()
+    {
+        return $this->check_in_time->format('d-m-Y');
     }
 }
