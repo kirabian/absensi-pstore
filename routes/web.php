@@ -82,10 +82,10 @@ Route::middleware(['auth'])->group(function () {
     })->middleware(['auth', 'role:security']);
 
     // Route scanner
-    Route::middleware(['auth', 'role:security'])->group(function () {
-        Route::get('/scan-qr', [ScanController::class, 'index'])->name('security.scan');
-        Route::post('/scan-qr/validate', [ScanController::class, 'validateScan'])->name('security.validate');
-    });
+  Route::middleware(['auth', 'role:security'])->group(function () {
+    Route::get('/scan-qr', [ScanController::class, 'index'])->name('security.scan');
+    Route::post('/scan-qr/validate', [ScanController::class, 'validateScan'])->name('security.validate');
+});
 
     // --- Rute Khusus USER_BIASA, LEADER, & AUDIT ---
     Route::middleware(['role:user_biasa,leader,audit'])->group(function () {
