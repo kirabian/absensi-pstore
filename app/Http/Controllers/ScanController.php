@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
-use App\Models\Attendance; // TAMBAHKAN INI
+use App\Models\Attendance;
 use Illuminate\Support\Facades\Auth;
 
 class ScanController extends Controller
@@ -68,24 +68,44 @@ class ScanController extends Controller
             ], 403);
         }
 
+        // === CEK APAKAH SUDAH ABSEN HARI INI ===
+        $alreadyAttended = Attendance::where('user_id', $userScanned->id)
+                                    ->whereDate('check_in_time', today())
+                                    ->exists();
+
+        if ($alreadyAttended) {
+            \Illuminate\Support\Facades\Log::warning('User already attended today', [
+                'user_id' => $userScanned->id,
+                'user_name' => $userScanned->name
+            ]);
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Karyawan sudah absen hari ini.'
+            ], 409); // 409 Conflict
+        }
+
         // === SIMPAN DATA ABSENSI ===
         try {
             $attendance = Attendance::create([
                 'user_id' => $userScanned->id,
-                'scan_by' => $securityUser->id,
-                'scan_time' => now(),
-                'date' => now()->toDateString(),
-                'time' => now()->toTimeString(),
                 'branch_id' => $userScanned->branch_id,
+                'check_in_time' => now(),
                 'status' => 'present',
-                'type' => 'scan',
-                'verified' => true,
+                'scanned_by_user_id' => $securityUser->id,
+                'verified_by_user_id' => null, // Belum diverifikasi audit
+                'photo_path' => $userScanned->profile_photo_path, // Simpan foto profil user
+                'latitude' => null, // Bisa ditambahkan jika ada GPS
+                'longitude' => null, // Bisa ditambahkan jika ada GPS
             ]);
 
             \Illuminate\Support\Facades\Log::info('Attendance recorded successfully', [
                 'attendance_id' => $attendance->id,
                 'user_scanned' => $userScanned->id,
-                'security_user' => $securityUser->id
+                'user_name' => $userScanned->name,
+                'security_user' => $securityUser->id,
+                'security_name' => $securityUser->name,
+                'branch' => $userScanned->branch->name ?? 'Pusat'
             ]);
 
         } catch (\Exception $e) {
@@ -93,16 +113,19 @@ class ScanController extends Controller
             
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal menyimpan data absensi.'
+                'message' => 'Gagal menyimpan data absensi: ' . $e->getMessage()
             ], 500);
         }
 
         // Response sukses
-        \Illuminate\Support\Facades\Log::info('Scan successful', ['scanned_user' => $userScanned->id]);
+        \Illuminate\Support\Facades\Log::info('Scan successful', [
+            'scanned_user' => $userScanned->id,
+            'attendance_id' => $attendance->id
+        ]);
         
         return response()->json([
             'status' => 'success',
-            'message' => 'Scan Valid! Data absensi telah disimpan.',
+            'message' => 'Absensi berhasil dicatat!',
             'data' => [
                 'name' => $userScanned->name,
                 'role' => $userScanned->role,
@@ -112,7 +135,8 @@ class ScanController extends Controller
                             ? asset('storage/' . $userScanned->profile_photo_path) 
                             : 'https://ui-avatars.com/api/?name=' . urlencode($userScanned->name) . '&background=random',
                 'scan_time' => now()->format('H:i:s'),
-                'scan_date' => now()->format('d-m-Y')
+                'scan_date' => now()->format('d-m-Y'),
+                'attendance_id' => $attendance->id
             ]
         ]);
     }
