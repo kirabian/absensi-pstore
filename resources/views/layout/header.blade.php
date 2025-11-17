@@ -13,11 +13,11 @@
         <div>
             {{-- Arahkan logo ke Dashboard (sudah dengan style perbesaran logo) --}}
             <a class="navbar-brand brand-logo" href="{{ route('dashboard') }}">
-                <img src="{{ asset('/public/assets/images/logo-pstore.png') }}" alt="logo"
+                <img src="{{ asset('assets/images/logo-pstore.png') }}" alt="logo"
                     style="width: 150px; height: auto;" />
             </a>
             <a class="navbar-brand brand-logo-mini" href="{{ route('dashboard') }}">
-                <img src="{{ asset('/public/assets/images/logo-pstore.png') }}" alt="logo" style="width: 45px; height: auto;" />
+                <img src="{{ asset('assets/images/logo-pstore.png') }}" alt="logo" style="width: 45px; height: auto;" />
             </a>
         </div>
     </div>
