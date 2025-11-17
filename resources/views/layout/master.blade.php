@@ -59,6 +59,7 @@
     <script src="{{ asset('assets/js/hoverable-collapse.js') }}"></script>
     <script src="{{ asset('assets/js/todolist.js') }}"></script>
     <script src="{{ asset('assets/js/jquery.cookie.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('assets/js/dashboard.js') }}"></script>
     {{-- Selalu letakkan @stack('scripts') di PALING AKHIR --}}
     @stack('scripts')
     </body>
