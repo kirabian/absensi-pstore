@@ -159,20 +159,19 @@
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
             let html5QrcodeScanner = null;
 
-            // Elements - Section 1 (Scan)
+            // Elements
             const scanSection = document.getElementById('scan-section');
             const btnStartScan = document.getElementById('btn-start-scan');
             const btnStopScan = document.getElementById('btn-stop-scan');
             const scanPlaceholder = document.getElementById('scan-placeholder');
             const readerDiv = document.getElementById('reader');
 
-            // Elements - Section 2 (Form)
             const formSection = document.getElementById('form-section');
             const resultName = document.getElementById('result-name');
             const resultDivision = document.getElementById('result-division');
             const resultUserId = document.getElementById('result-user-id');
 
-            // Elements - Camera Evidence
+            // Elements - Evidence
             const photoInput = document.getElementById('photo-input');
             const captureBtn = document.getElementById('capture-btn');
             const previewImage = document.getElementById('preview-image');
@@ -182,50 +181,77 @@
             const photoButtons = document.getElementById('photo-buttons');
             const submitButton = document.getElementById('submit-button');
 
-            // --- LOGIC 1: SCANNER QR ---
+            // --- 1. LOGIKA SCANNER QR (DENGAN DEBUGGING) ---
             
             btnStartScan.addEventListener('click', function() {
-                // UI Updates
+                // Cek apakah library sudah terload
+                if (typeof Html5QrcodeScanner === 'undefined') {
+                    alert("Error: Library QR Code belum termuat. Cek koneksi internet Anda.");
+                    return;
+                }
+
+                // Ubah UI dulu
                 scanPlaceholder.classList.add('d-none');
                 readerDiv.classList.remove('d-none');
                 btnStartScan.classList.add('d-none');
                 btnStopScan.classList.remove('d-none');
 
-                // Start Scanner
-                html5QrcodeScanner = new Html5QrcodeScanner(
-                    "reader", 
-                    { fps: 10, qrbox: {width: 250, height: 250} },
-                    false
-                );
-                html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+                // Inisialisasi Scanner
+                try {
+                    html5QrcodeScanner = new Html5QrcodeScanner(
+                        "reader", 
+                        { 
+                            fps: 10, 
+                            qrbox: {width: 250, height: 250},
+                            aspectRatio: 1.0
+                        },
+                        false
+                    );
+
+                    // Render dengan penanganan Error startup
+                    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+                    
+                } catch (e) {
+                    alert("Gagal memulai kamera: " + e);
+                    stopScanner();
+                }
             });
 
-            btnStopScan.addEventListener('click', function() {
-                stopScanner();
-            });
+            // Fungsi Stop Scanner
+            btnStopScan.addEventListener('click', stopScanner);
 
             function stopScanner() {
                 if (html5QrcodeScanner) {
                     html5QrcodeScanner.clear().then(() => {
-                        // UI Reset
-                        readerDiv.classList.add('d-none');
-                        scanPlaceholder.classList.remove('d-none');
-                        btnStartScan.classList.remove('d-none');
-                        btnStopScan.classList.add('d-none');
-                        readerDiv.innerHTML = ""; // Bersihkan DOM sisa scanner
+                        console.log("Scanner stopped");
+                        resetScannerUI();
                     }).catch(error => {
-                        console.error("Failed to clear html5QrcodeScanner. ", error);
+                        console.error("Failed to clear scanner", error);
+                        resetScannerUI(); // Tetap reset UI meski error
                     });
+                } else {
+                    resetScannerUI();
                 }
             }
 
+            function resetScannerUI() {
+                readerDiv.classList.add('d-none');
+                scanPlaceholder.classList.remove('d-none');
+                btnStartScan.classList.remove('d-none');
+                btnStopScan.classList.add('d-none');
+                readerDiv.innerHTML = "";
+            }
+
+            // Callback Sukses Scan
             function onScanSuccess(decodedText, decodedResult) {
-                // 1. Stop Scanning
+                console.log(`Scan result: ${decodedText}`);
+                
+                // Matikan scanner
                 if (html5QrcodeScanner) {
                     html5QrcodeScanner.clear(); 
                 }
 
-                // 2. Cek ke Server
+                // Kirim ke Server
                 fetch("{{ route('security.get.user') }}", {
                     method: "POST",
                     headers: {
@@ -234,80 +260,76 @@
                     },
                     body: JSON.stringify({ qr_code: decodedText })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) throw new Error("Server Error");
+                    return response.json();
+                })
                 .then(data => {
                     if (data.user) {
-                        // SUCCESS: User ketemu
                         showForm(data.user, data.division_name);
                     } else {
-                        // FAIL
-                        alert("QR Code tidak dikenali atau User tidak ditemukan.");
-                        stopScanner(); // Reset UI
+                        alert("QR Code tidak valid atau User tidak ditemukan!");
+                        resetScannerUI();
                     }
                 })
                 .catch(err => {
-                    console.error(err);
-                    alert("Terjadi kesalahan koneksi.");
-                    stopScanner();
+                    alert("Gagal mengambil data user: " + err);
+                    resetScannerUI();
                 });
             }
 
+            // Callback Gagal Scan (Sengaja dikosongkan agar tidak spam)
             function onScanFailure(error) {
-                // Biarkan kosong agar tidak spam console
+                // console.warn(`Code scan error = ${error}`);
             }
 
             function showForm(user, division) {
-                // Sembunyikan Scanner, Tampilkan Form
                 scanSection.classList.add('d-none');
                 formSection.classList.remove('d-none');
-
-                // Isi Data
                 resultName.textContent = user.name;
                 resultDivision.textContent = division || 'N/A';
                 resultUserId.value = user.id;
             }
 
             window.resetPage = function() {
-                // Reload halaman adalah cara paling aman dan bersih
                 window.location.reload();
             }
 
-            // --- LOGIC 2: FOTO BUKTI (Mirip Absen Mandiri) ---
-
+            // --- 2. LOGIKA FOTO BUKTI (Native Input) ---
+            
+            // Saat tombol "Buka Kamera" diklik
             captureBtn.addEventListener('click', function() {
                 photoInput.click();
             });
 
+            // Saat file dipilih/foto diambil
             photoInput.addEventListener('change', function(event) {
                 const file = event.target.files[0];
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = function(e) {
-                        // Tampilkan Preview
                         previewImage.src = e.target.result;
                         cameraPreview.classList.remove('d-none');
-                        
-                        // Sembunyikan Placeholder & Tombol Scan
                         cameraPlaceholder.classList.add('d-none');
                         photoButtons.classList.add('d-none');
-                        
-                        // Enable Submit
                         submitButton.disabled = false;
+                        submitButton.removeAttribute('disabled');
                     };
                     reader.readAsDataURL(file);
                 }
             });
 
+            // Tombol Foto Ulang
             retakeBtn.addEventListener('click', function() {
-                // Reset UI Foto
                 photoInput.value = '';
                 cameraPreview.classList.add('d-none');
                 cameraPlaceholder.classList.remove('d-none');
                 photoButtons.classList.remove('d-none');
                 submitButton.disabled = true;
+                submitButton.setAttribute('disabled', true);
             });
 
-            // Submit Loading State
+            // Loading saat submit
             document.getElementById('attendance-form').addEventListener('submit', function() {
                 const btn = document.getElementById('submit-button');
                 btn.innerHTML = '<i class="mdi mdi-loading mdi-spin me-1"></i>Memproses...';
