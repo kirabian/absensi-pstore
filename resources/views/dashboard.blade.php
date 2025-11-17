@@ -7,6 +7,10 @@
 @section('heading')
     Selamat Datang, {{ Auth::user()->name }}!
 @endsection
+@push('scripts')
+    {{-- Script ini HANYA dimuat saat buka dashboard --}}
+    <script src="{{ asset('assets/js/dashboard.js') }}"></script>
+@endpush
 
 @section('content')
 
