@@ -16,7 +16,7 @@
 
     # ★★★ TAMBAHKAN INI - Redirect /storage to /public/storage ★★★
     RewriteRule ^storage/(.*)$ public/storage/$1 [L]
-
+#testtt
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
