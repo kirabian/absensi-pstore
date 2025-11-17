@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 class ScanController extends Controller
 {
     /**
-     * Constructor dengan middleware
+     * Constructor
      */
     public function __construct()
     {
@@ -17,74 +17,71 @@ class ScanController extends Controller
     }
 
     /**
-     * Menampilkan View Scanner (Kamera)
+     * Menampilkan View Scanner
      */
     public function index()
     {
+        \Illuminate\Support\Facades\Log::info('ScanController accessed by user: ' . Auth::id());
         return view('security.scan');
     }
 
     /**
-     * Proses Validasi Data QR Code via AJAX
+     * Proses Validasi QR Code
      */
     public function validateScan(Request $request)
     {
-        try {
-            // 1. Validasi input
-            $validated = $request->validate([
-                'qr_code' => 'required|string|min:1'
-            ]);
+        \Illuminate\Support\Facades\Log::info('Validate scan request', ['user' => Auth::id(), 'data' => $request->all()]);
 
-            $qrValue = $validated['qr_code'];
-            $securityUser = Auth::user();
+        // Validasi input
+        $request->validate([
+            'qr_code' => 'required|string'
+        ]);
 
-            // 2. Cari User Karyawan berdasarkan QR Code
-            $userScanned = User::with(['division', 'branch'])
-                            ->where('qr_code_value', $qrValue)
-                            ->first();
+        $qrValue = $request->qr_code;
+        $securityUser = Auth::user();
 
-            // 3. Jika User Tidak Ditemukan
-            if (!$userScanned) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'QR Code tidak terdaftar.'
-                ], 404);
-            }
+        // Cari user berdasarkan QR code
+        $userScanned = User::with(['division', 'branch'])
+                           ->where('qr_code_value', $qrValue)
+                           ->first();
 
-            // 4. Validasi Cabang
-            if ($securityUser->branch_id && $userScanned->branch_id) {
-                if ($securityUser->branch_id != $userScanned->branch_id) {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'GAGAL: Karyawan ini dari cabang berbeda (' . ($userScanned->branch->name ?? 'Pusat') . ').',
-                    ], 403);
-                }
-            }
-
-            // 5. Jika Validasi Sukses
-            $photoUrl = $userScanned->profile_photo_path 
-                ? asset('storage/' . $userScanned->profile_photo_path) 
-                : 'https://ui-avatars.com/api/?name='.urlencode($userScanned->name).'&background=random';
-
+        if (!$userScanned) {
+            \Illuminate\Support\Facades\Log::warning('QR code not found: ' . $qrValue);
             return response()->json([
-                'status' => 'success',
-                'message' => 'Scan Valid!',
-                'data' => [
-                    'name' => $userScanned->name,
-                    'role' => ucfirst($userScanned->role),
-                    'division' => $userScanned->division->name ?? '-',
-                    'branch' => $userScanned->branch->name ?? 'Pusat',
-                    'photo' => $photoUrl
-                ]
-            ]);
+                'status' => 'error',
+                'message' => 'QR Code tidak terdaftar.'
+            ], 404);
+        }
 
-        } catch (\Exception $e) {
-            \Log::error('Scan Error: ' . $e->getMessage());
+        // Validasi cabang
+        if ($securityUser->branch_id && $userScanned->branch_id && 
+            $securityUser->branch_id != $userScanned->branch_id) {
+            \Illuminate\Support\Facades\Log::warning('Branch mismatch', [
+                'security_branch' => $securityUser->branch_id,
+                'user_branch' => $userScanned->branch_id
+            ]);
             
             return response()->json([
                 'status' => 'error',
-                'message' => 'Terjadi kesalahan sistem.'
-            ], 500);
+                'message' => 'GAGAL: Karyawan dari cabang berbeda (' . ($userScanned->branch->name ?? 'Pusat') . ').'
+            ], 403);
         }
+
+        // Response sukses
+        \Illuminate\Support\Facades\Log::info('Scan successful', ['scanned_user' => $userScanned->id]);
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Scan Valid!',
+            'data' => [
+                'name' => $userScanned->name,
+                'role' => $userScanned->role,
+                'division' => $userScanned->division->name ?? '-',
+                'branch' => $userScanned->branch->name ?? 'Pusat',
+                'photo' => $userScanned->profile_photo_path 
+                            ? asset('storage/' . $userScanned->profile_photo_path) 
+                            : 'https://ui-avatars.com/api/?name=' . urlencode($userScanned->name) . '&background=random'
+            ]
+        ]);
     }
 }

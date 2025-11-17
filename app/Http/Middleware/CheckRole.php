@@ -13,28 +13,35 @@ class CheckRole
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  \Closure  $next
-     * @param  ...$roles  // Ini akan menangkap semua role (cth: 'admin', 'security')
+     * @param  string  ...$roles
      * @return mixed
      */
     public function handle(Request $request, Closure $next, ...$roles)
     {
-        // 1. Cek apakah user sudah login
+        // Cek apakah user sudah login
         if (!Auth::check()) {
-            return redirect('login');
+            return redirect()->route('login');
         }
 
-        // 2. Ambil role user yang sedang login
-        $userRole = Auth::user()->role; // 'admin', 'security', dll.
+        $user = Auth::user();
 
-        // 3. Cek apakah role user ada di daftar yang diizinkan
-        foreach ($roles as $role) {
-            if ($userRole == $role) {
-                // Jika cocok, izinkan request
-                return $next($request);
-            }
+        // Debug: Log user role dan roles yang diizinkan
+        \Illuminate\Support\Facades\Log::info('CheckRole Middleware', [
+            'user_id' => $user->id,
+            'user_role' => $user->role,
+            'allowed_roles' => $roles
+        ]);
+
+        // Cek apakah role user termasuk dalam roles yang diizinkan
+        if (in_array($user->role, $roles)) {
+            return $next($request);
         }
 
-        // 4. Jika tidak ada yang cocok, tolak akses
-        return abort(403, 'Akses Ditolak. Anda tidak memiliki hak.');
+        // Jika role tidak diizinkan
+        if ($request->expectsJson()) {
+            return response()->json(['error' => 'Forbidden'], 403);
+        }
+        
+        abort(403, 'Akses ditolak. Role tidak memenuhi.');
     }
 }

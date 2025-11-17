@@ -69,10 +69,23 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // --- Rute Khusus SECURITY ---
+    // Route test
+    Route::get('/test-role-middleware', function () {
+        $user = auth()->user();
+        return response()->json([
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'user_role' => $user->role,
+            'user_branch' => $user->branch_id,
+            'message' => 'Middleware test berhasil'
+        ]);
+    })->middleware(['auth', 'role:security']);
+
+    // Route scanner
     Route::middleware(['auth', 'role:security'])->group(function () {
-    Route::get('/scan-qr', [ScanController::class, 'index'])->name('security.scan');
-    Route::post('/scan-qr/validate', [ScanController::class, 'validateScan'])->name('security.validate')->withoutMiddleware([\Fruitcake\Cors\HandleCors::class]);
-});
+        Route::get('/scan-qr', [ScanController::class, 'index'])->name('security.scan');
+        Route::post('/scan-qr/validate', [ScanController::class, 'validateScan'])->name('security.validate');
+    });
 
     // --- Rute Khusus USER_BIASA, LEADER, & AUDIT ---
     Route::middleware(['role:user_biasa,leader,audit'])->group(function () {
