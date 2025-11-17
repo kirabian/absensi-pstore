@@ -1,4 +1,4 @@
-@extends('layouts.app') {{-- Sesuaikan dengan layout utama Anda --}}
+@extends('layouts.master') {{-- Sesuaikan dengan layout utama Anda --}}
 
 @section('content')
 <div class="container py-4">
