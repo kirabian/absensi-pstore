@@ -1,191 +1,321 @@
-@extends('layouts.master') {{-- Sesuaikan dengan layout utama Anda --}}
+@extends('layout.master')
+
+@section('title')
+    Scan QR Absensi
+@endsection
+
+@section('heading')
+    Scan QR Code Absensi
+@endsection
 
 @section('content')
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Scan Absensi Karyawan</h5>
-                </div>
-                <div class="card-body text-center">
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                @if (session('success'))
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="mdi mdi-check-circle me-2"></i>
+                        {{ session('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
 
-                    {{-- Alert Messages --}}
-                    @if(session('success'))
-                        <div class="alert alert-success">{{ session('success') }}</div>
-                    @endif
-                    @if(session('error'))
-                        <div class="alert alert-danger">{{ session('error') }}</div>
-                    @endif
+                @if (session('error'))
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="mdi mdi-alert-circle me-2"></i>
+                        {{ session('error') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
 
-                    {{-- Area Kamera --}}
-                    <div id="reader" style="width: 100%; max-width: 500px; margin: 0 auto;"></div>
-                    
-                    {{-- Preview Hasil Foto (Hidden by default) --}}
-                    <div id="photo-preview-container" class="mt-3" style="display:none;">
-                        <label class="form-label fw-bold">Preview Foto:</label><br>
-                        <img id="photo-preview" class="img-thumbnail" style="max-width: 200px;">
-                        <button type="button" class="btn btn-secondary btn-sm d-block mx-auto mt-2" onclick="resetScanner()">Scan Ulang</button>
+                <div class="row">
+                    {{-- Kolom Scanner --}}
+                    <div class="col-md-6">
+                        <div class="scanner-section text-center">
+                            <h4 class="mb-4">Pindai QR Code</h4>
+                            
+                            {{-- Video Camera --}}
+                            <div id="reader" class="mb-3" style="width: 100%; max-width: 400px; margin: 0 auto;"></div>
+                            
+                            {{-- Manual Input --}}
+                            <div class="manual-input mt-4">
+                                <label class="form-label">Atau masukkan kode manual:</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="manualQrInput" placeholder="Masukkan kode QR">
+                                    <button class="btn btn-primary" type="button" id="manualSubmit">Cek</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    {{-- Status Text --}}
-                    <p class="mt-3 text-muted" id="scan-status">Arahkan kamera ke QR Code Karyawan</p>
-
-                    {{-- Form Absensi (Hidden sampai QR valid ditemukan) --}}
-                    <div id="attendance-form" style="display: none;" class="mt-4 text-start border p-3 rounded bg-light">
-                        <h5 class="text-primary fw-bold mb-3">Data Karyawan Ditemukan</h5>
-                        
-                        <form action="{{ route('security.attendance.store') }}" method="POST" enctype="multipart/form-data" id="main-form">
-                            @csrf
-                            <input type="hidden" name="user_id" id="user_id">
+                    {{-- Kolom Info User --}}
+                    <div class="col-md-6">
+                        <div class="user-info-section">
+                            <h4 class="mb-4">Informasi Karyawan</h4>
                             
-                            {{-- Input File Foto (Hidden, diisi otomatis oleh JS) --}}
-                            <input type="file" name="photo" id="photo-input" class="d-none" accept="image/*">
-
-                            <div class="mb-2">
-                                <label class="fw-bold">Nama:</label>
-                                <input type="text" class="form-control" id="user_name" readonly>
+                            {{-- Loading --}}
+                            <div id="loading" class="text-center d-none">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Memproses...</p>
                             </div>
 
-                            <div class="mb-2">
-                                <label class="fw-bold">Divisi:</label>
-                                <input type="text" class="form-control" id="user_division" readonly>
-                            </div>
-                            
-                            <div class="alert alert-warning mt-2" id="already-absen-alert" style="display:none;">
-                                <small>Warning: Karyawan ini tercatat sudah absen hari ini.</small>
+                            {{-- User Info --}}
+                            <div id="userInfo" class="d-none">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        {{-- Foto Profil --}}
+                                        <div class="text-center mb-3">
+                                            <img id="userPhoto" src="" alt="Foto Profil" 
+                                                 class="img-lg rounded-circle" 
+                                                 style="width: 100px; height: 100px; object-fit: cover;"
+                                                 onerror="this.src='{{ asset('assets/images/default-avatar.png') }}'">
+                                        </div>
+                                        
+                                        {{-- Info User --}}
+                                        <table class="table table-borderless">
+                                            <tr>
+                                                <td><strong>Nama:</strong></td>
+                                                <td id="userName">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Divisi:</strong></td>
+                                                <td id="userDivision">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Status:</strong></td>
+                                                <td>
+                                                    <span id="absenStatus" class="badge bg-success">Belum Absen</span>
+                                                    <span id="alreadyAbsen" class="badge bg-warning d-none">Sudah Absen</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        {{-- Form Absensi --}}
+                                        <form id="attendanceForm" method="POST" action="{{ route('security.attendance.store') }}" enctype="multipart/form-data">
+                                            @csrf
+                                            <input type="hidden" name="user_id" id="formUserId">
+                                            
+                                            <div class="mb-3">
+                                                <label for="photo" class="form-label">Ambil Foto *</label>
+                                                <input type="file" class="form-control" id="photo" name="photo" accept="image/*" capture="camera" required>
+                                                <small class="text-muted">Foto wajib diambil saat ini (gunakan kamera)</small>
+                                            </div>
+                                            
+                                            <button type="submit" class="btn btn-success w-100">
+                                                <i class="mdi mdi-check-circle me-2"></i>Konfirmasi Absensi
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
                             </div>
 
-                            <hr>
-                            <div class="d-grid gap-2">
-                                {{-- Tombol ini akan mengambil screenshot dari kamera scanner --}}
-                                <button type="button" class="btn btn-success" id="btn-capture-submit">
-                                    <i class="bi bi-camera"></i> Ambil Foto & Simpan Absen
-                                </button>
+                            {{-- Error Message --}}
+                            <div id="errorMessage" class="alert alert-danger d-none">
+                                <i class="mdi mdi-alert-circle me-2"></i>
+                                <span id="errorText"></span>
                             </div>
-                        </form>
+
+                            {{-- Default State --}}
+                            <div id="defaultState" class="text-center text-muted">
+                                <i class="mdi mdi-account-search display-4 mb-3"></i>
+                                <p>Scan QR code atau masukkan kode manual untuk melihat informasi karyawan</p>
+                            </div>
+                        </div>
                     </div>
-
                 </div>
             </div>
         </div>
     </div>
 </div>
+@endsection
 
-{{-- Script Library QR Scanner --}}
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+@push('scripts')
+<!-- Include HTML5 QR Code Scanner -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
 
 <script>
     let html5QrcodeScanner;
-    const csrfToken = "{{ csrf_token() }}";
-    const checkUrl = "{{ route('security.scan.check') }}";
 
+    // Initialize Scanner
+    function initScanner() {
+        html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", 
+            { 
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                supportedScanTypes: [
+                    Html5QrcodeScanType.SCAN_TYPE_CAMERA
+                ]
+            },
+            false
+        );
+
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    }
+
+    // Handle Scan Success
     function onScanSuccess(decodedText, decodedResult) {
-        // 1. Stop scanning sementara agar tidak double request
-        if(html5QrcodeScanner) {
-            html5QrcodeScanner.pause(); 
-        }
+        // Stop scanner temporarily
+        html5QrcodeScanner.clear();
+        
+        // Process QR code
+        processQrCode(decodedText);
+        
+        // Restart scanner after 3 seconds
+        setTimeout(() => {
+            initScanner();
+        }, 3000);
+    }
 
-        document.getElementById('scan-status').innerText = "Memproses QR Code...";
+    // Handle Scan Failure
+    function onScanFailure(error) {
+        // Optional: Handle scan failure
+        // console.warn(`QR scan failed: ${error}`);
+    }
 
-        // 2. Kirim ke Backend
-        fetch(checkUrl, {
+    // Process QR Code (for both scanner and manual input)
+    function processQrCode(qrCode) {
+        showLoading();
+        hideAllSections();
+
+        fetch('{{ route("security.scan.check") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
-            body: JSON.stringify({ qr_code: decodedText })
+            body: JSON.stringify({ qr_code: qrCode })
         })
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            if(data.status === 'success') {
-                // 3. Tampilkan Data User
-                document.getElementById('attendance-form').style.display = 'block';
-                document.getElementById('user_id').value = data.user.id;
-                document.getElementById('user_name').value = data.user.name;
-                document.getElementById('user_division').value = data.division_name;
-                
-                if(data.already_absen) {
-                    document.getElementById('already-absen-alert').style.display = 'block';
-                } else {
-                    document.getElementById('already-absen-alert').style.display = 'none';
-                }
-
-                document.getElementById('scan-status').innerText = "Silakan ambil foto wajah karyawan.";
-                
-                // Ubah perilaku tombol Capture
-                // Kita resume scanner tapi dalam mode video preview saja untuk foto
-                html5QrcodeScanner.resume();
+            hideLoading();
+            
+            if (data.status === 'success') {
+                displayUserInfo(data.user, data.division_name, data.already_absen);
             } else {
-                alert(data.message);
-                html5QrcodeScanner.resume();
+                showError(data.message || 'Terjadi kesalahan');
             }
         })
         .catch(error => {
+            hideLoading();
+            showError('Error: ' + error.message);
             console.error('Error:', error);
-            alert('Gagal memproses QR Code. Pastikan User valid.');
-            html5QrcodeScanner.resume();
         });
     }
 
-    function onScanFailure(error) {
-        // Handle scan failure, usually better to ignore and keep scanning.
-        // console.warn(`Code scan error = ${error}`);
-    }
-
-    // --- LOGIKA PENGAMBILAN FOTO DARI VIDEO STREAM ---
-    document.getElementById('btn-capture-submit').addEventListener('click', function() {
-        // Kita ambil elemen video dari html5-qrcode
-        // ID default biasanya 'reader__scan_region' > video
-        const videoElement = document.querySelector("#reader video");
+    // Display User Information
+    function displayUserInfo(user, division, alreadyAbsen) {
+        // Set user data
+        document.getElementById('userName').textContent = user.name;
+        document.getElementById('userDivision').textContent = division;
+        document.getElementById('formUserId').value = user.id;
         
-        if (!videoElement) {
-            alert("Kamera tidak terdeteksi! Refresh halaman.");
-            return;
+        // Set photo
+        const userPhoto = document.getElementById('userPhoto');
+        if (user.profile_photo_path) {
+            userPhoto.src = '{{ Storage::url("") }}' + user.profile_photo_path;
+        } else {
+            userPhoto.src = '{{ asset('assets/images/default-avatar.png') }}';
         }
-
-        // Buat Canvas untuk menggambar frame video
-        const canvas = document.createElement("canvas");
-        canvas.width = videoElement.videoWidth;
-        canvas.height = videoElement.videoHeight;
-        const context = canvas.getContext("2d");
-        context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-
-        // Konversi Canvas ke Blob (File)
-        canvas.toBlob(function(blob) {
-            // Buat File Object
-            const file = new File([blob], "attendance_photo.jpg", { type: "image/jpeg" });
-
-            // Masukkan ke input type="file" secara programatis
-            const container = new DataTransfer();
-            container.items.add(file);
-            document.getElementById('photo-input').files = container.files;
-
-            // Tampilkan preview (opsional)
-            document.getElementById('reader').style.display = 'none'; // sembunyikan scanner
-            document.getElementById('photo-preview-container').style.display = 'block';
-            document.getElementById('photo-preview').src = URL.createObjectURL(blob);
-
-            // Submit Form
-            document.getElementById('main-form').submit();
-        }, 'image/jpeg', 0.9); // Kualitas 0.9
-    });
-
-    function resetScanner() {
-        location.reload(); // Cara paling aman untuk reset state
+        
+        // Set absen status
+        if (alreadyAbsen) {
+            document.getElementById('absenStatus').classList.add('d-none');
+            document.getElementById('alreadyAbsen').classList.remove('d-none');
+        } else {
+            document.getElementById('absenStatus').classList.remove('d-none');
+            document.getElementById('alreadyAbsen').classList.add('d-none');
+        }
+        
+        // Show user info section
+        document.getElementById('userInfo').classList.remove('d-none');
+        document.getElementById('defaultState').classList.add('d-none');
     }
 
-    // Inisialisasi Scanner saat halaman load
-    document.addEventListener('DOMContentLoaded', function () {
-        html5QrcodeScanner = new Html5Qrcode("reader");
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+    // Show Error Message
+    function showError(message) {
+        document.getElementById('errorText').textContent = message;
+        document.getElementById('errorMessage').classList.remove('d-none');
+        document.getElementById('defaultState').classList.add('d-none');
+    }
+
+    // Show Loading
+    function showLoading() {
+        document.getElementById('loading').classList.remove('d-none');
+        hideAllSections();
+    }
+
+    // Hide Loading
+    function hideLoading() {
+        document.getElementById('loading').classList.add('d-none');
+    }
+
+    // Hide All Sections
+    function hideAllSections() {
+        document.getElementById('userInfo').classList.add('d-none');
+        document.getElementById('errorMessage').classList.add('d-none');
+        document.getElementById('defaultState').classList.add('d-none');
+    }
+
+    // Reset to Default State
+    function resetToDefault() {
+        hideAllSections();
+        document.getElementById('defaultState').classList.remove('d-none');
+        document.getElementById('manualQrInput').value = '';
+    }
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize scanner
+        initScanner();
         
-        // Mulai kamera belakang
-        html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess);
+        // Manual submit
+        document.getElementById('manualSubmit').addEventListener('click', function() {
+            const manualCode = document.getElementById('manualQrInput').value.trim();
+            if (manualCode) {
+                processQrCode(manualCode);
+            }
+        });
+        
+        // Enter key for manual input
+        document.getElementById('manualQrInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('manualSubmit').click();
+            }
+        });
+        
+        // Reset form when file input changes (optional)
+        document.getElementById('photo').addEventListener('change', function() {
+            // Optional: Add preview or validation
+        });
     });
 </script>
-@endsection
+
+<style>
+    .scanner-section {
+        padding: 20px;
+        border-right: 1px solid #e0e0e0;
+    }
+    
+    .user-info-section {
+        padding: 20px;
+    }
+    
+    #reader {
+        border: 2px dashed #007bff;
+        border-radius: 10px;
+        padding: 10px;
+        background: #f8f9fa;
+    }
+    
+    @media (max-width: 768px) {
+        .scanner-section {
+            border-right: none;
+            border-bottom: 1px solid #e0e0e0;
+        }
+    }
+</style>
+@endpush

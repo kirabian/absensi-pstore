@@ -9,33 +9,21 @@ class Attendance extends Model
 {
     use HasFactory;
 
-    /**
-     * Nama tabel otomatis terdeteksi sebagai 'attendances'.
-     * Kolom yang boleh diisi.
-     */
     protected $fillable = [
         'user_id',
+        'branch_id', // TAMBAHKAN INI - SANGAT PENTING!
         'check_in_time',
         'status',
         'photo_path',
         'scanned_by_user_id',
         'verified_by_user_id',
-        'latitude', // Kolom baru dari migrasi
-        'longitude', // Kolom baru dari migrasi
+        'latitude',
+        'longitude',
     ];
 
-    // --- INI ADALAH PERBAIKANNYA ---
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array
-     */
     protected $casts = [
-        // Ini akan mengubah 'check_in_time' menjadi objek Carbon
-        // sehingga Anda bisa menggunakan ->format()
         'check_in_time' => 'datetime',
     ];
-    // --- BATAS PERBAIKAN ---
 
     /**
      * Relasi many-to-one: Absensi ini milik satu User.
@@ -46,11 +34,18 @@ class Attendance extends Model
     }
 
     /**
+     * Relasi many-to-one: Absensi ini milik satu Branch.
+     */
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
+    }
+
+    /**
      * Relasi many-to-one: Absensi ini di-scan oleh satu Security (User).
      */
     public function scanner()
     {
-        // Kita beri nama 'scanner' agar beda, tapi menunjuk ke User
         return $this->belongsTo(User::class, 'scanned_by_user_id');
     }
 
@@ -59,7 +54,30 @@ class Attendance extends Model
      */
     public function verifier()
     {
-        // Kita beri nama 'verifier', menunjuk ke User
         return $this->belongsTo(User::class, 'verified_by_user_id');
+    }
+
+    /**
+     * Scope untuk absensi hari ini
+     */
+    public function scopeToday($query)
+    {
+        return $query->whereDate('check_in_time', today());
+    }
+
+    /**
+     * Scope untuk absensi berdasarkan user
+     */
+    public function scopeForUser($query, $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
+
+    /**
+     * Cek apakah sudah absen hari ini
+     */
+    public static function hasUserAttendedToday($userId)
+    {
+        return static::forUser($userId)->today()->exists();
     }
 }
