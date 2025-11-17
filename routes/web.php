@@ -19,6 +19,7 @@ use App\Http\Controllers\LeaveRequestController; // <-- DITAMBAHKAN
 | Rute Publik (Tidak Perlu Login)
 |--------------------------------------------------------------------------
 */
+
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
@@ -32,7 +33,7 @@ Route::middleware(['auth'])->group(function () {
 
     // --- Rute Utama ---
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    
+
 
     // --- Rute Edit Profil (UNTUK SEMUA ROLE) ---
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -42,7 +43,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/profile/ktp', [ProfileController::class, 'updateKtp'])->name('profile.ktp.update');
     Route::post('/profile/work-history', [WorkHistoryController::class, 'store'])->name('profile.work-history.store');
     Route::delete('/profile/work-history/{history}', [WorkHistoryController::class, 'destroy'])->name('profile.work-history.destroy');
-    
+
     // --- Rute Inventaris Profil ---
     Route::post('/profile/inventory', [ProfileController::class, 'storeInventory'])->name('profile.inventory.store');
     Route::delete('/profile/inventory/{inventory}', [ProfileController::class, 'destroyInventory'])->name('profile.inventory.destroy');
@@ -62,14 +63,20 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/verifikasi/tolak/{attendance}', [AuditController::class, 'reject'])->name('audit.reject');
 
         Route::get('/izin-telat', [AuditController::class, 'showLatePermissions'])->name('audit.late.list');
-        
+
         // Nanti Anda perlu halaman untuk memverifikasi pengajuan baru
         // Route::get('/verifikasi-izin', [LeaveRequestController::class, 'adminIndex'])->name('leave.admin.index');
     });
 
     // --- Rute Khusus SECURITY ---
-    Route::middleware(['role:security'])->group(function () {
+    Route::middleware(['auth', 'role:security'])->group(function () {
+        // Halaman Scan
         Route::get('/scan', [ScanController::class, 'scanPage'])->name('security.scan');
+
+        // PROSES 1: Cek QR Code (AJAX) - INI YANG KURANG
+        Route::post('/scan/get-user', [ScanController::class, 'getUserByQr'])->name('security.get.user');
+
+        // PROSES 2: Simpan Absen (Submit Form)
         Route::post('/scan/store', [ScanController::class, 'storeAttendance'])->name('security.attendance.store');
     });
 
@@ -77,15 +84,15 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:user_biasa,leader,audit'])->group(function () {
         Route::get('/tim-saya', [TeamController::class, 'index'])->name('my.team');
     });
-    
+
     // --- Rute Khusus USER_BIASA & LEADER ---
     Route::middleware(['role:user_biasa,leader'])->group(function () {
         Route::get('/absen-mandiri', [SelfAttendanceController::class, 'create'])->name('self.attend.create');
         Route::post('/absen-mandiri', [SelfAttendanceController::class, 'store'])->name('self.attend.store');
-        
+
         // Rute 'lapor-telat' dihapus karena diganti form baru
         // Route::post('/lapor-telat', [SelfAttendanceController::class, 'storeLateStatus'])->name('late.status.store'); 
-        
+
         // Rute ini masih dipakai di dashboard jika ada 'Laporan Telat Aktif'
         Route::post('/hapus-telat', [SelfAttendanceController::class, 'deleteLateStatus'])->name('late.status.delete');
 
@@ -94,6 +101,4 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/leave/store', [LeaveRequestController::class, 'store'])->name('leave.store');
         // Route::get('/leave/history', [LeaveRequestController::class, 'index'])->name('leave.index'); // Halaman riwayat
     });
-
-    
 });
