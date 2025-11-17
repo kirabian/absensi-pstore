@@ -68,17 +68,17 @@
                                     <div class="card-body">
                                         {{-- Foto Profil --}}
                                         <div class="text-center mb-3">
+                                            {{-- ID ditambahkan untuk manipulasi JS --}}
                                             <img id="userPhoto" src="" alt="Foto Profil" 
-                                                 class="img-lg rounded-circle" 
-                                                 style="width: 100px; height: 100px; object-fit: cover;"
-                                                 onerror="this.src='{{ asset('assets/images/default-avatar.png') }}'">
+                                                 class="img-lg rounded-circle shadow" 
+                                                 style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #fff;">
                                         </div>
                                         
                                         {{-- Info User --}}
                                         <table class="table table-borderless">
                                             <tr>
-                                                <td><strong>Nama:</strong></td>
-                                                <td id="userName">-</td>
+                                                <td style="width: 30%;"><strong>Nama:</strong></td>
+                                                <td id="userName" class="fw-bold">-</td>
                                             </tr>
                                             <tr>
                                                 <td><strong>Divisi:</strong></td>
@@ -88,7 +88,7 @@
                                                 <td><strong>Status:</strong></td>
                                                 <td>
                                                     <span id="absenStatus" class="badge bg-success">Belum Absen</span>
-                                                    <span id="alreadyAbsen" class="badge bg-warning d-none">Sudah Absen</span>
+                                                    <span id="alreadyAbsen" class="badge bg-warning text-dark d-none">Sudah Absen Hari Ini</span>
                                                 </td>
                                             </tr>
                                         </table>
@@ -98,13 +98,13 @@
                                             @csrf
                                             <input type="hidden" name="user_id" id="formUserId">
                                             
-                                            <div class="mb-3">
-                                                <label for="photo" class="form-label">Ambil Foto *</label>
+                                            <div class="mb-3 mt-3">
+                                                <label for="photo" class="form-label fw-bold">Bukti Foto (Wajib) *</label>
                                                 <input type="file" class="form-control" id="photo" name="photo" accept="image/*" capture="camera" required>
-                                                <small class="text-muted">Foto wajib diambil saat ini (gunakan kamera)</small>
+                                                <small class="text-muted">Ambil foto wajah karyawan saat ini.</small>
                                             </div>
                                             
-                                            <button type="submit" class="btn btn-success w-100">
+                                            <button type="submit" class="btn btn-success w-100 py-2">
                                                 <i class="mdi mdi-check-circle me-2"></i>Konfirmasi Absensi
                                             </button>
                                         </form>
@@ -119,9 +119,10 @@
                             </div>
 
                             {{-- Default State --}}
-                            <div id="defaultState" class="text-center text-muted">
-                                <i class="mdi mdi-account-search display-4 mb-3"></i>
-                                <p>Scan QR code atau masukkan kode manual untuk melihat informasi karyawan</p>
+                            <div id="defaultState" class="text-center text-muted py-5">
+                                <i class="mdi mdi-qrcode-scan display-3 mb-3 opacity-50"></i>
+                                <p class="h5">Siap Memindai</p>
+                                <p>Arahkan kamera ke QR Code karyawan</p>
                             </div>
                         </div>
                     </div>
@@ -133,22 +134,28 @@
 @endsection
 
 @push('scripts')
-<!-- Include HTML5 QR Code Scanner -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
 
 <script>
+    // ==========================================
+    // KONFIGURASI URL (Agar tidak error syntax)
+    // ==========================================
+    const BASE_STORAGE_URL = "{{ Storage::url('') }}"; 
+    const DEFAULT_AVATAR = "{{ asset('assets/images/default-avatar.png') }}";
+    
     let html5QrcodeScanner;
 
     // Initialize Scanner
     function initScanner() {
+        // Cek apakah element reader ada untuk menghindari error null
+        if (!document.getElementById('reader')) return;
+
         html5QrcodeScanner = new Html5QrcodeScanner(
             "reader", 
             { 
                 fps: 10,
                 qrbox: { width: 250, height: 250 },
-                supportedScanTypes: [
-                    Html5QrcodeScanType.SCAN_TYPE_CAMERA
-                ]
+                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
             },
             false
         );
@@ -158,25 +165,23 @@
 
     // Handle Scan Success
     function onScanSuccess(decodedText, decodedResult) {
-        // Stop scanner temporarily
+        // Stop scanner sementara
         html5QrcodeScanner.clear();
         
         // Process QR code
         processQrCode(decodedText);
         
-        // Restart scanner after 3 seconds
+        // Restart scanner setelah 5 detik (memberi waktu user melihat hasil)
         setTimeout(() => {
             initScanner();
-        }, 3000);
+        }, 5000);
     }
 
-    // Handle Scan Failure
     function onScanFailure(error) {
-        // Optional: Handle scan failure
-        // console.warn(`QR scan failed: ${error}`);
+        // Biarkan kosong agar console bersih
     }
 
-    // Process QR Code (for both scanner and manual input)
+    // Process QR Code
     function processQrCode(qrCode) {
         showLoading();
         hideAllSections();
@@ -196,83 +201,95 @@
             if (data.status === 'success') {
                 displayUserInfo(data.user, data.division_name, data.already_absen);
             } else {
-                showError(data.message || 'Terjadi kesalahan');
+                showError(data.message || 'Karyawan tidak ditemukan / Salah Cabang.');
             }
         })
         .catch(error => {
             hideLoading();
-            showError('Error: ' + error.message);
+            showError('Koneksi Error: ' + error.message);
             console.error('Error:', error);
         });
     }
 
-    // Display User Information
+    // ==========================================
+    // FUNGSI TAMPILAN USER INFO (FIXED)
+    // ==========================================
     function displayUserInfo(user, division, alreadyAbsen) {
-        // Set user data
+        // 1. Set Teks
         document.getElementById('userName').textContent = user.name;
         document.getElementById('userDivision').textContent = division;
         document.getElementById('formUserId').value = user.id;
         
-        // Set photo
+        // 2. Logika Foto Profil (Yang Diperbaiki)
         const userPhoto = document.getElementById('userPhoto');
-        if (user.profile_photo_path) {
-            userPhoto.src = '{{ Storage::url("") }}' + user.profile_photo_path;
-        } else {
-            userPhoto.src = '{{ asset('assets/images/default-avatar.png') }}';
-        }
         
-        // Set absen status
+        if (user.profile_photo_path) {
+            // Jika ada foto di database, gabungkan dengan URL Storage
+            // Hapus slash di depan jika ada agar tidak double slash
+            let cleanPath = user.profile_photo_path.replace(/^\/+/, '');
+            userPhoto.src = BASE_STORAGE_URL + cleanPath;
+        } else {
+            // Jika tidak ada foto, gunakan UI Avatars (Inisial Nama)
+            // Ini lebih baik daripada gambar rusak
+            let encodedName = encodeURIComponent(user.name);
+            userPhoto.src = `https://ui-avatars.com/api/?name=${encodedName}&background=random&color=fff&size=128`;
+        }
+
+        // Handler jika gambar error (misal file terhapus fisik) -> balik ke default/avatar
+        userPhoto.onerror = function() {
+            this.onerror = null; // Mencegah loop
+            let encodedName = encodeURIComponent(user.name);
+            this.src = `https://ui-avatars.com/api/?name=${encodedName}&background=random&color=fff`;
+        };
+        
+        // 3. Set Status Absen
         if (alreadyAbsen) {
             document.getElementById('absenStatus').classList.add('d-none');
             document.getElementById('alreadyAbsen').classList.remove('d-none');
+            
+            // Opsional: Disable tombol jika sudah absen
+            // document.querySelector('button[type="submit"]').disabled = true;
         } else {
             document.getElementById('absenStatus').classList.remove('d-none');
             document.getElementById('alreadyAbsen').classList.add('d-none');
+            // document.querySelector('button[type="submit"]').disabled = false;
         }
         
-        // Show user info section
+        // 4. Tampilkan UI
         document.getElementById('userInfo').classList.remove('d-none');
         document.getElementById('defaultState').classList.add('d-none');
     }
 
-    // Show Error Message
     function showError(message) {
         document.getElementById('errorText').textContent = message;
         document.getElementById('errorMessage').classList.remove('d-none');
         document.getElementById('defaultState').classList.add('d-none');
     }
 
-    // Show Loading
     function showLoading() {
         document.getElementById('loading').classList.remove('d-none');
         hideAllSections();
     }
 
-    // Hide Loading
     function hideLoading() {
         document.getElementById('loading').classList.add('d-none');
     }
 
-    // Hide All Sections
     function hideAllSections() {
         document.getElementById('userInfo').classList.add('d-none');
         document.getElementById('errorMessage').classList.add('d-none');
         document.getElementById('defaultState').classList.add('d-none');
     }
 
-    // Reset to Default State
     function resetToDefault() {
         hideAllSections();
         document.getElementById('defaultState').classList.remove('d-none');
         document.getElementById('manualQrInput').value = '';
     }
 
-    // Event Listeners
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize scanner
         initScanner();
         
-        // Manual submit
         document.getElementById('manualSubmit').addEventListener('click', function() {
             const manualCode = document.getElementById('manualQrInput').value.trim();
             if (manualCode) {
@@ -280,16 +297,10 @@
             }
         });
         
-        // Enter key for manual input
         document.getElementById('manualQrInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 document.getElementById('manualSubmit').click();
             }
-        });
-        
-        // Reset form when file input changes (optional)
-        document.getElementById('photo').addEventListener('change', function() {
-            // Optional: Add preview or validation
         });
     });
 </script>
@@ -309,6 +320,12 @@
         border-radius: 10px;
         padding: 10px;
         background: #f8f9fa;
+        overflow: hidden; /* Mencegah video keluar batas */
+    }
+
+    #reader video {
+        border-radius: 8px; /* Membuat sudut video agak melengkung */
+        object-fit: cover;
     }
     
     @media (max-width: 768px) {
