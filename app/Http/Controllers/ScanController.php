@@ -14,7 +14,7 @@ class ScanController extends Controller
 
     public function scanPage()
     {
-        return view('security.scan'); // Pastikan nama view ini benar
+        return view('security.scan');
     }
 
     public function getUserByQr(Request $request)
@@ -32,9 +32,9 @@ class ScanController extends Controller
                 'user' => $user,
                 'division_name' => $user->division->name ?? null
             ]);
-        } else {
-            return response()->json(['error' => 'User not found or not in this branch'], 404);
         }
+
+        return response()->json(['error' => 'User not found or not in this branch'], 404);
     }
 
     public function storeAttendance(Request $request)
@@ -44,23 +44,30 @@ class ScanController extends Controller
             'photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        $path = $request->file('photo')->store('public/foto_security');
-        $user = User::find($request->user_id);
+        try {
+            $path = $request->file('photo')->store('foto_security', 'public');
+            $user = User::find($request->user_id);
 
-        Attendance::create([
-            'user_id' => $user->id,
-            'branch_id' => $user->branch_id, // <-- **INI PERBAIKAN PENTING #3**
-            'check_in_time' => now(),
-            'status' => 'verified',
-            'photo_path' => $path,
-            'scanned_by_user_id' => Auth::id(),
-        ]);
+            Attendance::create([
+                'user_id' => $user->id,
+                'branch_id' => $user->branch_id,
+                'check_in_time' => now(),
+                'status' => 'verified',
+                'photo_path' => $path,
+                'scanned_by_user_id' => Auth::id(),
+            ]);
 
-        $title = "Absensi Masuk (Security)";
-        $body = $user->name . " telah diabsen masuk oleh Security.";
-        $this->sendNotificationToBranchRoles(['admin', 'audit'], $user->branch_id, $title, $body);
+            // Sementara comment notifikasi dulu
+            // $title = "Absensi Masuk (Security)";
+            // $body = $user->name . " telah diabsen masuk oleh Security.";
+            // $this->sendNotificationToBranchRoles(['admin', 'audit'], $user->branch_id, $title, $body);
 
-        return redirect()->route('security.scan')
-            ->with('success', 'Absensi berhasil dicatat!');
+            return redirect()->route('security.scan')
+                ->with('success', 'Absensi berhasil dicatat!');
+
+        } catch (\Exception $e) {
+            return redirect()->route('security.scan')
+                ->with('error', 'Error: ' . $e->getMessage());
+        }
     }
 }
