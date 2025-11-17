@@ -9,14 +9,17 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-// --- TAMBAHAN UNTUK MERAPIKAN ---
+use Illuminate\Support\Facades\Storage;
+// --- PERBAIKAN IMPORT ---
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Support\Str; // INI YANG BENAR
+// ---------------------------------
 use App\Models\WorkHistory;
 use App\Models\Inventory;
 use App\Models\LateNotification;
 use App\Models\Division;
 use App\Models\Branch;
 use App\Models\Attendance;
-// ---------------------------------
 
 class User extends Authenticatable
 {
@@ -32,8 +35,8 @@ class User extends Authenticatable
         'role',
         'division_id',
         'qr_code_value',
+        'qr_code_path', // TAMBAHKAN INI
         'branch_id',
-        // --- TAMBAHAN PROFIL BARU ---
         'profile_photo_path',
         'ktp_photo_path',
         'hire_date',
@@ -42,7 +45,6 @@ class User extends Authenticatable
         'tiktok',
         'facebook',
         'linkedin',
-        // -------------------------
     ];
 
     /**
@@ -58,7 +60,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'hire_date' => 'date', // <-- Tanggal Masuk
+        'hire_date' => 'date',
     ];
 
     public function division(): BelongsTo
@@ -97,5 +99,89 @@ class User extends Authenticatable
     public function inventories()
     {
         return $this->hasMany(Inventory::class);
+    }
+
+    /**
+     * Generate QR Code for user
+     */
+    public function generateQrCode()
+    {
+        // Generate unique QR value jika belum ada
+        if (!$this->qr_code_value) {
+            $this->qr_code_value = 'EMP-' . $this->id . '-' . Str::random(8) . '-' . time();
+            $this->save();
+        }
+        
+        // Generate QR Code image
+        $qrCode = QrCode::format('png')
+            ->size(300)
+            ->generate($this->qr_code_value);
+            
+        $fileName = 'qrcodes/' . $this->id . '_' . time() . '.png';
+        Storage::disk('public')->put($fileName, $qrCode);
+        
+        $this->update(['qr_code_path' => $fileName]);
+        
+        return $this;
+    }
+
+    /**
+     * Get QR Code URL
+     */
+    public function getQrCodeUrlAttribute()
+    {
+        return $this->qr_code_path ? Storage::url($this->qr_code_path) : null;
+    }
+
+    /**
+     * Check if user has QR code
+     */
+    public function hasQrCode()
+    {
+        return !empty($this->qr_code_value) && !empty($this->qr_code_path);
+    }
+
+    /**
+     * Get user's today attendance
+     */
+    public function todayAttendance()
+    {
+        return $this->attendances()
+                    ->whereDate('check_in_time', today())
+                    ->first();
+    }
+
+    /**
+     * Check if user has attended today
+     */
+    public function hasAttendedToday()
+    {
+        return $this->attendances()
+                    ->whereDate('check_in_time', today())
+                    ->exists();
+    }
+
+    /**
+     * Get profile photo URL
+     */
+    public function getProfilePhotoUrlAttribute()
+    {
+        if ($this->profile_photo_path) {
+            return Storage::url($this->profile_photo_path);
+        }
+        
+        return null;
+    }
+
+    /**
+     * Get KTP photo URL
+     */
+    public function getKtpPhotoUrlAttribute()
+    {
+        if ($this->ktp_photo_path) {
+            return Storage::url($this->ktp_photo_path);
+        }
+        
+        return null;
     }
 }
