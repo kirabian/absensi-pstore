@@ -71,8 +71,8 @@ Route::middleware(['auth'])->group(function () {
     // --- Rute Khusus SECURITY ---
     Route::middleware(['auth', 'role:security'])->group(function () {
         // --- ROUTE UNTUK SECURITY (SCANNER) ---
-        Route::get('/scan-qr', [ScanController::class, 'index'])->name('scan.index');
-        Route::post('/scan-qr/validate', [ScanController::class, 'validateScan'])->name('scan.validate');
+        Route::get('/scan-qr', [ScanController::class, 'index'])->name('security.scan');
+        Route::post('/scan-qr/validate', [ScanController::class, 'validateScan'])->name('security.validate');
     });
 
     // --- Rute Khusus USER_BIASA, LEADER, & AUDIT ---
