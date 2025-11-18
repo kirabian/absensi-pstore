@@ -30,8 +30,8 @@
                                 <tr>
                                     <th class="ps-4">#</th>
                                     <th>Nama</th>
-                                    <th>Status Absensi</th>
-                                    <th>Foto/Alasan</th>
+                                    <th>Status & Waktu</th>
+                                    <th>Foto / Keterangan</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -53,98 +53,110 @@
                                         </td>
 
                                         {{-- ======================================= --}}
-                                        {{-- BLOK LOGIKA BARU UNTUK STATUS --}}
+                                        {{-- KOLOM STATUS ABSENSI (UPDATED) --}}
                                         {{-- ======================================= --}}
                                         @if ($member->attendances->isNotEmpty())
-                                            {{-- 1. Jika user SUDAH absen hari ini --}}
                                             @php
                                                 $attendance = $member->attendances->first();
                                             @endphp
                                             <td>
-                                                <div class="d-flex align-items-center">
-                                                    @if($attendance->status == 'verified')
-                                                        <span class="badge bg-success badge-pill me-2">
-                                                            <i class="mdi mdi-check-circle-outline me-1"></i>Terverifikasi
+                                                {{-- Badge Status --}}
+                                                <div class="mb-2">
+                                                    @if ($attendance->check_out_time)
+                                                        <span class="badge bg-primary badge-pill">
+                                                            <i class="mdi mdi-home-variant-outline me-1"></i>Sudah Pulang
                                                         </span>
                                                     @else
-                                                        <span class="badge bg-warning text-dark badge-pill me-2">
-                                                            <i class="mdi mdi-clock-outline me-1"></i>Menunggu
+                                                        <span class="badge bg-success badge-pill">
+                                                            <i class="mdi mdi-briefcase-check-outline me-1"></i>Sedang Bekerja
                                                         </span>
                                                     @endif
-                                                    <div>
-                                                        <small class="text-muted d-block">{{ $attendance->check_in_time->format('H:i') }} WIB</small>
-                                                        <small class="text-muted">{{ $attendance->check_in_time->format('d M Y') }}</small>
+                                                </div>
+
+                                                {{-- Detail Waktu --}}
+                                                <div class="small text-muted">
+                                                    <div class="d-flex align-items-center mb-1">
+                                                        <i class="mdi mdi-login text-success me-2"></i>
+                                                        <span>Masuk: <strong>{{ $attendance->check_in_time->format('H:i') }}</strong></span>
                                                     </div>
+                                                    @if ($attendance->check_out_time)
+                                                        <div class="d-flex align-items-center">
+                                                            <i class="mdi mdi-logout text-primary me-2"></i>
+                                                            <span>Pulang: <strong>{{ $attendance->check_out_time->format('H:i') }}</strong></span>
+                                                        </div>
+                                                    @else
+                                                        <div class="d-flex align-items-center text-muted opacity-50">
+                                                            <i class="mdi mdi-logout me-2"></i>
+                                                            <span>Belum Pulang</span>
+                                                        </div>
+                                                    @endif
                                                 </div>
                                             </td>
+                                            
+                                            {{-- Foto Absen --}}
                                             <td>
                                                 @if($attendance->photo_path)
                                                     <a href="{{ Storage::url($attendance->photo_path) }}" target="_blank" class="image-popup">
                                                         <div class="position-relative" style="width: 60px; height: 60px;">
                                                             <img src="{{ Storage::url($attendance->photo_path) }}"
                                                                  alt="foto absen"
-                                                                 class="rounded shadow-sm"
+                                                                 class="rounded shadow-sm border"
                                                                  style="width: 100%; height: 100%; object-fit: cover;">
                                                             <div class="position-absolute top-0 end-0 m-1">
-                                                                <i class="mdi mdi-magnify-plus-outline text-white bg-dark bg-opacity-50 rounded-circle p-1"></i>
+                                                                <i class="mdi mdi-magnify-plus-outline text-white bg-dark bg-opacity-50 rounded-circle p-1" style="font-size: 10px;"></i>
                                                             </div>
                                                         </div>
                                                     </a>
                                                 @else
-                                                    <span class="text-muted small">
-                                                        <i class="mdi mdi-image-off"></i>
-                                                        Tidak ada foto
+                                                    <span class="text-muted small fst-italic">
+                                                        <i class="mdi mdi-image-off me-1"></i>No Photo
                                                     </span>
                                                 @endif
                                             </td>
 
                                         @elseif ($member->activeLateStatus)
-                                            {{-- 2. (BARU) Jika user IZIN TELAT hari ini --}}
+                                            {{-- 2. KASUS IZIN / SAKIT / TELAT --}}
                                             <td>
-                                                <div class="d-flex align-items-center">
-                                                    <span class="badge bg-info badge-pill me-2">
-                                                        <i class="mdi mdi-alert-circle-outline me-1"></i>Izin Telat
+                                                <div class="mb-2">
+                                                    <span class="badge bg-info badge-pill">
+                                                        <i class="mdi mdi-file-document-outline me-1"></i>Izin / Sakit
                                                     </span>
                                                 </div>
+                                                <small class="text-muted">
+                                                    Diajukan: {{ $member->activeLateStatus->created_at->format('H:i') }}
+                                                </small>
                                             </td>
                                             <td>
-                                                <div class="message-container">
-                                                    <p class="mb-0 text-break small" style="max-width: 200px;">
-                                                        <i class="mdi mdi-chat-alert-outline me-1 text-info"></i>
-                                                        "{{ $member->activeLateStatus->message }}"
+                                                <div class="message-container p-2 bg-light rounded border border-light">
+                                                    <p class="mb-0 text-break small text-dark">
+                                                        <i class="mdi mdi-format-quote-open text-info me-1"></i>
+                                                        {{ Str::limit($member->activeLateStatus->message, 50) }}
                                                     </p>
-                                                    <small class="text-muted">
-                                                        {{ $member->activeLateStatus->created_at->format('H:i') }}
-                                                    </small>
                                                 </div>
                                             </td>
 
                                         @else
-                                            {{-- 3. Jika user BELUM absen hari ini --}}
+                                            {{-- 3. KASUS BELUM ABSEN --}}
                                             <td>
                                                 <span class="badge bg-danger badge-pill">
-                                                    <i class="mdi mdi-close-circle-outline me-1"></i>Belum Absen
+                                                    <i class="mdi mdi-close-circle-outline me-1"></i>Belum Hadir
                                                 </span>
                                             </td>
                                             <td>
                                                 <span class="text-muted small">
-                                                    <i class="mdi mdi-clock-alert"></i>
-                                                    Menunggu absensi
+                                                    <i class="mdi mdi-clock-alert me-1"></i>Menunggu
                                                 </span>
                                             </td>
                                         @endif
-                                        {{-- ======================================= --}}
-                                        {{-- AKHIR BLOK LOGIKA BARU --}}
-                                        {{-- ======================================= --}}
                                     </tr>
                                 @empty
                                     <tr>
                                         <td colspan="4" class="text-center py-5">
                                             <div class="mb-3">
-                                                <i class="mdi mdi-account-multiple-outline display-4 text-muted"></i>
+                                                <i class="mdi mdi-account-group-outline display-4 text-muted opacity-25"></i>
                                             </div>
                                             <h5 class="text-muted">Tidak ada rekan satu divisi</h5>
-                                            <p class="text-muted">Anda saat ini tidak memiliki anggota tim di divisi yang sama.</p>
+                                            <p class="text-muted small">Anda saat ini sendirian di divisi ini.</p>
                                         </td>
                                     </tr>
                                 @endforelse
@@ -160,12 +172,12 @@
     <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Foto Absensi</h5>
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Bukti Foto Absensi</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body text-center">
-                    <img id="modalImage" src="" alt="Foto Absensi" class="img-fluid rounded">
+                <div class="modal-body text-center p-4 bg-light">
+                    <img id="modalImage" src="" alt="Foto Absensi" class="img-fluid rounded shadow">
                 </div>
             </div>
         </div>
@@ -183,53 +195,49 @@
         }
 
         .avatar-title {
-            font-weight: 600;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
             font-size: 16px;
         }
 
         .badge-pill {
-            border-radius: 20px;
-            padding: 8px 12px;
-            font-weight: 500;
+            border-radius: 50rem;
+            padding: 0.5em 1em;
+            font-weight: 600;
         }
 
         .table > :not(caption) > * > * {
-            padding: 1rem 0.75rem;
+            padding: 1.2rem 1rem;
             vertical-align: middle;
         }
 
         .table-hover tbody tr:hover {
-            background-color: rgba(0, 0, 0, 0.02);
-            transition: background-color 0.2s ease;
+            background-color: rgba(0, 0, 0, 0.015);
         }
 
-        .message-container {
-            max-height: 60px;
-            overflow: hidden;
-            position: relative;
+        .image-popup {
+            display: inline-block;
+            transition: transform 0.2s;
         }
-
-        .message-container:hover {
-            max-height: none;
-            background: linear-gradient(transparent, #f8f9fa 10px);
-        }
-
-        .image-popup:hover img {
+        
+        .image-popup:hover {
             transform: scale(1.05);
-            transition: transform 0.2s ease;
         }
 
         .card {
-            border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(0, 0, 0, 0.08);
+            border: none;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+            border-radius: 1rem;
         }
     </style>
 @endpush
 
 @push('scripts')
     <script>
-        // Image popup functionality
         document.addEventListener('DOMContentLoaded', function() {
             const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
             const modalImage = document.getElementById('modalImage');
