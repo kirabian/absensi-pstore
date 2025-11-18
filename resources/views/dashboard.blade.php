@@ -253,7 +253,7 @@
                             </div>
                         @endif
 
-                        {{-- LOGIKA TAMPILAN BARU: CEK ABSEN MASUK & PULANG --}}
+                        {{-- LOGIKA TAMPILAN BARU --}}
                         @if ($myAttendanceToday)
                             {{-- KONDISI 1: SUDAH MASUK & SUDAH PULANG --}}
                             @if ($myAttendanceToday->check_out_time)
@@ -278,6 +278,17 @@
                                             <h4 class="fw-bold text-primary mb-0">{{ $myAttendanceToday->check_out_time->format('H:i') }}</h4>
                                         </div>
                                     </div>
+                                    
+                                    {{-- Tampilkan Foto Pulang Jika Ada --}}
+                                    @if($myAttendanceToday->photo_out_path)
+                                        <div class="mt-3 text-center border-top pt-3">
+                                            <p class="small text-muted mb-2"><i class="mdi mdi-camera me-1"></i>Bukti Foto Pulang</p>
+                                            <img src="{{ asset('storage/' . $myAttendanceToday->photo_out_path) }}" 
+                                                 class="img-fluid rounded shadow-sm border" 
+                                                 style="height: 100px; object-fit: cover;" 
+                                                 alt="Foto Pulang">
+                                        </div>
+                                    @endif
                                 </div>
 
                             {{-- KONDISI 2: BARU MASUK (BELUM PULANG) --}}
@@ -294,6 +305,17 @@
                                             </p>
                                         </div>
                                     </div>
+                                    
+                                    {{-- Tampilkan Foto Masuk --}}
+                                    @if($myAttendanceToday->photo_path)
+                                        <div class="mt-3 text-center border-top pt-3">
+                                            <p class="small text-muted mb-2"><i class="mdi mdi-camera me-1"></i>Bukti Foto Masuk</p>
+                                            <img src="{{ asset('storage/' . $myAttendanceToday->photo_path) }}" 
+                                                 class="img-fluid rounded shadow-sm border" 
+                                                 style="height: 100px; object-fit: cover;" 
+                                                 alt="Foto Masuk">
+                                        </div>
+                                    @endif
                                 </div>
                                 <div class="alert alert-info border-0 bg-light text-dark">
                                     <i class="mdi mdi-information me-2"></i> Jangan lupa melakukan scan QR <strong>Pulang</strong> sebelum meninggalkan kantor.
@@ -385,7 +407,7 @@
 
 @push('styles')
     <style>
-        /* Card Bank Style - Mirip Kartu ATM/Debit */
+        /* Card Bank Style */
         .card-bank {
             position: relative;
             min-height: 200px;
@@ -408,10 +430,9 @@
             color: white;
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* Untuk space antara header dan content */
+            justify-content: space-between;
         }
 
-        /* Chip Kartu */
         .card-bank-chip {
             width: 40px;
             height: 30px;
@@ -432,7 +453,6 @@
             border-radius: 6px 6px 0 0;
         }
 
-        /* Icon di Card */
         .card-bank-icon {
             position: absolute;
             top: 20px;
@@ -441,45 +461,15 @@
             opacity: 0.2;
         }
 
-        /* Content Card */
-        .card-bank-content {
-            position: relative;
-            z-index: 3;
-        }
+        .card-bank-content { position: relative; z-index: 3; }
+        .card-bank-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; font-weight: 600; }
+        .card-bank-value { font-family: 'Consolas', 'Courier New', monospace; font-size: 36px; font-weight: 700; margin-bottom: 8px; line-height: 1; }
+        .card-bank-desc { font-size: 13px; opacity: 0.85; margin-bottom: 0; }
 
-        .card-bank-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0.9;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-
-        .card-bank-value {
-            font-family: 'Consolas', 'Courier New', monospace; /* Font mirip angka kartu */
-            font-size: 36px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            line-height: 1;
-        }
-
-        .card-bank-desc {
-            font-size: 13px;
-            opacity: 0.85;
-            margin-bottom: 0;
-        }
-
-        /* Pattern Background */
         .card-bank-pattern {
-            position: absolute;
-            bottom: -50px;
-            right: -50px;
-            width: 200px;
-            height: 200px;
+            position: absolute; bottom: -50px; right: -50px; width: 200px; height: 200px;
             background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-            border-radius: 50%;
-            z-index: 1;
+            border-radius: 50%; z-index: 1;
         }
 
         /* Gradient Themes */
@@ -491,270 +481,66 @@
         .gradient-dark { background: linear-gradient(135deg, #2c3e50 0%, #000000 100%); }
         .gradient-indigo { background: linear-gradient(135deg, #5f72bd 0%, #9b23ea 100%); }
 
-        /* ========== STYLE KARTU ID BARU (MIRIP ATM) ========== */
+        /* ID Card Style */
         .card-id {
-            position: relative;
-            border-radius: 16px;
-            overflow: hidden;
-            border: none;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); /* Bayangan lebih gelap */
-            color: white;
-            min-height: 220px; /* Sedikit lebih tinggi */
-            display: flex;
-            flex-direction: column;
-            font-family: 'Roboto', sans-serif; /* Font umum untuk kartu */
+            position: relative; border-radius: 16px; overflow: hidden; border: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); color: white; min-height: 220px;
+            display: flex; flex-direction: column; font-family: 'Roboto', sans-serif;
         }
 
         .card-id .card-body {
-            position: relative;
-            z-index: 2;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between; /* Distribusi elemen dari atas ke bawah */
-            flex-grow: 1;
-            gap: 15px; /* Jarak antar bagian utama */
+            position: relative; z-index: 2; padding: 24px; display: flex; flex-direction: column;
+            justify-content: space-between; flex-grow: 1; gap: 15px;
         }
 
-        .card-id-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
+        .card-id-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .card-id-logo { display: flex; flex-direction: column; align-items: flex-end; font-size: 10px; font-weight: 700; line-height: 1; }
+        .card-id-logo i { font-size: 38px; margin-bottom: 4px; color: #ffed4e; }
+        
+        .card-id-details { flex-grow: 1; }
+        .card-id-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; opacity: 0.7; margin-bottom: 4px; font-weight: 500; }
+        .card-id-name { font-size: 24px; font-weight: 700; margin-bottom: 12px; line-height: 1.2; word-break: break-word; font-family: 'Consolas', 'Courier New', monospace; }
+        .card-id-division { font-size: 16px; font-weight: 500; opacity: 0.9; word-break: break-word; font-family: 'Consolas', 'Courier New', monospace; }
+        
+        .card-id-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; }
+        .card-id-valid, .card-id-card-number { font-size: 12px; font-weight: 500; opacity: 0.8; font-family: 'Consolas', 'Courier New', monospace; letter-spacing: 0.5px; }
 
-        .card-id-logo {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end; /* Logo di kanan atas */
-            font-size: 10px;
-            font-weight: 700;
-            line-height: 1;
-        }
+        /* Other Cards */
+        .card-action { border-radius: 16px; border: none; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); transition: all 0.3s ease; height: 100%; }
+        .card-action:hover { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); transform: translateY(-4px); }
+        .card-status { border-radius: 16px; border: none; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); height: 100%; }
 
-        .card-id-logo i {
-            font-size: 38px; /* Ukuran ikon kartu */
-            margin-bottom: 4px;
-            color: #ffed4e; /* Warna ikon mirip chip */
-        }
-
-        .card-id-details {
-            flex-grow: 1; /* Memberi ruang untuk nama/divisi */
-        }
-
-        .card-id-label {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            opacity: 0.7;
-            margin-bottom: 4px;
-            font-weight: 500;
-        }
-
-        .card-id-name {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            line-height: 1.2;
-            word-break: break-word;
-            font-family: 'Consolas', 'Courier New', monospace; /* Font mirip kartu */
-        }
-
-        .card-id-division {
-            font-size: 16px;
-            font-weight: 500;
-            opacity: 0.9;
-            word-break: break-word;
-            font-family: 'Consolas', 'Courier New', monospace;
-        }
-
-        .card-id-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-top: 20px;
-        }
-
-        .card-id-valid,
-        .card-id-card-number {
-            font-size: 12px;
-            font-weight: 500;
-            opacity: 0.8;
-            font-family: 'Consolas', 'Courier New', monospace;
-            letter-spacing: 0.5px;
-        }
-
-        /* Responsive adjustments for card-id */
-        @media (max-width: 768px) {
-            .card-id {
-                min-height: 200px;
-            }
-
-            .card-id .card-body {
-                padding: 20px;
-                gap: 10px;
-            }
-
-            .card-id-name {
-                font-size: 20px;
-            }
-
-            .card-id-division {
-                font-size: 14px;
-            }
-
-            .card-id-logo i {
-                font-size: 32px;
-            }
-
-            .card-id-valid,
-            .card-id-card-number {
-                font-size: 10px;
-            }
-        }
-        /* ========== END STYLE KARTU ID BARU (MIRIP ATM) ========== */
-
-
-        /* Card Action - Card Biasa dengan Style Modern */
-        .card-action {
-            border-radius: 16px;
-            border: none;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-            transition: all 0.3s ease;
-            height: 100%; /* Menyamakan tinggi */
-        }
-
-        .card-action:hover {
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-            transform: translateY(-4px);
-        }
-
-        /* Card Status - Untuk Status Absensi */
-        .card-status {
-            border-radius: 16px;
-            border: none;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-            height: 100%;
-            /* Pastikan tingginya sama */
-        }
-
-        .status-card {
-            padding: 24px;
-            border-radius: 12px;
-            border: 2px solid;
-            background: #f8fafc;
-        }
-
-        .status-success {
-            border-color: #10b981;
-            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-        }
-
-        .status-warning {
-            border-color: #f59e0b;
-            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-        }
-
-        .status-info {
-            border-color: #3b82f6;
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-        }
+        .status-card { padding: 24px; border-radius: 12px; border: 2px solid; background: #f8fafc; }
+        .status-success { border-color: #10b981; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); }
+        .status-warning { border-color: #f59e0b; background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); }
+        .status-info { border-color: #3b82f6; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); }
 
         .status-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 20px;
-            font-size: 28px;
-            flex-shrink: 0;
+            width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            margin-right: 20px; font-size: 28px; flex-shrink: 0;
         }
+        .status-success .status-icon { background: #10b981; color: white; }
+        .status-warning .status-icon { background: #f59e0b; color: white; }
+        .status-info .status-icon { background: #3b82f6; color: white; }
 
-        .status-success .status-icon {
-            background: #10b981;
-            color: white;
-        }
+        .btn-dark { background: #000; border: 2px solid #000; border-radius: 10px; font-weight: 600; padding: 12px 28px; transition: all 0.3s ease; }
+        .btn-dark:hover { background: #1f2937; border-color: #1f2937; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
+        .btn-outline-dark { border: 2px solid #000; color: #000; border-radius: 10px; font-weight: 600; padding: 12px 28px; transition: all 0.3s ease; }
+        .btn-outline-dark:hover { background: #000; color: white; transform: translateY(-2px); }
+        .btn-light { background: rgba(255, 255, 255, 0.95); border: none; color: #1f2937; font-weight: 600; border-radius: 8px; }
+        .btn-light:hover { background: white; color: #000; }
+        .alert { border-radius: 10px; border: none; padding: 16px 20px; }
+        .badge { border-radius: 8px; font-weight: 600; padding: 6px 12px; }
 
-        .status-warning .status-icon {
-            background: #f59e0b;
-            color: white;
-        }
-
-        .status-info .status-icon {
-            background: #3b82f6;
-            color: white;
-        }
-
-        /* Buttons */
-        .btn-dark {
-            background: #000;
-            border: 2px solid #000;
-            border-radius: 10px;
-            font-weight: 600;
-            padding: 12px 28px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-dark:hover {
-            background: #1f2937;
-            border-color: #1f2937;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn-outline-dark {
-            border: 2px solid #000;
-            color: #000;
-            border-radius: 10px;
-            font-weight: 600;
-            padding: 12px 28px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-outline-dark:hover {
-            background: #000;
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        .btn-light {
-            background: rgba(255, 255, 255, 0.95);
-            border: none;
-            color: #1f2937;
-            font-weight: 600;
-            border-radius: 8px;
-        }
-
-        .btn-light:hover {
-            background: white;
-            color: #000;
-        }
-
-        /* Alert */
-        .alert {
-            border-radius: 10px;
-            border: none;
-            padding: 16px 20px;
-        }
-
-        /* Badge */
-        .badge {
-            border-radius: 8px;
-            font-weight: 600;
-            padding: 6px 12px;
-        }
-
-        /* Responsive */
         @media (max-width: 768px) {
-            .card-bank-value {
-                font-size: 28px;
-            }
-
-            .card-bank {
-                min-height: 180px;
-            }
+            .card-bank-value { font-size: 28px; }
+            .card-bank { min-height: 180px; }
+            .card-id { min-height: 200px; }
+            .card-id .card-body { padding: 20px; gap: 10px; }
+            .card-id-name { font-size: 20px; }
+            .card-id-division { font-size: 14px; }
+            .card-id-logo i { font-size: 32px; }
+            .card-id-valid, .card-id-card-number { font-size: 10px; }
         }
     </style>
 @endpush

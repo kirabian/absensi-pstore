@@ -15,6 +15,7 @@ class Attendance extends Model
         'check_in_time',
         'status',
         'photo_path',
+        'photo_out_path', // Foto Pulang (TAMBAHKAN INI)
         'scanned_by_user_id',
         'verified_by_user_id',
         'latitude',

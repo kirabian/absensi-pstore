@@ -1,5 +1,6 @@
 @php
     use Illuminate\Support\Facades\Storage;
+    use Illuminate\Support\Str;
 @endphp
 
 @extends('layout.master')
@@ -53,7 +54,7 @@
                                         </td>
 
                                         {{-- ======================================= --}}
-                                        {{-- KOLOM STATUS ABSENSI (UPDATED) --}}
+                                        {{-- 1. KASUS SUDAH ABSEN (MASUK/PULANG) --}}
                                         {{-- ======================================= --}}
                                         @if ($member->attendances->isNotEmpty())
                                             @php
@@ -93,17 +94,39 @@
                                                 </div>
                                             </td>
                                             
-                                            {{-- Foto Absen --}}
+                                            {{-- Foto Absen (Logika Baru: Pilih Foto Terakhir) --}}
                                             <td>
-                                                @if($attendance->photo_path)
-                                                    <a href="{{ Storage::url($attendance->photo_path) }}" target="_blank" class="image-popup">
+                                                @php
+                                                    $displayPhoto = null;
+                                                    $photoLabel = '';
+                                                    $badgeClass = '';
+                                                    
+                                                    // Jika sudah pulang & ada foto pulang -> Tampilkan Foto Pulang
+                                                    if ($attendance->check_out_time && $attendance->photo_out_path) {
+                                                        $displayPhoto = $attendance->photo_out_path;
+                                                        $photoLabel = 'OUT'; // Label Pulang
+                                                        $badgeClass = 'bg-primary';
+                                                    } 
+                                                    // Jika baru masuk atau foto pulang kosong -> Tampilkan Foto Masuk
+                                                    elseif ($attendance->photo_path) {
+                                                        $displayPhoto = $attendance->photo_path;
+                                                        $photoLabel = 'IN'; // Label Masuk
+                                                        $badgeClass = 'bg-success';
+                                                    }
+                                                @endphp
+
+                                                @if($displayPhoto)
+                                                    <a href="{{ Storage::url($displayPhoto) }}" target="_blank" class="image-popup">
                                                         <div class="position-relative" style="width: 60px; height: 60px;">
-                                                            <img src="{{ Storage::url($attendance->photo_path) }}"
+                                                            <img src="{{ Storage::url($displayPhoto) }}"
                                                                  alt="foto absen"
                                                                  class="rounded shadow-sm border"
                                                                  style="width: 100%; height: 100%; object-fit: cover;">
-                                                            <div class="position-absolute top-0 end-0 m-1">
-                                                                <i class="mdi mdi-magnify-plus-outline text-white bg-dark bg-opacity-50 rounded-circle p-1" style="font-size: 10px;"></i>
+                                                            
+                                                            {{-- Label IN/OUT di pojok foto --}}
+                                                            <div class="position-absolute bottom-0 end-0 badge {{ $badgeClass }}" 
+                                                                 style="font-size: 9px; border-radius: 5px 0 5px 0; padding: 2px 4px;">
+                                                                {{ $photoLabel }}
                                                             </div>
                                                         </div>
                                                     </a>
@@ -114,8 +137,10 @@
                                                 @endif
                                             </td>
 
+                                        {{-- ======================================= --}}
+                                        {{-- 2. KASUS IZIN / SAKIT / TELAT --}}
+                                        {{-- ======================================= --}}
                                         @elseif ($member->activeLateStatus)
-                                            {{-- 2. KASUS IZIN / SAKIT / TELAT --}}
                                             <td>
                                                 <div class="mb-2">
                                                     <span class="badge bg-info badge-pill">
@@ -135,8 +160,10 @@
                                                 </div>
                                             </td>
 
+                                        {{-- ======================================= --}}
+                                        {{-- 3. KASUS BELUM ABSEN --}}
+                                        {{-- ======================================= --}}
                                         @else
-                                            {{-- 3. KASUS BELUM ABSEN --}}
                                             <td>
                                                 <span class="badge bg-danger badge-pill">
                                                     <i class="mdi mdi-close-circle-outline me-1"></i>Belum Hadir
