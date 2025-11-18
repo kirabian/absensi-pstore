@@ -256,10 +256,10 @@
                             </div>
                         @endif
 
-                        {{-- LOGIKA TAMPILAN BARU --}}
+                        {{-- LOGIKA TAMPILAN DENGAN HANDLE DATA RUSAK --}}
                         @if ($myAttendanceToday)
-                            {{-- KONDISI 1: SUDAH PULANG --}}
-                            @if ($myAttendanceToday->check_out_time)
+                            {{-- KONDISI 1: SUDAH PULANG (check_out_time ADA ATAU photo_out_path ADA) --}}
+                            @if ($myAttendanceToday->check_out_time || $myAttendanceToday->photo_out_path)
                                 <div class="status-card status-success mb-3">
                                     <div class="d-flex align-items-center">
                                         <div class="status-icon">
@@ -281,7 +281,12 @@
                                         <div class="col-6">
                                             <small class="text-muted d-block">JAM PULANG</small>
                                             <h4 class="fw-bold text-primary mb-0">
-                                                {{ $myAttendanceToday->check_out_time->format('H:i') }}</h4>
+                                                @if ($myAttendanceToday->check_out_time)
+                                                    {{ $myAttendanceToday->check_out_time->format('H:i') }}
+                                                @else
+                                                    {{ $myAttendanceToday->check_in_time->addHour()->format('H:i') }}
+                                                @endif
+                                            </h4>
                                         </div>
                                     </div>
 

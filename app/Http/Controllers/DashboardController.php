@@ -58,29 +58,37 @@ class DashboardController extends Controller
                 ->count();
 
             $data['totalUsers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])->count();
+            // HANYA UNTUK USER BIASA & LEADER
         } elseif ($user->role == 'user_biasa' || $user->role == 'leader') {
-            // --- Data untuk USER BIASA & LEADER ---
 
-            // PERBAIKAN: CARI ABSENSI HARI INI YANG SUDAH PULANG DULU
-            // Priority: 1. Yang sudah pulang, 2. Yang masih masuk, 3. Tidak ada
-            
-            // Cari yang SUDAH PULANG (ada check_out_time)
-            $attendanceWithCheckout = Attendance::where('user_id', $user->id)
+            // AMBIL SEMUA absensi hari ini
+            $todayAttendances = Attendance::where('user_id', $user->id)
                 ->whereDate('check_in_time', today())
-                ->whereNotNull('check_out_time') // ← INI YANG PENTING!
                 ->orderBy('check_in_time', 'desc')
-                ->first();
+                ->get();
+
+            // LOGIC PRIORITY:
+            // 1. Cari yang SUDAH PULANG (check_out_time NOT NULL)
+            $attendanceWithCheckout = $todayAttendances->first(function ($attendance) {
+                return !is_null($attendance->check_out_time);
+            });
 
             if ($attendanceWithCheckout) {
                 // JIKA ADA YANG SUDAH PULANG
                 $data['myAttendanceToday'] = $attendanceWithCheckout;
             } else {
-                // JIKA BELUM PULANG, CARI YANG MASIH MASUK
-                $data['myAttendanceToday'] = Attendance::where('user_id', $user->id)
-                    ->whereDate('check_in_time', today())
-                    ->whereNull('check_out_time') // Yang belum pulang
-                    ->orderBy('check_in_time', 'desc')
-                    ->first();
+                // 2. Cari yang punya photo_out_path (data rusak tapi sudah pulang)
+                $attendanceWithPhotoOut = $todayAttendances->first(function ($attendance) {
+                    return !is_null($attendance->photo_out_path);
+                });
+
+                if ($attendanceWithPhotoOut) {
+                    // JIKA ADA YANG SUDAH PULANG (tapi check_out_time NULL)
+                    $data['myAttendanceToday'] = $attendanceWithPhotoOut;
+                } else {
+                    // 3. Ambil yang terakhir (masih masuk)
+                    $data['myAttendanceToday'] = $todayAttendances->first();
+                }
             }
 
             $data['myPendingCount'] = Attendance::where('user_id', $user->id)
@@ -96,7 +104,7 @@ class DashboardController extends Controller
                 ->whereDate('created_at', today())
                 ->first();
         }
-        
+
         return view('dashboard', $data);
     }
 }
