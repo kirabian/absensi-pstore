@@ -355,7 +355,7 @@
                             </div>
                         @endif
                         {{-- DEBUG: Tampilkan data attendance --}}
-                        <div
+                        {{-- <div
                             style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 20px; font-size: 12px;">
                             <strong>DEBUG Attendance Data:</strong><br>
                             @if ($myAttendanceToday)
@@ -368,7 +368,7 @@
                             @else
                                 NO ATTENDANCE DATA
                             @endif
-                        </div>
+                        </div> --}}
                     </div>
                 </div>
             </div>
