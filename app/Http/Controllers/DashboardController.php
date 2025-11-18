@@ -61,23 +61,26 @@ class DashboardController extends Controller
         } elseif ($user->role == 'user_biasa' || $user->role == 'leader') {
             // --- Data untuk USER BIASA & LEADER ---
 
-            // PERBAIKAN: Ambil SEMUA absensi hari ini untuk user
-            $todayAttendances = Attendance::where('user_id', $user->id)
+            // PERBAIKAN: CARI ABSENSI HARI INI YANG SUDAH PULANG DULU
+            // Priority: 1. Yang sudah pulang, 2. Yang masih masuk, 3. Tidak ada
+            
+            // Cari yang SUDAH PULANG (ada check_out_time)
+            $attendanceWithCheckout = Attendance::where('user_id', $user->id)
                 ->whereDate('check_in_time', today())
+                ->whereNotNull('check_out_time') // ← INI YANG PENTING!
                 ->orderBy('check_in_time', 'desc')
-                ->get();
+                ->first();
 
-            // Cari yang sudah PULANG (ada check_out_time)
-            $attendanceWithCheckout = $todayAttendances->first(function ($attendance) {
-                return !is_null($attendance->check_out_time);
-            });
-
-            // Jika ada yang sudah pulang, gunakan itu
             if ($attendanceWithCheckout) {
+                // JIKA ADA YANG SUDAH PULANG
                 $data['myAttendanceToday'] = $attendanceWithCheckout;
             } else {
-                // Jika belum pulang, ambil yang terakhir (masih masuk)
-                $data['myAttendanceToday'] = $todayAttendances->first();
+                // JIKA BELUM PULANG, CARI YANG MASIH MASUK
+                $data['myAttendanceToday'] = Attendance::where('user_id', $user->id)
+                    ->whereDate('check_in_time', today())
+                    ->whereNull('check_out_time') // Yang belum pulang
+                    ->orderBy('check_in_time', 'desc')
+                    ->first();
             }
 
             $data['myPendingCount'] = Attendance::where('user_id', $user->id)

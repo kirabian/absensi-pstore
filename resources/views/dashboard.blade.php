@@ -349,6 +349,21 @@
                                 </div>
                             </div>
                         @endif
+                        {{-- DEBUG: Tampilkan data attendance --}}
+                        <div
+                            style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 20px; font-size: 12px;">
+                            <strong>DEBUG Attendance Data:</strong><br>
+                            @if ($myAttendanceToday)
+                                ID: {{ $myAttendanceToday->id }}<br>
+                                Check In: {{ $myAttendanceToday->check_in_time }}<br>
+                                Check Out: {{ $myAttendanceToday->check_out_time ?? 'NULL' }}<br>
+                                Photo Path: {{ $myAttendanceToday->photo_path }}<br>
+                                Photo Out Path: {{ $myAttendanceToday->photo_out_path ?? 'NULL' }}<br>
+                                Status: {{ $myAttendanceToday->check_out_time ? 'SUDAH PULANG' : 'MASIH BEKERJA' }}
+                            @else
+                                NO ATTENDANCE DATA
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
