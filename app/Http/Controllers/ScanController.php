@@ -48,91 +48,92 @@ class ScanController extends Controller
     }
 
     // FUNGSI 2: Simpan Absensi dengan Foto Real-time & Tipe Absen (FIXED)
-    public function storeAttendance(Request $request)
-    {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'type' => 'required|in:masuk,pulang,malam',
-            'image' => 'required|string',
-        ]);
+    // FUNGSI 2: Simpan Absensi dengan Foto Real-time & Tipe Absen (FIXED)
+public function storeAttendance(Request $request)
+{
+    $request->validate([
+        'user_id' => 'required|exists:users,id',
+        'type' => 'required|in:masuk,pulang,malam',
+        'image' => 'required|string',
+    ]);
 
-        $user = User::find($request->user_id);
-        $securityUser = Auth::user();
+    $user = User::find($request->user_id);
+    $securityUser = Auth::user();
+    
+    // 1. Proses Upload Foto Base64
+    $image = $request->image;
+    $image = str_replace('data:image/png;base64,', '', $image);
+    $image = str_replace(' ', '+', $image);
+    
+    // Nama file unik (bedakan masuk/pulang/malam)
+    $typeLabel = $request->type; 
+    $imageName = 'attendance/capture_' . $typeLabel . '_' . time() . '_' . $user->id . '.png';
+    
+    Storage::disk('public')->put($imageName, base64_decode($image));
+
+    // 2. Logika Absen
+    if ($request->type == 'masuk') {
+        // Cek double login - PERBAIKAN: gunakan whereDate yang benar
+        $exists = Attendance::where('user_id', $user->id)
+                            ->whereDate('check_in_time', today())
+                            ->whereNull('check_out_time') // Hanya yang belum pulang
+                            ->exists();
         
-        // 1. Proses Upload Foto Base64
-        $image = $request->image;
-        $image = str_replace('data:image/png;base64,', '', $image);
-        $image = str_replace(' ', '+', $image);
-        
-        // Nama file unik (bedakan masuk/pulang/malam)
-        $typeLabel = $request->type; 
-        $imageName = 'attendance/capture_' . $typeLabel . '_' . time() . '_' . $user->id . '.png';
-        
-        Storage::disk('public')->put($imageName, base64_decode($image));
-
-        // 2. Logika Absen
-        if ($request->type == 'masuk') {
-            // Cek double login
-            $exists = Attendance::where('user_id', $user->id)->whereDate('check_in_time', today())->exists();
-            if ($exists) {
-                return response()->json(['status' => 'error', 'message' => 'Karyawan ini sudah absen masuk hari ini!'], 409);
-            }
-
-            Attendance::create([
-                'user_id' => $user->id,
-                'branch_id' => $user->branch_id,
-                'check_in_time' => now(),
-                'status' => 'present',
-                'photo_path' => $imageName, // Simpan foto MASUK
-                'scanned_by_user_id' => $securityUser->id,
-            ]);
-
-            $msg = "Absen MASUK Berhasil";
-        
-        } elseif ($request->type == 'pulang') {
-            // Cari data absen hari ini
-            $attendance = Attendance::where('user_id', $user->id)
-                                    ->whereDate('check_in_time', today())
-                                    ->first();
-            
-            if (!$attendance) {
-                return response()->json(['status' => 'error', 'message' => 'Karyawan ini belum absen masuk hari ini!'], 404);
-            }
-
-            // CEK DOUBLE SCAN PULANG
-            if ($attendance->check_out_time) {
-                 return response()->json(['status' => 'error', 'message' => 'Karyawan ini sudah melakukan absen pulang!'], 409);
-            }
-
-            // Update Data Pulang (FIXED)
-            $attendance->update([
-                'check_out_time' => now(),
-                'photo_out_path' => $imageName, // Simpan foto PULANG
-            ]);
-
-            $msg = "Absen PULANG Berhasil";
-
-        } elseif ($request->type == 'malam') {
-            // Logika lembur
-            Attendance::create([
-                'user_id' => $user->id,
-                'branch_id' => $user->branch_id,
-                'check_in_time' => now(),
-                'status' => 'overtime',
-                'photo_path' => $imageName,
-                'scanned_by_user_id' => $securityUser->id,
-            ]);
-
-            $msg = "Absen LEMBUR Berhasil";
+        if ($exists) {
+            return response()->json(['status' => 'error', 'message' => 'Karyawan ini sudah absen masuk hari ini!'], 409);
         }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => $msg,
-            'data' => [
-                'name' => $user->name,
-                'photo' => asset('storage/' . $imageName)
-            ]
+        $attendance = Attendance::create([
+            'user_id' => $user->id,
+            'branch_id' => $user->branch_id,
+            'check_in_time' => now(),
+            'status' => 'present',
+            'photo_path' => $imageName, // Simpan foto MASUK
+            'scanned_by_user_id' => $securityUser->id,
         ]);
+
+        $msg = "Absen MASUK Berhasil";
+    
+    } elseif ($request->type == 'pulang') {
+        // PERBAIKAN: Cari data absen MASUK hari ini yang BELUM pulang
+        $attendance = Attendance::where('user_id', $user->id)
+                                ->whereDate('check_in_time', today())
+                                ->whereNull('check_out_time') // Yang belum check_out
+                                ->first();
+        
+        if (!$attendance) {
+            return response()->json(['status' => 'error', 'message' => 'Karyawan ini belum absen masuk hari ini atau sudah pulang!'], 404);
+        }
+
+        // Update Data Pulang (FIXED)
+        $attendance->update([
+            'check_out_time' => now(),
+            'photo_out_path' => $imageName, // Simpan foto PULANG
+        ]);
+
+        $msg = "Absen PULANG Berhasil";
+
+    } elseif ($request->type == 'malam') {
+        // Logika lembur
+        $attendance = Attendance::create([
+            'user_id' => $user->id,
+            'branch_id' => $user->branch_id,
+            'check_in_time' => now(),
+            'status' => 'overtime',
+            'photo_path' => $imageName,
+            'scanned_by_user_id' => $securityUser->id,
+        ]);
+
+        $msg = "Absen LEMBUR Berhasil";
     }
+
+    return response()->json([
+        'status' => 'success',
+        'message' => $msg,
+        'data' => [
+            'name' => $user->name,
+            'photo' => asset('storage/' . $imageName)
+        ]
+    ]);
+}
 }

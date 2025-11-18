@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Division;
 use App\Models\Attendance;
-use App\Models\LateNotification; // Pastikan ini di-import
+use App\Models\LateNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -26,7 +26,7 @@ class DashboardController extends Controller
         $attendanceQuery = Attendance::query();
         $userQuery = User::query();
         $divisionQuery = Division::query();
-        $lateQuery = LateNotification::query(); // Perbaikan nama variabel query
+        $lateQuery = LateNotification::query();
 
         if ($user->role != 'admin' || $branch_id != null) {
             // Filter per cabang untuk User/Leader/Security/Admin Cabang
@@ -53,7 +53,6 @@ class DashboardController extends Controller
             $data['attendancesToday'] = $attendanceQuery->whereDate('check_in_time', today())->count();
         } elseif ($user->role == 'security') {
             // --- SECURITY ---
-            // Hitung berapa kali security ini melakukan scan hari ini
             $data['myScansToday'] = Attendance::where('scanned_by_user_id', $user->id)
                 ->whereDate('check_in_time', today())
                 ->count();
@@ -62,11 +61,24 @@ class DashboardController extends Controller
         } elseif ($user->role == 'user_biasa' || $user->role == 'leader') {
             // --- Data untuk USER BIASA & LEADER ---
 
-            // [UPDATE PENTING] Gunakan latest()
-            $data['myAttendanceToday'] = Attendance::where('user_id', $user->id)
+            // PERBAIKAN: Ambil SEMUA absensi hari ini untuk user
+            $todayAttendances = Attendance::where('user_id', $user->id)
                 ->whereDate('check_in_time', today())
-                ->latest() // Mengambil yang paling update
-                ->first();
+                ->orderBy('check_in_time', 'desc')
+                ->get();
+
+            // Cari yang sudah PULANG (ada check_out_time)
+            $attendanceWithCheckout = $todayAttendances->first(function ($attendance) {
+                return !is_null($attendance->check_out_time);
+            });
+
+            // Jika ada yang sudah pulang, gunakan itu
+            if ($attendanceWithCheckout) {
+                $data['myAttendanceToday'] = $attendanceWithCheckout;
+            } else {
+                // Jika belum pulang, ambil yang terakhir (masih masuk)
+                $data['myAttendanceToday'] = $todayAttendances->first();
+            }
 
             $data['myPendingCount'] = Attendance::where('user_id', $user->id)
                 ->where('status', 'pending_verification')
@@ -81,6 +93,7 @@ class DashboardController extends Controller
                 ->whereDate('created_at', today())
                 ->first();
         }
+        
         return view('dashboard', $data);
     }
 }
