@@ -8,7 +8,6 @@
     Selamat Datang, {{ Auth::user()->name }}!
 @endsection
 
-
 @section('content')
 
     {{-- ======================================================================= --}}
@@ -71,7 +70,7 @@
                         <div class="card-bank-icon">
                             <i class="mdi mdi-alert-circle-outline"></i>
                         </div>
-                        <div class_l_s="card-bank-content">
+                        <div class="card-bank-content">
                             <p class="card-bank-label">Perlu Verifikasi</p>
                             <h2 class="card-bank-value">{{ $pendingVerifications }}</h2>
                             <p class="card-bank-desc">Menunggu persetujuan</p>
@@ -168,11 +167,11 @@
             <div class="col-md-6 grid-margin stretch-card">
                 <div class="card card-action">
                     <div class="card-body text-center py-5">
-                        <div class_l_s="mb-4">
+                        <div class="mb-4">
                             <i class="mdi mdi-qrcode-scan display-1 text-dark"></i>
                         </div>
                         <h4 class="card-title mb-3">Pindai QR User</h4>
-                        <p class="text-muted mb-4">Arahkan kamera ke QR Code user untuk melakukan absensi.</p>
+                        <p class="text-muted mb-4">Arahkan kamera ke QR Code user untuk melakukan absensi (Masuk/Pulang).</p>
                         <a href="{{ route('security.scan') }}" class="btn btn-dark btn-lg">
                             <i class="mdi mdi-camera-enhance me-2"></i>Mulai Memindai
                         </a>
@@ -225,7 +224,7 @@
                         </div>
                         <div class="card-id-footer">
                             <p class="card-id-valid">VALID THRU 12/28</p>
-                            <p class="card-id-card-number">**** **** **** 1234</p>
+                            <p class="card-id-card-number">**** **** **** {{ substr(Auth::user()->phone ?? '1234', -4) }}</p>
                         </div>
                     </div>
                 </div>
@@ -254,62 +253,68 @@
                             </div>
                         @endif
 
+                        {{-- LOGIKA TAMPILAN BARU: CEK ABSEN MASUK & PULANG --}}
                         @if ($myAttendanceToday)
-                            <div class="status-card status-success">
-                                <div class="d-flex align-items-center">
-                                    <div class="status-icon">
-                                        <i class="mdi mdi-check-circle"></i>
+                            {{-- KONDISI 1: SUDAH MASUK & SUDAH PULANG --}}
+                            @if ($myAttendanceToday->check_out_time)
+                                <div class="status-card status-success mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="status-icon">
+                                            <i class="mdi mdi-home-variant"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h5 class="mb-1 fw-bold">Anda Sudah Pulang</h5>
+                                            <p class="text-muted mb-0 small">Terima kasih atas kerja keras Anda hari ini!</p>
+                                        </div>
                                     </div>
-                                    <div class="flex-grow-1">
-                                        <h5 class="mb-2">Anda Sudah Absen</h5>
-                                        <p class="mb-1">
-                                            <i class="mdi mdi-clock-outline me-1"></i>
-                                            {{ $myAttendanceToday->check_in_time->format('d M Y, H:i') }}
-                                        </p>
-                                        <p class="mb-0">
-                                            @if ($myAttendanceToday->status == 'verified')
-                                                <span class="badge bg-success">
-                                                    <i class="mdi mdi-check-decagram me-1"></i>Terverifikasi
-                                                </span>
-                                            @else
-                                                <span class="badge bg-warning text-dark">
-                                                    <i class="mdi mdi-timer-sand me-1"></i>Menunggu Verifikasi
-                                                </span>
-                                            @endif
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        @elseif ($activeLateStatus)
-                            <div class="status-card status-warning">
-                                <div class="d-flex align-items-center">
-                                    <div class="status-icon">
-                                        <i class="mdi mdi-clock-alert"></i>
-                                    </div>
-                                    <div class_l_s="flex-grow-1">
-                                        <h5 class="mb-2">Laporan Telat Aktif</h5>
-                                        <p class="mb-2 fst-italic">"{{ $activeLateStatus->message }}"</p>
-                                        <small class="text-muted">
-                                            <i class="mdi mdi-calendar me-1"></i>
-                                            {{ $activeLateStatus->created_at->format('d M Y, H:i') }}
-                                        </small>
+                                    <hr>
+                                    <div class="row text-center">
+                                        <div class="col-6 border-end">
+                                            <small class="text-muted d-block">JAM MASUK</small>
+                                            <h4 class="fw-bold text-success mb-0">{{ $myAttendanceToday->check_in_time->format('H:i') }}</h4>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">JAM PULANG</small>
+                                            <h4 class="fw-bold text-primary mb-0">{{ $myAttendanceToday->check_out_time->format('H:i') }}</h4>
+                                        </div>
                                     </div>
                                 </div>
-                                <form action="{{ route('late.status.delete') }}" method="POST" class="mt-3">
-                                    @csrf
-                                    <button type="submit" class="btn btn-dark btn-sm">
-                                        <i class="mdi mdi-delete me-1"></i>Hapus Laporan & Absen Sekarang
-                                    </button>
-                                </form>
-                            </div>
+
+                            {{-- KONDISI 2: BARU MASUK (BELUM PULANG) --}}
+                            @else
+                                <div class="status-card status-success mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="status-icon">
+                                            <i class="mdi mdi-check-circle"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h5 class="mb-1 fw-bold">Sedang Bekerja</h5>
+                                            <p class="mb-0">
+                                                Masuk Pukul: <strong>{{ $myAttendanceToday->check_in_time->format('H:i') }}</strong>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="alert alert-info border-0 bg-light text-dark">
+                                    <i class="mdi mdi-information me-2"></i> Jangan lupa melakukan scan QR <strong>Pulang</strong> sebelum meninggalkan kantor.
+                                </div>
+                            @endif
+
+                        {{-- KONDISI 3: BELUM ABSEN SAMA SEKALI --}}
                         @else
                             <div class="status-card status-info">
                                 <div class="text-center py-4">
-                                    <i class="mdi mdi-information-outline display-4 mb-3"></i>
-                                    <h5 class="mb-3">Anda Belum Absen Hari Ini</h5>
-                                    <a href="{{ route('self.attend.create') }}" class="btn btn-dark btn-lg">
-                                        <i class="mdi mdi-calendar-check me-2"></i>Lakukan Absen Mandiri
-                                    </a>
+                                    <i class="mdi mdi-clock-alert display-4 mb-3 text-primary"></i>
+                                    <h5 class="mb-2 fw-bold">Anda Belum Absen Hari Ini</h5>
+                                    <p class="text-muted mb-4">Silakan scan QR di pos security atau gunakan absen mandiri jika WFH/Dinas.</p>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <a href="{{ route('self.attend.create') }}" class="btn btn-dark">
+                                            <i class="mdi mdi-fingerprint me-2"></i>Absen Mandiri
+                                        </a>
+                                        <a href="{{ route('leave.create') }}" class="btn btn-outline-dark">
+                                            <i class="mdi mdi-file-document-edit-outline me-2"></i>Izin/Sakit
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         @endif
@@ -318,7 +323,7 @@
             </div>
         </div>
 
-        {{-- KARTU STATISTIK (DIPINDAH KE BARIS BARU) --}}
+        {{-- KARTU STATISTIK --}}
         <div class="row">
             <div class="col-md-6 grid-margin stretch-card">
                 <div class="card card-bank gradient-indigo">
@@ -330,9 +335,9 @@
                         <div class="card-bank-content">
                             <p class="card-bank-label">Perlu Verifikasi</p>
                             <h2 class="card-bank-value">{{ $myPendingCount }}</h2>
-                            <p class="card-bank-desc">Menunggu persetujuan audit</p>
+                            <p class="card-bank-desc">Absensi menunggu persetujuan audit</p>
                             <div class="mt-4 pt-3 border-top border-light">
-                                <p class="card-bank-label mb-2">Teman Satu Divisi</p>
+                                <p class="card-bank-label mb-2">Rekan Satu Divisi</p>
                                 <h3 class="card-bank-value mb-0">{{ $myTeamCount }}</h3>
                             </div>
                         </div>
@@ -341,29 +346,39 @@
                 </div>
             </div>
 
-            {{-- ======================================================================= --}}
-            {{-- KARTU AKSI BARU UNTUK PENGAJUAN IZIN --}}
-            {{-- ======================================================================= --}}
+            {{-- KARTU AKSI CEPAT --}}
             <div class="col-md-6 grid-margin stretch-card">
                 <div class="card card-action">
-                    <div class="card-body text-center py-5">
-                        <i class="mdi mdi-calendar-plus display-3 text-dark mb-4"></i>
-                        <h4 class="card-title mb-3">Manajemen Absensi</h4>
-                        <p class="text-muted mb-4">Ajukan izin, sakit, cuti, atau libur mingguan melalui form terpusat.</p>
-                        <a href="{{ route('leave.create') }}" class="btn btn-dark btn-lg">
-                            <i class="mdi mdi-file-document-box-plus-outline me-2"></i>Buat Pengajuan Baru
-                        </a>
+                    <div class="card-body py-4">
+                        <h5 class="card-title mb-4"><i class="mdi mdi-lightning-bolt me-2"></i>Aksi Cepat</h5>
+                        <div class="d-grid gap-3">
+                            <a href="{{ route('leave.create') }}" class="btn btn-light text-start p-3 border">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-danger text-white rounded p-2 me-3">
+                                        <i class="mdi mdi-hospital-box"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">Ajukan Sakit / Izin</h6>
+                                        <small class="text-muted">Formulir ketidakhadiran</small>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="{{ route('profile.edit') }}" class="btn btn-light text-start p-3 border">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary text-white rounded p-2 me-3">
+                                        <i class="mdi mdi-account-cog"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">Update Profil</h6>
+                                        <small class="text-muted">Ubah foto & data diri</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        {{-- ======================================================================= --}}
-        {{-- FORM "LAPOR KENDALA" YANG LAMA DIHAPUS --}}
-        {{-- ======================================================================= --}}
-        {{-- @if (!$myAttendanceToday && !$activeLateStatus)
-            ... (Bagian ini dihapus) ...
-        @endif --}}
     @endif
 
 @endsection
@@ -468,33 +483,13 @@
         }
 
         /* Gradient Themes */
-        .gradient-purple {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .gradient-blue {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
-
-        .gradient-green {
-            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-        }
-
-        .gradient-orange {
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-        }
-
-        .gradient-red {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .gradient-dark {
-            background: linear-gradient(135deg, #2c3e50 0%, #000000 100%);
-        }
-
-        .gradient-indigo {
-            background: linear-gradient(135deg, #5f72bd 0%, #9b23ea 100%);
-        }
+        .gradient-purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .gradient-blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .gradient-green { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .gradient-orange { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .gradient-red { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .gradient-dark { background: linear-gradient(135deg, #2c3e50 0%, #000000 100%); }
+        .gradient-indigo { background: linear-gradient(135deg, #5f72bd 0%, #9b23ea 100%); }
 
         /* ========== STYLE KARTU ID BARU (MIRIP ATM) ========== */
         .card-id {
@@ -692,13 +687,6 @@
             color: white;
         }
 
-        /* Card Report */
-        .card-report {
-            border-radius: 16px;
-            border: none;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-        }
-
         /* Buttons */
         .btn-dark {
             background: #000;
@@ -742,19 +730,6 @@
         .btn-light:hover {
             background: white;
             color: #000;
-        }
-
-        /* Form Control */
-        .form-control-lg {
-            border-radius: 10px;
-            border: 2px solid #e5e7eb;
-            padding: 14px 18px;
-            transition: all 0.3s ease;
-        }
-
-        .form-control-lg:focus {
-            border-color: #000;
-            box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
         }
 
         /* Alert */
