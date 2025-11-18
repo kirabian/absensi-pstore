@@ -6,88 +6,124 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Attendance;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ScanController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(['auth', 'role:security']);
-    }
-
     public function index()
     {
         return view('security.scan');
     }
 
-    public function validateScan(Request $request)
+    // FUNGSI 1: Cek QR Code dan Kembalikan Data User (Tanpa Absen Dulu)
+    public function checkUser(Request $request)
     {
-        // 1. Validasi Input
-        $request->validate([
-            'qr_code' => 'required|string'
-        ]);
+        $request->validate(['qr_code' => 'required|string']);
 
-        $qrValue = $request->qr_code;
-        $securityUser = Auth::user();
+        $user = User::with(['division', 'branch'])
+                    ->where('qr_code_value', $request->qr_code)
+                    ->first();
 
-        // 2. Cari User berdasarkan QR Code
-        $userScanned = User::with(['division', 'branch'])
-                           ->where('qr_code_value', $qrValue)
-                           ->first();
-
-        if (!$userScanned) {
+        if (!$user) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'QR Code tidak ditemukan dalam sistem.'
+                'message' => 'QR Code tidak ditemukan.'
             ], 404);
         }
 
-        // --- [MODIFIKASI] VALIDASI CABANG DIHAPUS AGAR BEBAS SCAN ---
-        // Bagian pengecekan branch_id saya hapus supaya security bisa scan siapa saja.
-        
-        // 3. Cek Duplikasi Absen (Apakah sudah absen hari ini?)
-        $alreadyAttended = Attendance::where('user_id', $userScanned->id)
-                                     ->whereDate('check_in_time', today())
-                                     ->exists();
-
-        if ($alreadyAttended) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Karyawan atas nama ' . $userScanned->name . ' sudah absen hari ini.'
-            ], 409); // 409 Conflict
-        }
-
-        // 4. Simpan Absensi
-        try {
-            $attendance = Attendance::create([
-                'user_id' => $userScanned->id,
-                'branch_id' => $userScanned->branch_id, // Tetap catat cabang asli karyawan
-                'check_in_time' => now(),
-                'status' => 'present',
-                'scanned_by_user_id' => $securityUser->id,
-                'verified_by_user_id' => null,
-                'photo_path' => $userScanned->profile_photo_path,
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Database Error: ' . $e->getMessage()
-            ], 500);
-        }
-
-        // 5. Response Sukses
         return response()->json([
             'status' => 'success',
-            'message' => 'Absensi Berhasil!',
             'data' => [
-                'name' => $userScanned->name,
-                'role' => $userScanned->role,
-                'division' => $userScanned->division->name ?? '-',
-                'branch' => $userScanned->branch->name ?? 'Pusat',
-                'photo' => $userScanned->profile_photo_path 
-                            ? asset('storage/' . $userScanned->profile_photo_path) 
-                            : 'https://ui-avatars.com/api/?name=' . urlencode($userScanned->name) . '&background=random',
-                'scan_time' => now()->format('H:i:s'),
+                'id' => $user->id,
+                'name' => $user->name,
+                'role' => $user->role,
+                'division' => $user->division->name ?? '-',
+                'branch' => $user->branch->name ?? 'Pusat',
+                'photo_url' => $user->profile_photo_path 
+                                ? asset('storage/' . $user->profile_photo_path) 
+                                : 'https://ui-avatars.com/api/?name=' . urlencode($user->name)
+            ]
+        ]);
+    }
+
+    // FUNGSI 2: Simpan Absensi dengan Foto Real-time & Tipe Absen
+    public function storeAttendance(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'type' => 'required|in:masuk,pulang,malam', // Validasi tipe
+            'image' => 'required|string', // Base64 Image
+        ]);
+
+        $user = User::find($request->user_id);
+        $securityUser = Auth::user();
+        
+        // Proses Upload Foto Base64
+        $image = $request->image;  // data:image/png;base64,......
+        $image = str_replace('data:image/png;base64,', '', $image);
+        $image = str_replace(' ', '+', $image);
+        $imageName = 'attendance/capture_' . time() . '_' . $user->id . '.png';
+        Storage::disk('public')->put($imageName, base64_decode($image));
+
+        // Logika Berdasarkan Tipe Absen
+        if ($request->type == 'masuk') {
+            // Cek double login
+            $exists = Attendance::where('user_id', $user->id)->whereDate('check_in_time', today())->exists();
+            if ($exists) {
+                return response()->json(['status' => 'error', 'message' => 'Sudah absen masuk hari ini!'], 409);
+            }
+
+            Attendance::create([
+                'user_id' => $user->id,
+                'branch_id' => $user->branch_id,
+                'check_in_time' => now(),
+                'status' => 'present',
+                'photo_path' => $imageName, // Simpan foto capture security
+                'scanned_by_user_id' => $securityUser->id,
+            ]);
+
+            $msg = "Absen MASUK Berhasil";
+        
+        } elseif ($request->type == 'pulang') {
+            // Cari absen masuk hari ini
+            $attendance = Attendance::where('user_id', $user->id)
+                                    ->whereDate('check_in_time', today())
+                                    ->first();
+            
+            if (!$attendance) {
+                return response()->json(['status' => 'error', 'message' => 'Belum ada absen masuk hari ini!'], 404);
+            }
+
+            // Update check_out_time (Pastikan kolom ini ada di database!)
+            // Jika belum ada kolom check_out_time, logic ini harus disesuaikan
+            $attendance->update([
+                'check_out_time' => now(), // Asumsi ada kolom ini
+                // 'photo_out_path' => $imageName, // Opsional jika mau simpan foto pulang
+            ]);
+
+            $msg = "Absen PULANG Berhasil";
+
+        } elseif ($request->type == 'malam') {
+            // Absen malam / Lembur (Bisa dianggap check-in baru atau status khusus)
+            Attendance::create([
+                'user_id' => $user->id,
+                'branch_id' => $user->branch_id,
+                'check_in_time' => now(),
+                'status' => 'overtime', // Status khusus
+                'photo_path' => $imageName,
+                'scanned_by_user_id' => $securityUser->id,
+            ]);
+
+            $msg = "Absen MALAM/LEMBUR Berhasil";
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => $msg,
+            'data' => [
+                'name' => $user->name,
+                'photo' => asset('storage/' . $imageName) // Tampilkan foto yang baru dicapture
             ]
         ]);
     }

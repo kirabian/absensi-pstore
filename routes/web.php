@@ -12,7 +12,7 @@ use App\Http\Controllers\TeamController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\WorkHistoryController;
-use App\Http\Controllers\LeaveRequestController; // <-- DITAMBAHKAN
+use App\Http\Controllers\LeaveRequestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -69,7 +69,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // --- Rute Khusus SECURITY ---
-    // Route test
+    // Route test (Bisa dihapus jika tidak perlu)
     Route::get('/test-role-middleware', function () {
         $user = auth()->user();
         return response()->json([
@@ -81,16 +81,21 @@ Route::middleware(['auth'])->group(function () {
         ]);
     })->middleware(['auth', 'role:security']);
 
-    Route::middleware(['auth', 'role:security'])->group(function () {
-        Route::get('/scan-qr', [ScanController::class, 'index'])->name('security.scan');
-        Route::post('/scan-qr/validate', [ScanController::class, 'validateScan'])->name('security.validate');
-        Route::post('/scan-qr/complete', [ScanController::class, 'completeAttendance'])->name('security.complete-attendance');
+    // === [ UPDATE PENTING DISINI ] ===
+    // Menggunakan grup middleware baru yang lebih bersih
+    Route::middleware(['role:security'])->prefix('security')->name('security.')->group(function () {
+        
+        // Halaman utama scanner (GET)
+        Route::get('/scan', [ScanController::class, 'index'])->name('scan');
+        
+        // Step 1: Validasi QR, kirim balik data user (POST)
+        Route::post('/check-user', [ScanController::class, 'checkUser'])->name('check-user');
+        
+        // Step 2: Simpan absensi (Masuk/Pulang/Malam) + Foto (POST)
+        Route::post('/store-attendance', [ScanController::class, 'storeAttendance'])->name('store-attendance');
     });
+    // === [ AKHIR UPDATE ] ===
 
-    // Tambahkan route ini untuk testing
-    Route::get('/scan-test', function () {
-        return view('security.scan-test');
-    })->middleware(['auth', 'role:security']);
 
     // --- Rute Khusus USER_BIASA, LEADER, & AUDIT ---
     Route::middleware(['role:user_biasa,leader,audit'])->group(function () {
@@ -102,15 +107,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/absen-mandiri', [SelfAttendanceController::class, 'create'])->name('self.attend.create');
         Route::post('/absen-mandiri', [SelfAttendanceController::class, 'store'])->name('self.attend.store');
 
-        // Rute 'lapor-telat' dihapus karena diganti form baru
-        // Route::post('/lapor-telat', [SelfAttendanceController::class, 'storeLateStatus'])->name('late.status.store'); 
-
-        // Rute ini masih dipakai di dashboard jika ada 'Laporan Telat Aktif'
         Route::post('/hapus-telat', [SelfAttendanceController::class, 'deleteLateStatus'])->name('late.status.delete');
 
         // --- Rute Pengajuan Izin/Cuti/Sakit/Telat Baru ---
         Route::get('/leave/create', [LeaveRequestController::class, 'create'])->name('leave.create');
         Route::post('/leave/store', [LeaveRequestController::class, 'store'])->name('leave.store');
-        // Route::get('/leave/history', [LeaveRequestController::class, 'index'])->name('leave.index'); // Halaman riwayat
     });
 });
