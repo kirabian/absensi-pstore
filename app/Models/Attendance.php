@@ -24,6 +24,7 @@ class Attendance extends Model
 
     protected $casts = [
         'check_in_time' => 'datetime',
+        'check_out_time' => 'datetime', // <--- BARIS INI HARUS ADA
     ];
 
     /**
