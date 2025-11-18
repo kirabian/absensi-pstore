@@ -18,7 +18,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         $data = [];
-        $branch_id = $user->branch_id; 
+        $branch_id = $user->branch_id;
 
         // ======================================================
         // 1. QUERY DASAR (Filter Cabang)
@@ -46,31 +46,27 @@ class DashboardController extends Controller
             $data['totalDivisions'] = $divisionQuery->count();
             $data['attendancesToday'] = $attendanceQuery->whereDate('check_in_time', today())->count();
             $data['pendingVerifications'] = $attendanceQuery->where('status', 'pending_verification')->count();
-
         } elseif ($user->role == 'audit') {
             // --- AUDIT ---
             $data['myTeamMembers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])->count();
             $data['pendingVerifications'] = $attendanceQuery->where('status', 'pending_verification')->count();
             $data['attendancesToday'] = $attendanceQuery->whereDate('check_in_time', today())->count();
-
         } elseif ($user->role == 'security') {
             // --- SECURITY ---
             // Hitung berapa kali security ini melakukan scan hari ini
             $data['myScansToday'] = Attendance::where('scanned_by_user_id', $user->id)
                 ->whereDate('check_in_time', today())
                 ->count();
-                
-            $data['totalUsers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])->count();
 
+            $data['totalUsers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])->count();
         } elseif ($user->role == 'user_biasa' || $user->role == 'leader') {
-            // --- USER BIASA & LEADER ---
-            
-            // [PENTING] Ambil Data Absensi Hari Ini (Termasuk Checkout Time)
-            // Pakai latest() untuk memastikan mengambil data update terakhir
+            // --- Data untuk USER BIASA & LEADER ---
+
+            // [UPDATE PENTING] Gunakan latest()
             $data['myAttendanceToday'] = Attendance::where('user_id', $user->id)
                 ->whereDate('check_in_time', today())
-                ->latest() 
-                ->first(); 
+                ->latest() // Mengambil yang paling update
+                ->first();
 
             $data['myPendingCount'] = Attendance::where('user_id', $user->id)
                 ->where('status', 'pending_verification')
@@ -85,7 +81,6 @@ class DashboardController extends Controller
                 ->whereDate('created_at', today())
                 ->first();
         }
-
         return view('dashboard', $data);
     }
 }
