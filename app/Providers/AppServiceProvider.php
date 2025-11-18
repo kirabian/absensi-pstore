@@ -22,8 +22,11 @@ class AppServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function boot()
+   public function boot()
     {
-        //
+        // Tambahkan baris ini agar semua asset() dipaksa pakai HTTPS
+        if($this->app->environment('production') || $this->app->environment('local')) {
+            URL::forceScheme('https');
+        }
     }
 }
