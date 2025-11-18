@@ -11,82 +11,107 @@
             background-color: #000; 
             margin: 0; 
             padding: 0; 
-            height: 100vh; /* Pastikan body full height */
+            height: 100vh; 
             overflow: hidden; 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
 
-        /* Container Utama: Flex Column */
+        /* Container Utama */
         .scanner-container { 
             height: 100%; 
             display: flex; 
             flex-direction: column; 
+            position: relative;
         }
         
-        /* Header: Tidak Absolute lagi, tapi Relative agar mengambil ruang sendiri */
+        /* Header Styling */
         .scanner-header {
-            position: relative; /* Ubah dari absolute ke relative */
-            width: 100%;
-            background: #000; /* Hitam pekat agar kontras */
+            background: #000; /* Hitam pekat */
             color: white; 
             padding: 20px 15px; 
-            z-index: 10;
+            z-index: 20; /* Di atas kamera */
             text-align: center; 
-            box-shadow: 0 2px 10px rgba(255,255,255,0.1); /* Sedikit shadow pemisah */
-            flex-shrink: 0; /* Header jangan mengecil */
+            flex-shrink: 0; 
+            border-bottom: 1px solid #333;
         }
         
-        /* Body: Mengisi sisa ruang & Center Content */
+        /* Area Kamera Mengisi Sisa Ruang (Full Height) */
         .scanner-body { 
-            flex: 1; /* Ambil sisa ruang ke bawah */
-            display: flex;
-            align-items: center; /* Tengahkan Vertikal */
-            justify-content: center; /* Tengahkan Horizontal */
-            background: #111; /* Sedikit lebih terang dari header */
+            flex: 1; /* Ini kuncinya: ambil sisa ruang ke bawah */
             position: relative;
+            background: #000;
             overflow: hidden;
         }
 
-        /* Kotak Kamera */
+        /* Memaksa Library QR Code mengisi ruangan */
         #reader { 
-            width: 100%; 
-            max-width: 600px; /* Batasi lebar di layar besar */
-            border: none; 
-            border-radius: 15px; /* Sudut kamera tumpul biar bagus */
-            overflow: hidden;
+            width: 100% !important; 
+            height: 100% !important; 
+            border: none !important; 
+            padding: 0 !important;
         }
         
-        /* Memaksa video fill area */
+        /* Trik agar Video tidak gepeng tapi 'Cover' area */
         #reader video { 
             object-fit: cover; 
             width: 100% !important; 
             height: 100% !important; 
-            border-radius: 15px;
         }
 
-        /* Overlay Result (Tidak berubah) */
+        /* Membuat Frame Kotak Putih Manual di Tengah (Overlay) */
+        .scan-guide {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px;
+            height: 250px;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            border-radius: 20px;
+            z-index: 15;
+            pointer-events: none; /* Agar tidak menghalangi klik */
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); /* Efek gelap di luar kotak */
+        }
+        
+        /* Hiasan Sudut Frame */
+        .scan-guide::before, .scan-guide::after {
+            content: ''; position: absolute; width: 40px; height: 40px;
+            border-color: #00ff88; border-style: solid;
+        }
+        .scan-guide::before { top: -2px; left: -2px; border-width: 4px 0 0 4px; border-radius: 20px 0 0 0; }
+        .scan-guide::after { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; border-radius: 0 0 20px 0; }
+        
+        /* Animasi Garis Scan */
+        .scan-line {
+            width: 100%; height: 2px; background: #00ff88;
+            position: absolute; top: 0;
+            animation: scanMov 2s infinite linear;
+            box-shadow: 0 0 10px #00ff88;
+        }
+        @keyframes scanMov { 0% {top: 10%; opacity: 0;} 50% {opacity: 1;} 100% {top: 90%; opacity: 0;} }
+
+        /* Overlay Result */
         .result-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.9);
             display: none; align-items: center; justify-content: center;
             z-index: 9999;
         }
         .result-card {
-            background: white; width: 90%; max-width: 400px;
+            background: #1a1a1a; color: white;
+            width: 90%; max-width: 350px;
             border-radius: 20px; padding: 30px; text-align: center;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid #333;
         }
-        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        
         .user-photo {
-            width: 120px; height: 120px; border-radius: 50%;
-            object-fit: cover; border: 5px solid #fff;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            width: 100px; height: 100px; border-radius: 50%;
+            object-fit: cover; border: 3px solid #00ff88;
             margin-bottom: 15px;
         }
-        
-        /* Sembunyikan elemen bawaan library */
-        #reader__dashboard_section_csr span, 
+
+        /* Sembunyikan elemen bawaan library yang mengganggu */
+        #reader__dashboard_section_csr, 
         #reader__dashboard_section_swaplink { display: none !important; }
     </style>
 </head>
@@ -102,6 +127,10 @@
 
         <div class="scanner-body">
             <div id="reader"></div>
+            
+            <div class="scan-guide">
+                <div class="scan-line"></div>
+            </div>
         </div>
     </div>
 
@@ -109,16 +138,15 @@
     <div class="result-overlay" id="resultOverlay">
         <div class="result-card">
             <div id="resultContent"></div>
-            <button class="btn btn-dark w-100 mt-4 py-3 fw-bold rounded-pill" onclick="closeResult()">
-                <i class="fas fa-qrcode me-2"></i> SCAN LAGI
+            <button class="btn btn-light w-100 mt-4 py-3 fw-bold rounded-pill" onclick="closeResult()">
+                SCAN LAGI
             </button>
         </div>
     </div>
 
     {{-- Library --}}
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
 
     <script>
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -128,61 +156,52 @@
         function onScanSuccess(decodedText, decodedResult) {
             if (isProcessing) return;
             isProcessing = true;
-
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.pause();
-            }
-
+            if (html5QrcodeScanner) html5QrcodeScanner.pause();
             processQRCode(decodedText);
         }
 
         function processQRCode(qrCode) {
             showResult(`
-                <div class="spinner-border text-dark mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
-                <h4 class="fw-bold">Memproses Data...</h4>
+                <div class="spinner-border text-light mb-3" role="status"></div>
+                <h5>Memproses...</h5>
             `);
 
             fetch("{{ route('security.validate') }}", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": csrfToken
-                },
+                headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": csrfToken },
                 body: JSON.stringify({ qr_code: qrCode })
             })
             .then(async response => {
                 const data = await response.json();
-                if (!response.ok) throw new Error(data.message || 'Terjadi kesalahan server.');
+                if (!response.ok) throw new Error(data.message || 'Error.');
                 return data;
             })
             .then(data => {
                 showResult(`
-                    <div class="mb-3 text-success">
-                        <i class="fas fa-check-circle" style="font-size: 5rem;"></i>
+                    <div class="mb-2 text-success" style="font-size: 3rem;">
+                        <i class="fas fa-check-circle"></i>
                     </div>
-                    <h2 class="fw-bold text-success mb-2">BERHASIL!</h2>
-                    <p class="text-secondary mb-4">${data.message}</p>
+                    <h3 class="fw-bold text-success">DITERIMA</h3>
+                    <p class="text-muted small mb-3">${data.message}</p>
                     
-                    <div class="bg-light p-4 rounded-3 border">
+                    <div class="bg-dark p-3 rounded-3 border border-secondary">
                         <img src="${data.data.photo}" class="user-photo" alt="User">
-                        <h4 class="fw-bold mb-1 text-dark">${data.data.name}</h4>
-                        <p class="text-muted small mb-2 text-uppercase fw-bold">${data.data.role} • ${data.data.division}</p>
-                        <span class="badge bg-dark px-3 py-2 rounded-pill">${data.data.branch}</span>
+                        <h5 class="fw-bold mb-0 text-white">${data.data.name}</h5>
+                        <small class="text-muted text-uppercase">${data.data.role}</small>
+                        <div class="mt-2"><span class="badge bg-success">${data.data.branch}</span></div>
                     </div>
                 `);
             })
             .catch(err => {
                 showResult(`
-                    <div class="mb-3 text-danger">
-                        <i class="fas fa-times-circle" style="font-size: 5rem;"></i>
+                    <div class="mb-2 text-danger" style="font-size: 3rem;">
+                        <i class="fas fa-times-circle"></i>
                     </div>
-                    <h2 class="fw-bold text-danger mb-2">GAGAL!</h2>
-                    <p class="text-secondary">${err.message}</p>
+                    <h3 class="fw-bold text-danger">DITOLAK</h3>
+                    <p class="text-light small">${err.message}</p>
                 `);
             })
-            .finally(() => {
-                setTimeout(() => { isProcessing = false; }, 1000);
-            });
+            .finally(() => setTimeout(() => { isProcessing = false; }, 1000));
         }
 
         function showResult(html) {
@@ -192,16 +211,14 @@
 
         function closeResult() {
             document.getElementById('resultOverlay').style.display = 'none';
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.resume();
-            }
+            if (html5QrcodeScanner) html5QrcodeScanner.resume();
         }
 
         document.addEventListener('DOMContentLoaded', function() {
             const config = {
                 fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0,
+                // qrbox: { width: 250, height: 250 }, // Kita hapus biar library ga bingung
+                // aspectRatio: 1.0, // HAPUS INI AGAR TIDAK KOTAK
                 videoConstraints: {
                     facingMode: "environment" 
                 }
