@@ -22,9 +22,9 @@ class AppServiceProvider extends ServiceProvider
      *
      * @return void
      */
-   public function boot()
+  public function boot()
     {
-        // Paksa HTTPS agar CSS tidak diblokir browser
+        // Paksa semua aset menggunakan HTTPS
         if($this->app->environment('production') || $this->app->environment('local')) {
             URL::forceScheme('https');
         }
