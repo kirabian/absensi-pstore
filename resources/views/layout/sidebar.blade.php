@@ -11,7 +11,7 @@
         {{-- =================================== --}}
         {{--     MENU UNTUK SUPER ADMIN        --}}
         {{-- =================================== --}}
-        @if (auth()->user()->role == 'admin')
+        @if (auth()->user()->role == 'admin' || auth()->user()->role == 'audit')
             <li class="nav-item nav-category">Menu Super Admin</li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('branches.index') }}">
@@ -24,7 +24,7 @@
         {{-- =================================== --}}
         {{--   MENU UNTUK SUPER ADMIN & AUDIT   --}}
         {{-- =================================== --}}
-        @if (auth()->user()->role == 'super_admin' || auth()->user()->role == 'audit')
+        @if (auth()->user()->role == 'admin' || auth()->user()->role == 'audit' || auth()->user()->role == 'leader')
             <li class="nav-item nav-category">Manajemen Tim</li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('divisions.index') }}">
