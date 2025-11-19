@@ -13,6 +13,7 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\WorkHistoryController;
 use App\Http\Controllers\LeaveRequestController;
+use App\Http\Controllers\WorkScheduleController; // TAMBAHKAN INI
 
 /*
 |--------------------------------------------------------------------------
@@ -34,6 +35,17 @@ Route::middleware(['auth'])->group(function () {
     // --- Rute Utama ---
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
+    // === TAMBAHKAN RUTE WORK SCHEDULES DI SINI ===
+    Route::prefix('work-schedules')->group(function () {
+        Route::get('/', [WorkScheduleController::class, 'index'])->name('work-schedules.index');
+        Route::get('/create', [WorkScheduleController::class, 'create'])->name('work-schedules.create');
+        Route::post('/', [WorkScheduleController::class, 'store'])->name('work-schedules.store');
+        Route::get('/{workSchedule}/edit', [WorkScheduleController::class, 'edit'])->name('work-schedules.edit');
+        Route::put('/{workSchedule}', [WorkScheduleController::class, 'update'])->name('work-schedules.update');
+        Route::delete('/{workSchedule}', [WorkScheduleController::class, 'destroy'])->name('work-schedules.destroy');
+        Route::patch('/{workSchedule}/toggle-status', [WorkScheduleController::class, 'toggleStatus'])->name('work-schedules.toggle-status');
+    })->middleware('can:access_work_schedules');
+    // === AKHIR TAMBAHAN ===
 
     // --- Rute Edit Profil (UNTUK SEMUA ROLE) ---
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -91,11 +103,13 @@ Route::middleware(['auth'])->group(function () {
         // Step 1: Validasi QR, kirim balik data user (POST)
         Route::post('/check-user', [ScanController::class, 'checkUser'])->name('check-user');
         
-        // Step 2: Simpan absensi (Masuk/Pulang/Malam) + Foto (POST)
+        // Step 2: Simpan absensi (Masuk/Pulang) + Foto (POST)
         Route::post('/store-attendance', [ScanController::class, 'storeAttendance'])->name('store-attendance');
+        
+        // Stats untuk dashboard security
+        Route::get('/stats', [ScanController::class, 'getStats'])->name('stats');
     });
     // === [ AKHIR UPDATE ] ===
-
 
     // --- Rute Khusus USER_BIASA, LEADER, & AUDIT ---
     Route::middleware(['role:user_biasa,leader,audit'])->group(function () {

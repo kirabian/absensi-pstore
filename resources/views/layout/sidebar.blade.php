@@ -20,8 +20,6 @@
                 </a>
             </li>
         @endif
-        {{-- =================================== --}}
-
 
         {{-- =================================== --}}
         {{--   MENU UNTUK SUPER ADMIN & AUDIT   --}}
@@ -41,8 +39,19 @@
                 </a>
             </li>
         @endif
-        {{-- =================================== --}}
 
+        {{-- =================================== --}}
+        {{--   MENU MANAGEMENT JAM KERJA BARU  --}}
+        {{-- =================================== --}}
+        @if (auth()->user()->role == 'super_admin' || auth()->user()->role == 'admin' || auth()->user()->role == 'audit' || auth()->user()->role == 'leader')
+            <li class="nav-item nav-category">Management Jam Kerja</li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('work-schedules.index') }}">
+                    <i class="menu-icon mdi mdi-clock-outline"></i>
+                    <span class="menu-title">Jam Kerja</span>
+                </a>
+            </li>
+        @endif
 
         {{-- =================================== --}}
         {{--   MENU KHUSUS VERIFIKASI (Super Admin & Audit) --}}
@@ -62,8 +71,6 @@
                 </a>
             </li>
         @endif
-        {{-- =================================== --}}
-
 
         {{-- =================================== --}}
         {{--     MENU UNTUK SECURITY         --}}
@@ -77,7 +84,6 @@
                 </a>
             </li>
         @endif
-        {{-- =================================== --}}
 
         {{-- =================================== --}}
         {{--     MENU UNTUK LEADER, user_biasa, & AUDIT --}}
@@ -91,6 +97,5 @@
                 </a>
             </li>
         @endif
-        {{-- =================================== --}}
     </ul>
 </nav>
