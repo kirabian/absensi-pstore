@@ -11,7 +11,7 @@
         {{-- =================================== --}}
         {{--     MENU UNTUK SUPER ADMIN        --}}
         {{-- =================================== --}}
-        @if (auth()->user()->role == 'super_admin')
+        @if (auth()->user()->role == 'admin')
             <li class="nav-item nav-category">Menu Super Admin</li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('branches.index') }}">
