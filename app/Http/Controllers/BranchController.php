@@ -12,17 +12,21 @@ class BranchController extends Controller
      * Filter agar hanya Super Admin yang bisa akses.
      */
     public function __construct()
-    {
-        // Middleware ini akan mengecek SETIAP fungsi di controller ini
-        $this->middleware(function ($request, $next) {
-            // Cek jika user adalah admin DAN branch_id-nya KOSONG (Super Admin)
-            if (Auth::check() && Auth::user()->role == 'admin,audit' && Auth::user()->branch_id == null) {
-                return $next($request); // Lanjutkan
-            }
-            // Jika bukan, lempar error 403 (Akses Ditolak)
-            return abort(403, 'Hanya Super Admin yang boleh mengakses halaman ini.');
-        });
-    }
+{
+    $this->middleware(function ($request, $next) {
+
+        if (
+            Auth::check() &&
+            in_array(Auth::user()->role, ['admin', 'audit']) &&   // admin ATAU audit
+            Auth::user()->branch_id == null                      // super admin (tanpa branch)
+        ) {
+            return $next($request);
+        }
+
+        return abort(403, 'Hanya Super Admin (Admin atau Audit) yang boleh mengakses halaman ini.');
+    });
+}
+
 
     /**
      * Menampilkan daftar semua cabang.
