@@ -17,15 +17,15 @@ class BranchController extends Controller
 
         if (
             Auth::check() &&
-            in_array(Auth::user()->role, ['admin', 'audit']) &&   // admin ATAU audit
-            Auth::user()->branch_id == null                      // super admin (tanpa branch)
+            in_array(Auth::user()->role, ['admin', 'audit'])
         ) {
             return $next($request);
         }
 
-        return abort(403, 'Hanya Super Admin (Admin atau Audit) yang boleh mengakses halaman ini.');
+        return abort(403, 'Hanya Admin atau Audit yang boleh mengakses halaman ini.');
     });
 }
+
 
 
     /**
