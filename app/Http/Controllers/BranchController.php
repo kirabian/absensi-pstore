@@ -16,7 +16,7 @@ class BranchController extends Controller
         // Middleware ini akan mengecek SETIAP fungsi di controller ini
         $this->middleware(function ($request, $next) {
             // Cek jika user adalah admin DAN branch_id-nya KOSONG (Super Admin)
-            if (Auth::check() && Auth::user()->role == 'admin' && Auth::user()->branch_id == null) {
+            if (Auth::check() && Auth::user()->role == 'admin,audit' && Auth::user()->branch_id == null) {
                 return $next($request); // Lanjutkan
             }
             // Jika bukan, lempar error 403 (Akses Ditolak)
