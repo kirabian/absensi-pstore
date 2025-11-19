@@ -61,7 +61,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile/inventory/{inventory}', [ProfileController::class, 'destroyInventory'])->name('profile.inventory.destroy');
 
     // --- Rute Khusus ADMIN ---
-    Route::middleware(['role:admin'])->group(function () {
+    Route::middleware(['role:admin,audit'])->group(function () {
         Route::resource('branches', BranchController::class);
     });
 

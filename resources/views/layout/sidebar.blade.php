@@ -12,7 +12,7 @@
         {{--     MENU UNTUK SUPER ADMIN        --}}
         {{-- =================================== --}}
         @if (auth()->user()->role == 'admin' || auth()->user()->role == 'audit')
-            <li class="nav-item nav-category">Menu Super Admin</li>
+            <li class="nav-item nav-category">Menu Cabang</li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('branches.index') }}">
                     <i class="menu-icon mdi mdi-domain"></i>
