@@ -9,7 +9,6 @@
 @endsection
 
 @section('content')
-
     {{-- ======================================================================= --}}
     {{-- TAMPILAN UNTUK ADMIN --}}
     {{-- ======================================================================= --}}
@@ -100,29 +99,31 @@
                 </div>
             </div>
         </div>
+
+        {{-- BROADCAST SECTION FOR ADMIN --}}
         <div class="row mt-4">
-        <div class="col-12 grid-margin stretch-card">
-            <div class="card card-action">
-                <div class="card-body text-center py-4">
-                    <i class="mdi mdi-bullhorn-outline display-3 text-primary mb-4"></i>
-                    <h4 class="card-title mb-3">Broadcast Message</h4>
-                    <p class="text-muted mb-4">Kirim pengumuman penting ke semua user sistem.</p>
-                    <div class="d-flex justify-content-center gap-3 flex-wrap">
-                        <a href="{{ route('broadcast.create') }}" class="btn btn-primary btn-lg">
-                            <i class="mdi mdi-plus-circle me-2"></i>Buat Broadcast Baru
-                        </a>
-                        <a href="{{ route('broadcast.index') }}" class="btn btn-outline-primary btn-lg">
-                            <i class="mdi mdi-format-list-bulleted me-2"></i>Lihat Semua Broadcast
-                        </a>
+            <div class="col-12 grid-margin stretch-card">
+                <div class="card card-action">
+                    <div class="card-body text-center py-4">
+                        <i class="mdi mdi-bullhorn-outline display-3 text-primary mb-4"></i>
+                        <h4 class="card-title mb-3">Broadcast Message</h4>
+                        <p class="text-muted mb-4">Kirim pengumuman penting ke semua user sistem.</p>
+                        <div class="d-flex justify-content-center gap-3 flex-wrap">
+                            <a href="{{ route('broadcast.create') }}" class="btn btn-primary btn-lg">
+                                <i class="mdi mdi-plus-circle me-2"></i>Buat Broadcast Baru
+                            </a>
+                            <a href="{{ route('broadcast.index') }}" class="btn btn-outline-primary btn-lg">
+                                <i class="mdi mdi-format-list-bulleted me-2"></i>Lihat Semua Broadcast
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-        {{-- ======================================================================= --}}
-        {{-- TAMPILAN UNTUK AUDIT --}}
-        {{-- ======================================================================= --}}
+    {{-- ======================================================================= --}}
+    {{-- TAMPILAN UNTUK AUDIT --}}
+    {{-- ======================================================================= --}}
     @elseif (auth()->user()->role == 'audit')
         <div class="row">
             <div class="col-md-4 grid-margin stretch-card">
@@ -178,9 +179,25 @@
             </div>
         </div>
 
-        {{-- ======================================================================= --}}
-        {{-- TAMPILAN UNTUK SECURITY --}}
-        {{-- ======================================================================= --}}
+        {{-- BROADCAST SECTION FOR AUDIT --}}
+        <div class="row mt-4">
+            <div class="col-12 grid-margin stretch-card">
+                <div class="card card-action">
+                    <div class="card-body text-center py-4">
+                        <i class="mdi mdi-bullhorn-outline display-3 text-info mb-4"></i>
+                        <h4 class="card-title mb-3">Pengumuman Terbaru</h4>
+                        <p class="text-muted mb-4">Lihat pengumuman dan informasi terbaru dari sistem.</p>
+                        <a href="{{ route('broadcast.index') }}" class="btn btn-info btn-lg">
+                            <i class="mdi mdi-format-list-bulleted me-2"></i>Lihat Semua Pengumuman
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {{-- ======================================================================= --}}
+    {{-- TAMPILAN UNTUK SECURITY --}}
+    {{-- ======================================================================= --}}
     @elseif (auth()->user()->role == 'security')
         <div class="row">
             <div class="col-md-6 grid-margin stretch-card">
@@ -220,9 +237,25 @@
             </div>
         </div>
 
-        {{-- ======================================================================= --}}
-        {{-- TAMPILAN UNTUK USER BIASA & LEADER --}}
-        {{-- ======================================================================= --}}
+        {{-- BROADCAST SECTION FOR SECURITY --}}
+        <div class="row mt-4">
+            <div class="col-12 grid-margin stretch-card">
+                <div class="card card-action">
+                    <div class="card-body text-center py-4">
+                        <i class="mdi mdi-bullhorn-outline display-3 text-info mb-4"></i>
+                        <h4 class="card-title mb-3">Pengumuman Terbaru</h4>
+                        <p class="text-muted mb-4">Lihat pengumuman dan informasi terbaru dari sistem.</p>
+                        <a href="{{ route('broadcast.index') }}" class="btn btn-info btn-lg">
+                            <i class="mdi mdi-format-list-bulleted me-2"></i>Lihat Semua Pengumuman
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {{-- ======================================================================= --}}
+    {{-- TAMPILAN UNTUK USER BIASA & LEADER --}}
+    {{-- ======================================================================= --}}
     @elseif (auth()->user()->role == 'user_biasa' || auth()->user()->role == 'leader')
         <div class="row">
             {{-- KARTU ID BARU --}}
@@ -373,21 +406,6 @@
                                 </div>
                             </div>
                         @endif
-                        {{-- DEBUG: Tampilkan data attendance --}}
-                        {{-- <div
-                            style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 20px; font-size: 12px;">
-                            <strong>DEBUG Attendance Data:</strong><br>
-                            @if ($myAttendanceToday)
-                                ID: {{ $myAttendanceToday->id }}<br>
-                                Check In: {{ $myAttendanceToday->check_in_time }}<br>
-                                Check Out: {{ $myAttendanceToday->check_out_time ?? 'NULL' }}<br>
-                                Photo Path: {{ $myAttendanceToday->photo_path }}<br>
-                                Photo Out Path: {{ $myAttendanceToday->photo_out_path ?? 'NULL' }}<br>
-                                Status: {{ $myAttendanceToday->check_out_time ? 'SUDAH PULANG' : 'MASIH BEKERJA' }}
-                            @else
-                                NO ATTENDANCE DATA
-                            @endif
-                        </div> --}}
                     </div>
                 </div>
             </div>
@@ -449,8 +467,73 @@
                 </div>
             </div>
         </div>
+
+        {{-- BROADCAST SECTION FOR USER BIASA & LEADER --}}
+        <div class="row mt-4">
+            <div class="col-12 grid-margin stretch-card">
+                <div class="card card-action">
+                    <div class="card-body text-center py-4">
+                        <i class="mdi mdi-bullhorn-outline display-3 text-info mb-4"></i>
+                        <h4 class="card-title mb-3">Pengumuman Terbaru</h4>
+                        <p class="text-muted mb-4">Lihat pengumuman dan informasi terbaru dari sistem.</p>
+                        <a href="{{ route('broadcast.index') }}" class="btn btn-info btn-lg">
+                            <i class="mdi mdi-format-list-bulleted me-2"></i>Lihat Semua Pengumuman
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
     @endif
 
+    {{-- ======================================================================= --}}
+    {{-- BROADCAST TERBARU UNTUK SEMUA ROLE --}}
+    {{-- ======================================================================= --}}
+    @if($latestBroadcasts->count() > 0)
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">
+                        <i class="mdi mdi-bullhorn-outline me-2 text-primary"></i>Pengumuman Terbaru
+                    </h4>
+                    <div class="row">
+                        @foreach($latestBroadcasts as $broadcast)
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-left-3 
+                                @if($broadcast->priority == 'high') border-left-danger
+                                @elseif($broadcast->priority == 'medium') border-left-warning
+                                @else border-left-info @endif">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title mb-0">{{ $broadcast->title }}</h6>
+                                        <span class="badge 
+                                            @if($broadcast->priority == 'high') badge-danger
+                                            @elseif($broadcast->priority == 'medium') badge-warning
+                                            @else badge-info @endif">
+                                            {{ ucfirst($broadcast->priority) }}
+                                        </span>
+                                    </div>
+                                    <p class="card-text text-muted small">
+                                        {{ Str::limit($broadcast->message, 100) }}
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            {{ $broadcast->published_at->format('d M Y H:i') }}
+                                        </small>
+                                        <a href="{{ route('broadcast.show', $broadcast->id) }}" class="btn btn-sm btn-outline-primary">
+                                            Baca Selengkapnya
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 @endsection
 
 @push('styles')
@@ -794,6 +877,23 @@
             border-radius: 8px;
             font-weight: 600;
             padding: 6px 12px;
+        }
+
+        /* Border left for broadcast cards */
+        .border-left-3 {
+            border-left-width: 4px !important;
+        }
+
+        .border-left-danger {
+            border-left-color: #dc3545 !important;
+        }
+
+        .border-left-warning {
+            border-left-color: #ffc107 !important;
+        }
+
+        .border-left-info {
+            border-left-color: #17a2b8 !important;
         }
 
         @media (max-width: 768px) {
