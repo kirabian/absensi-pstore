@@ -12,10 +12,12 @@
         <div>
             {{-- Arahkan logo ke Dashboard --}}
             <a class="navbar-brand brand-logo" href="{{ route('dashboard') }}">
-                <img src="{{ asset('assets/images/logo-pstore.png') }}" alt="logo" style="width: 150px; height: auto;" />
+                <img src="{{ asset('assets/images/logo-pstore.png') }}" alt="logo"
+                    style="width: 150px; height: auto;" />
             </a>
             <a class="navbar-brand brand-logo-mini" href="{{ route('dashboard') }}">
-                <img src="{{ asset('assets/images/logo-pstore.png') }}" alt="logo" style="width: 45px; height: auto;" />
+                <img src="{{ asset('assets/images/logo-pstore.png') }}" alt="logo"
+                    style="width: 45px; height: auto;" />
             </a>
         </div>
     </div>
@@ -36,15 +38,16 @@
             </li>
 
             {{-- Search -- Hanya untuk Admin --}}
-            @if(auth()->user()->role == 'admin')
-            <li class="nav-item">
-                <div class="search-form">
-                    <i class="icon-search"></i>
-                    <input type="search" class="form-control" id="globalSearch"
-                        placeholder="Search users, broadcasts, divisions..." title="Search here" autocomplete="off">
-                    <div class="search-results dropdown-menu" id="searchResults" style="display: none;"></div>
-                </div>
-            </li>
+            @if (auth()->user()->role == 'admin')
+                <li class="nav-item">
+                    <div class="search-form position-relative">
+                        <i class="icon-search position-absolute"
+                            style="left: 15px; top: 50%; transform: translateY(-50%); z-index: 10; pointer-events: none;"></i>
+                        <input type="search" class="form-control ps-4" id="globalSearch"
+                            placeholder="Search users, broadcasts, divisions..." title="Search here" autocomplete="off">
+                        <div class="search-results dropdown-menu" id="searchResults" style="display: none;"></div>
+                    </div>
+                </li>
             @endif
 
             {{-- Notifications --}}
@@ -126,7 +129,8 @@
 
             {{-- User Profile --}}
             <li class="nav-item dropdown user-dropdown">
-                <a class="nav-link" id="UserDropdown" href="#" data-bs-toggle="dropdown" aria-expanded="false">
+                <a class="nav-link" id="UserDropdown" href="#" data-bs-toggle="dropdown"
+                    aria-expanded="false">
                     {{-- =================================== --}}
                     {{--   LOGIKA FOTO/INISIAL (KECIL)   --}}
                     {{-- =================================== --}}
@@ -183,8 +187,8 @@
                     <div class="dropdown-divider"></div>
 
                     {{-- Link "Sign Out" --}}
-                    <a href="{{ route('logout') }}" class="dropdown-item" 
-                       onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                    <a href="{{ route('logout') }}" class="dropdown-item"
+                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                         <i class="dropdown-item-icon mdi mdi-power text-primary me-2"></i>Sign Out
                     </a>
                     <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
@@ -230,7 +234,7 @@
 </script>
 
 <style>
-    /* Search Form Styles */
+    /* Search Form Styles - FIXED */
     .search-form {
         position: relative;
         margin-right: 15px;
@@ -243,22 +247,42 @@
         transform: translateY(-50%);
         color: #6c757d;
         z-index: 10;
+        pointer-events: none; /* Prevent icon from blocking input */
     }
 
     .search-form .form-control {
         border-radius: 25px;
         border: 2px solid #e2e8f0;
-        padding-left: 40px;
+        padding-left: 40px !important; /* Important untuk override bootstrap */
         padding-right: 15px;
         transition: all 0.3s ease;
         background: #f8f9fa;
         width: 300px;
+        height: 40px;
+        position: relative;
+        z-index: 5;
     }
 
     .search-form .form-control:focus {
         border-color: #000;
         box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
         background: white;
+        outline: none;
+    }
+
+    .search-form .form-control::placeholder {
+        color: #6c757d;
+        opacity: 0.8;
+    }
+
+    /* Hover effects untuk search container */
+    .search-form:hover .form-control {
+        border-color: #000;
+        background: white;
+    }
+
+    .search-form:hover .icon-search {
+        color: #000;
     }
 
     .search-results {
@@ -281,6 +305,7 @@
         transition: all 0.2s ease;
         text-decoration: none;
         color: #333;
+        display: block;
     }
 
     .search-results .dropdown-item:last-child {
@@ -468,7 +493,7 @@
         }
         
         .search-form .form-control {
-            width: 100%;
+            width: 100% !important;
         }
         
         .search-results {
@@ -493,7 +518,7 @@
 
     @media (max-width: 576px) {
         .search-form .form-control {
-            width: 200px;
+            width: 200px !important;
         }
     }
 
@@ -510,6 +535,17 @@
             transform: rotate(359deg);
         }
     }
+
+    /* Focus state untuk accessibility */
+    .search-form.focused .form-control {
+        border-color: #000;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .search-form.focused .icon-search {
+        color: #000;
+    }
 </style>
 
 @push('scripts')
@@ -517,6 +553,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('globalSearch');
     const searchResults = document.getElementById('searchResults');
+    const searchForm = document.querySelector('.search-form');
     
     // Jika search input tidak ada (bukan admin), skip
     if (!searchInput) return;
@@ -553,9 +590,29 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 300);
     });
 
+    // Focus effects
+    searchInput.addEventListener('focus', function() {
+        searchForm.classList.add('focused');
+        const query = this.value.trim();
+        if (query.length >= 2) {
+            performSearch(query);
+        }
+    });
+
+    searchInput.addEventListener('blur', function() {
+        // Delay hiding results to allow clicking on them
+        setTimeout(() => {
+            if (!searchResults.matches(':hover')) {
+                searchForm.classList.remove('focused');
+                hideResults();
+            }
+        }, 200);
+    });
+
     // Hide results when clicking outside
     document.addEventListener('click', function(e) {
-        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+        if (!searchForm.contains(e.target)) {
+            searchForm.classList.remove('focused');
             hideResults();
         }
     });
@@ -588,20 +645,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Keyboard navigation for results
     searchResults.addEventListener('keydown', function(e) {
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            const next = e.target.nextElementSibling || searchResults.querySelector('a');
-            if (next) next.focus();
+        if (e.target.tagName === 'A') {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const next = e.target.nextElementSibling;
+                if (next) next.focus();
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prev = e.target.previousElementSibling || searchInput;
+                prev.focus();
+            }
+            if (e.key === 'Escape') {
+                hideResults();
+                searchInput.focus();
+            }
         }
-        if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const prev = e.target.previousElementSibling || searchInput;
-            if (prev) prev.focus();
-        }
-        if (e.key === 'Escape') {
-            hideResults();
-            searchInput.focus();
-        }
+    });
+
+    // Keep results visible when hovering over them
+    searchResults.addEventListener('mouseenter', function() {
+        searchForm.classList.add('focused');
+    });
+
+    searchResults.addEventListener('mouseleave', function() {
+        setTimeout(() => {
+            if (!searchInput.matches(':focus')) {
+                searchForm.classList.remove('focused');
+                hideResults();
+            }
+        }, 300);
     });
 
     function performSearch(query) {
@@ -669,8 +742,6 @@ document.addEventListener('DOMContentLoaded', function() {
         searchResults.style.overflowY = 'auto';
         
         // Position the results dropdown
-        const searchForm = searchInput.closest('.search-form');
-        const rect = searchForm.getBoundingClientRect();
         searchResults.style.left = '0';
         searchResults.style.top = '100%';
     }
@@ -679,13 +750,13 @@ document.addEventListener('DOMContentLoaded', function() {
         searchResults.style.display = 'none';
     }
 
-    // Add focus effect to search input
-    searchInput.addEventListener('focus', function() {
-        this.parentElement.classList.add('focused');
-    });
-
-    searchInput.addEventListener('blur', function() {
-        this.parentElement.classList.remove('focused');
+    // Clear search when clicking on result
+    searchResults.addEventListener('click', function(e) {
+        if (e.target.closest('a')) {
+            searchInput.value = '';
+            hideResults();
+            searchForm.classList.remove('focused');
+        }
     });
 });
 </script>
