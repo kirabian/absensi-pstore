@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\GlobalSearchController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\DashboardController;
@@ -35,6 +36,10 @@ Route::middleware(['auth'])->group(function () {
 
     // --- Rute Utama ---
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+    // --- Rute Search Global (Hanya untuk Admin) ---
+    Route::get('/search', [GlobalSearchController::class, 'search'])->name('search');
+
     // --- Rute untuk SEMUA USER yang login (bisa lihat broadcast) ---
     Route::prefix('broadcast')->name('broadcast.')->group(function () {
         Route::get('/', [BroadcastController::class, 'index'])->name('index');
