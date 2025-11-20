@@ -35,9 +35,21 @@ Route::middleware(['auth'])->group(function () {
 
     // --- Rute Utama ---
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    // --- Rute untuk SEMUA USER yang login (bisa lihat broadcast) ---
     Route::prefix('broadcast')->name('broadcast.')->group(function () {
         Route::get('/', [BroadcastController::class, 'index'])->name('index');
         Route::get('/{broadcast}', [BroadcastController::class, 'show'])->name('show');
+    });
+
+    // --- Rute Khusus ADMIN (untuk mengelola broadcast) ---
+    Route::middleware(['role:admin'])->group(function () {
+        Route::prefix('broadcast')->name('broadcast.')->group(function () {
+            Route::get('/create', [BroadcastController::class, 'create'])->name('create');
+            Route::post('/', [BroadcastController::class, 'store'])->name('store');
+            Route::get('/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('edit');
+            Route::put('/{broadcast}', [BroadcastController::class, 'update'])->name('update');
+            Route::delete('/{broadcast}', [BroadcastController::class, 'destroy'])->name('destroy');
+        });
     });
 
     // CATATAN: RUTE BROADCAST DIPINDAHKAN KE BAWAH UNTUK MELINDUNGINYA DENGAN role:admin
@@ -79,19 +91,19 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/izin-telat', [AuditController::class, 'showLatePermissions'])->name('audit.late.list');
     });
 
-    // --- Rute Khusus ADMIN (Hanya untuk Admin untuk mengelola Broadcast) ---
-    Route::middleware(['role:admin'])->group(function () {
-        // === RUTE BROADCAST ===
-        Route::prefix('broadcast')->name('broadcast.')->group(function () {
-            Route::get('/', [BroadcastController::class, 'index'])->name('index');
-            Route::get('/create', [BroadcastController::class, 'create'])->name('create');
-            Route::post('/', [BroadcastController::class, 'store'])->name('store');
-            Route::get('/{broadcast}', [BroadcastController::class, 'show'])->name('show');
-            Route::get('/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('edit');
-            Route::put('/{broadcast}', [BroadcastController::class, 'update'])->name('update');
-            Route::delete('/{broadcast}', [BroadcastController::class, 'destroy'])->name('destroy');
-        });
-    });
+    // // --- Rute Khusus ADMIN (Hanya untuk Admin untuk mengelola Broadcast) ---
+    // Route::middleware(['role:admin'])->group(function () {
+    //     // === RUTE BROADCAST ===
+    //     Route::prefix('broadcast')->name('broadcast.')->group(function () {
+    //         Route::get('/', [BroadcastController::class, 'index'])->name('index');
+    //         Route::get('/create', [BroadcastController::class, 'create'])->name('create');
+    //         Route::post('/', [BroadcastController::class, 'store'])->name('store');
+    //         Route::get('/{broadcast}', [BroadcastController::class, 'show'])->name('show');
+    //         Route::get('/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('edit');
+    //         Route::put('/{broadcast}', [BroadcastController::class, 'update'])->name('update');
+    //         Route::delete('/{broadcast}', [BroadcastController::class, 'destroy'])->name('destroy');
+    //     });
+    // });
 
     // --- Rute Khusus SECURITY ---
     // Route test (Bisa dihapus jika tidak perlu)
