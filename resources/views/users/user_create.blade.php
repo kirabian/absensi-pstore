@@ -49,7 +49,7 @@
                             <option value="audit" {{ old('role') == 'audit' ? 'selected' : '' }}>Audit</option>
                             <option value="leader" {{ old('role') == 'leader' ? 'selected' : '' }}>Leader</option>
                             <option value="security" {{ old('role') == 'security' ? 'selected' : '' }}>Security</option>
-                            <option value="karyawan" {{ old('role') == 'karyawan' ? 'selected' : '' }}>Karyawan</option>
+                            <option value="user_biasa" {{ old('role') == 'user_biasa' ? 'selected' : '' }}>Karyawan</option>
                         </select>
                     </div>
                 </div>

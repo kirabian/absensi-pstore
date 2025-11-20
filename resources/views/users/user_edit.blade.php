@@ -52,7 +52,7 @@
                             <option value="audit" {{ old('role', $user->role) == 'audit' ? 'selected' : '' }}>Audit</option>
                             <option value="leader" {{ old('role', $user->role) == 'leader' ? 'selected' : '' }}>Leader</option>
                             <option value="security" {{ old('role', $user->role) == 'security' ? 'selected' : '' }}>Security</option>
-                            <option value="karyawan" {{ old('role', $user->role) == 'karyawan' ? 'selected' : '' }}>Karyawan</option>
+                            <option value="user_biasa" {{ old('role', $user->role) == 'user_biasa' ? 'selected' : '' }}>Karyawan</option>
                         </select>
                     </div>
                 </div>
