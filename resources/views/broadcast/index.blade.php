@@ -9,11 +9,11 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">Daftar Broadcast</h5>
-                @can('create', App\Models\Broadcast::class)
+                @if(auth()->user()->role == 'admin')
                 <a href="{{ route('broadcast.create') }}" class="btn btn-primary">
                     <i class="mdi mdi-plus me-2"></i>Buat Broadcast
                 </a>
-                @endcan
+                @endif
             </div>
             <div class="card-body">
                 @if($broadcasts->count() > 0)
@@ -46,19 +46,18 @@
                                             <a href="{{ route('broadcast.show', $broadcast) }}" class="btn btn-sm btn-info">
                                                 <i class="mdi mdi-eye"></i>
                                             </a>
-                                            @can('update', $broadcast)
+                                            @if(auth()->user()->role == 'admin')
                                             <a href="{{ route('broadcast.edit', $broadcast) }}" class="btn btn-sm btn-warning">
                                                 <i class="mdi mdi-pencil"></i>
                                             </a>
-                                            @endcan
-                                            @can('delete', $broadcast)
                                             <form action="{{ route('broadcast.destroy', $broadcast) }}" method="POST" class="d-inline">
-                                                @csrf @method('DELETE')
+                                                @csrf 
+                                                @method('DELETE')
                                                 <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Hapus broadcast?')">
                                                     <i class="mdi mdi-delete"></i>
                                                 </button>
                                             </form>
-                                            @endcan
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
@@ -71,6 +70,12 @@
                     <div class="text-center py-5">
                         <i class="mdi mdi-bullhorn-outline display-4 text-muted"></i>
                         <h4 class="text-muted mt-3">Belum ada broadcast</h4>
+                        @if(auth()->user()->role == 'admin')
+                        <p class="text-muted mb-4">Mulai dengan membuat broadcast pertama Anda</p>
+                        <a href="{{ route('broadcast.create') }}" class="btn btn-primary">
+                            <i class="mdi mdi-plus me-2"></i>Buat Broadcast Pertama
+                        </a>
+                        @endif
                     </div>
                 @endif
             </div>
