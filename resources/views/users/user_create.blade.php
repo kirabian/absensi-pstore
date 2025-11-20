@@ -92,7 +92,7 @@
                             <option value="">-- Pilih Divisi --</option>
                             @foreach ($divisions as $division)
                                 <option value="{{ $division->id }}" {{ old('division_id') == $division->id ? 'selected' : '' }}>
-                                    {{ $division->name }} (Cabang: {{ $division->branch->name ?? 'N/A' }})
+                                    {{ $division->name }}
                                 </option>
                             @endforeach
                         </select>
