@@ -354,21 +354,6 @@
                                 </div>
                             </div>
                         @endif
-                        {{-- DEBUG: Tampilkan data attendance --}}
-                        {{-- <div
-                            style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 20px; font-size: 12px;">
-                            <strong>DEBUG Attendance Data:</strong><br>
-                            @if ($myAttendanceToday)
-                                ID: {{ $myAttendanceToday->id }}<br>
-                                Check In: {{ $myAttendanceToday->check_in_time }}<br>
-                                Check Out: {{ $myAttendanceToday->check_out_time ?? 'NULL' }}<br>
-                                Photo Path: {{ $myAttendanceToday->photo_path }}<br>
-                                Photo Out Path: {{ $myAttendanceToday->photo_out_path ?? 'NULL' }}<br>
-                                Status: {{ $myAttendanceToday->check_out_time ? 'SUDAH PULANG' : 'MASIH BEKERJA' }}
-                            @else
-                                NO ATTENDANCE DATA
-                            @endif
-                        </div> --}}
                     </div>
                 </div>
             </div>
@@ -431,6 +416,80 @@
             </div>
         </div>
     @endif
+
+    {{-- ======================================================================= --}}
+    {{-- SECTION BROADCAST UNTUK SEMUA ROLE --}}
+    {{-- ======================================================================= --}}
+    <div class="row mt-4">
+        <div class="col-12 grid-margin">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="card-title mb-0">
+                            <i class="mdi mdi-bullhorn-outline me-2 text-primary"></i>
+                            Pengumuman Terbaru
+                        </h4>
+                        <a href="{{ route('broadcast.index') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="mdi mdi-format-list-bulleted me-1"></i> Lihat Semua
+                        </a>
+                    </div>
+
+                    @php
+                        // Ambil 3 broadcast terbaru
+                        $recentBroadcasts = \App\Models\Broadcast::published()
+                            ->orderBy('published_at', 'desc')
+                            ->take(3)
+                            ->get();
+                    @endphp
+
+                    @if($recentBroadcasts->count() > 0)
+                        <div class="row">
+                            @foreach($recentBroadcasts as $broadcast)
+                                <div class="col-md-4 mb-3">
+                                    <div class="card broadcast-card h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <span class="badge 
+                                                    @if($broadcast->priority == 'high') badge-danger
+                                                    @elseif($broadcast->priority == 'medium') badge-warning
+                                                    @else badge-info @endif">
+                                                    {{ ucfirst($broadcast->priority) }}
+                                                </span>
+                                                <small class="text-muted">
+                                                    {{ $broadcast->published_at->format('d M') }}
+                                                </small>
+                                            </div>
+                                            <h6 class="card-title mb-2">{{ $broadcast->title }}</h6>
+                                            <p class="card-text text-muted small">
+                                                {{ Str::limit($broadcast->message, 100) }}
+                                            </p>
+                                        </div>
+                                        <div class="card-footer bg-transparent">
+                                            <a href="{{ route('broadcast.show', $broadcast->id) }}" 
+                                               class="btn btn-sm btn-outline-dark w-100">
+                                                <i class="mdi mdi-eye-outline me-1"></i> Baca Selengkapnya
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-center py-4">
+                            <i class="mdi mdi-bullhorn-outline display-4 text-muted mb-3"></i>
+                            <h5 class="text-muted">Belum ada pengumuman</h5>
+                            <p class="text-muted">Tidak ada broadcast yang diterbitkan saat ini.</p>
+                            @if(auth()->user()->role == 'admin')
+                                <a href="{{ route('broadcast.create') }}" class="btn btn-primary">
+                                    <i class="mdi mdi-plus me-1"></i> Buat Broadcast Pertama
+                                </a>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
 
 @endsection
 
@@ -721,6 +780,35 @@
             color: white;
         }
 
+        /* Broadcast Card Styles */
+        .broadcast-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .broadcast-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .broadcast-card .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        .broadcast-card .card-text {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .broadcast-card .card-footer {
+            border-top: 1px solid #f0f0f0;
+            padding: 12px 20px;
+        }
+
         .btn-dark {
             background: #000;
             border: 2px solid #000;
@@ -810,6 +898,14 @@
             .card-id-valid,
             .card-id-card-number {
                 font-size: 10px;
+            }
+
+            .broadcast-card .card-title {
+                font-size: 14px;
+            }
+
+            .broadcast-card .card-text {
+                font-size: 13px;
             }
         }
     </style>
