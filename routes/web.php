@@ -14,7 +14,7 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\WorkHistoryController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\WorkScheduleController;
-use App\Http\Controllers\BroadcastController;
+use App\Http\Controllers\BroadcastController; // TAMBAHKAN INI
 
 /*
 |--------------------------------------------------------------------------
@@ -69,9 +69,13 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/profile/inventory', [ProfileController::class, 'storeInventory'])->name('profile.inventory.store');
     Route::delete('/profile/inventory/{inventory}', [ProfileController::class, 'destroyInventory'])->name('profile.inventory.destroy');
 
-    // --- Rute Khusus ADMIN & AUDIT ---
+    // --- Rute Khusus ADMIN ---
     Route::middleware(['role:admin,audit'])->group(function () {
         Route::resource('branches', BranchController::class);
+    });
+
+    // --- Rute Khusus ADMIN & AUDIT ---
+    Route::middleware(['role:admin,audit'])->group(function () {
         Route::resource('divisions', DivisionController::class);
         Route::resource('users', UserController::class);
 
@@ -80,10 +84,27 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/verifikasi/tolak/{attendance}', [AuditController::class, 'reject'])->name('audit.reject');
 
         Route::get('/izin-telat', [AuditController::class, 'showLatePermissions'])->name('audit.late.list');
+
+        // Nanti Anda perlu halaman untuk memverifikasi pengajuan baru
+        // Route::get('/verifikasi-izin', [LeaveRequestController::class, 'adminIndex'])->name('leave.admin.index');
     });
 
     // --- Rute Khusus SECURITY ---
+    // Route test (Bisa dihapus jika tidak perlu)
+    Route::get('/test-role-middleware', function () {
+        $user = auth()->user();
+        return response()->json([
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'user_role' => $user->role,
+            'user_branch' => $user->branch_id,
+            'message' => 'Middleware test berhasil'
+        ]);
+    })->middleware(['auth', 'role:security']);
+
+    // === RUTE SECURITY ===
     Route::middleware(['role:security'])->prefix('security')->name('security.')->group(function () {
+        
         // Halaman utama scanner (GET)
         Route::get('/scan', [ScanController::class, 'index'])->name('scan');
         
@@ -113,16 +134,4 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/leave/create', [LeaveRequestController::class, 'create'])->name('leave.create');
         Route::post('/leave/store', [LeaveRequestController::class, 'store'])->name('leave.store');
     });
-
-    // --- Route Test Middleware (Opsional, bisa dihapus) ---
-    Route::get('/test-role-middleware', function () {
-        $user = auth()->user();
-        return response()->json([
-            'user_id' => $user->id,
-            'user_name' => $user->name,
-            'user_role' => $user->role,
-            'user_branch' => $user->branch_id,
-            'message' => 'Middleware test berhasil'
-        ]);
-    })->middleware(['auth', 'role:security']);
 });
