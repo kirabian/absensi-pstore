@@ -11,6 +11,7 @@ class BroadcastController extends Controller
 {
     public function index()
     {
+        // SEMUA user yang login bisa melihat broadcast
         $broadcasts = Broadcast::published()
             ->with('creator')
             ->orderBy('published_at', 'desc')
@@ -57,6 +58,7 @@ class BroadcastController extends Controller
 
     public function show(Broadcast $broadcast)
     {
+        // SEMUA user yang login bisa melihat detail broadcast
         if (!$broadcast->is_published) {
             abort(404);
         }

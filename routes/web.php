@@ -35,6 +35,11 @@ Route::middleware(['auth'])->group(function () {
 
     // --- Rute Utama ---
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::prefix('broadcast')->name('broadcast.')->group(function () {
+        Route::get('/', [BroadcastController::class, 'index'])->name('index');
+        Route::get('/{broadcast}', [BroadcastController::class, 'show'])->name('show');
+    });
+});
 
     // CATATAN: RUTE BROADCAST DIPINDAHKAN KE BAWAH UNTUK MELINDUNGINYA DENGAN role:admin
 

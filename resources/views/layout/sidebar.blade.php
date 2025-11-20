@@ -58,7 +58,7 @@
         {{-- =================================== --}}
         @if (auth()->user()->role == 'audit' || auth()->user()->role == 'admin')
             <li class="nav-item nav-category">Verifikasi</li>
-            <li class="nav-item"> 
+            <li class="nav-item">
                 <a class="nav-link" href="{{ route('audit.verify.list') }}">
                     <i class="menu-icon mdi mdi-checkbox-marked-outline"></i>
                     <span class="menu-title">Verifikasi Absensi</span>
@@ -91,9 +91,14 @@
         @if (auth()->user()->role == 'user_biasa' || auth()->user()->role == 'leader' || auth()->user()->role == 'audit')
             <li class="nav-item nav-category">Menu Pengguna</li>
             <li class="nav-item">
-                <a class="nav-link" href="{{ route('my.team') }}"> 
+                <a class="nav-link" href="{{ route('my.team') }}">
                     <i class="menu-icon mdi mdi-account-multiple-outline"></i>
                     <span class="menu-title">Tim Saya</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('broadcast.index') }}">
+                    <i class="mdi mdi-bullhorn"></i> Pesan Broadcast
                 </a>
             </li>
         @endif
