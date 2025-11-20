@@ -10,13 +10,14 @@ use Illuminate\Support\Facades\Auth;
 class BroadcastController extends Controller
 {
     public function index()
-    {
-        $broadcasts = Broadcast::published()
-            ->orderBy('published_at', 'desc')
-            ->paginate(10);
+{
+    $broadcasts = Broadcast::published()
+        ->with('creator') // Tambahkan eager loading relasi 'creator'
+        ->orderBy('published_at', 'desc')
+        ->paginate(10);
 
-        return view('broadcast.index', compact('broadcasts'));
-    }
+    return view('broadcast.index', compact('broadcasts'));
+}
 
     public function create()
     {

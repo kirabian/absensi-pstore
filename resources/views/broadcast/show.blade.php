@@ -27,7 +27,7 @@
                         <small class="text-muted">
                             <i class="mdi mdi-calendar"></i> 
                             {{ $broadcast->published_at->format('d M Y H:i') }} 
-                            oleh {{ $broadcast->creator->name }}
+                            oleh {{ $broadcast->creator->name ?? 'User Tidak Ditemukan' }}
                         </small>
                     </div>
 

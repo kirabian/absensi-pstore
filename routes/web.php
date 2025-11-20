@@ -14,7 +14,7 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\WorkHistoryController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\WorkScheduleController;
-use App\Http\Controllers\BroadcastController; // TAMBAHKAN INI
+use App\Http\Controllers\BroadcastController; 
 
 /*
 |--------------------------------------------------------------------------
@@ -36,16 +36,7 @@ Route::middleware(['auth'])->group(function () {
     // --- Rute Utama ---
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-     // === RUTE BROADCAST ===
-    Route::prefix('broadcast')->name('broadcast.')->group(function () {
-        Route::get('/', [BroadcastController::class, 'index'])->name('index');
-        Route::get('/create', [BroadcastController::class, 'create'])->name('create');
-        Route::post('/', [BroadcastController::class, 'store'])->name('store');
-        Route::get('/{broadcast}', [BroadcastController::class, 'show'])->name('show');
-        Route::get('/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('edit'); // TAMBAH INI
-        Route::put('/{broadcast}', [BroadcastController::class, 'update'])->name('update'); // TAMBAH INI
-        Route::delete('/{broadcast}', [BroadcastController::class, 'destroy'])->name('destroy');
-    });
+    // CATATAN: RUTE BROADCAST DIPINDAHKAN KE BAWAH UNTUK MELINDUNGINYA DENGAN role:admin
 
     // === RUTE WORK SCHEDULES ===
     Route::prefix('work-schedules')->name('work-schedules.')->group(function () {
@@ -71,13 +62,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/profile/inventory', [ProfileController::class, 'storeInventory'])->name('profile.inventory.store');
     Route::delete('/profile/inventory/{inventory}', [ProfileController::class, 'destroyInventory'])->name('profile.inventory.destroy');
 
-    // --- Rute Khusus ADMIN ---
+    // --- Rute Khusus ADMIN & AUDIT (Dibuat terpisah agar Admin/Audit dapat mengelola Branch, Division, User, dan Verifikasi) ---
     Route::middleware(['role:admin,audit'])->group(function () {
         Route::resource('branches', BranchController::class);
-    });
-
-    // --- Rute Khusus ADMIN & AUDIT ---
-    Route::middleware(['role:admin,audit'])->group(function () {
         Route::resource('divisions', DivisionController::class);
         Route::resource('users', UserController::class);
 
@@ -86,11 +73,22 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/verifikasi/tolak/{attendance}', [AuditController::class, 'reject'])->name('audit.reject');
 
         Route::get('/izin-telat', [AuditController::class, 'showLatePermissions'])->name('audit.late.list');
-
-        // Nanti Anda perlu halaman untuk memverifikasi pengajuan baru
-        // Route::get('/verifikasi-izin', [LeaveRequestController::class, 'adminIndex'])->name('leave.admin.index');
     });
 
+    // --- Rute Khusus ADMIN (Hanya untuk Admin untuk mengelola Broadcast) ---
+    Route::middleware(['role:admin'])->group(function () {
+        // === RUTE BROADCAST DIPINDAHKAN DI SINI DAN DILINDUNGI role:admin ===
+        Route::prefix('broadcast')->name('broadcast.')->group(function () {
+            Route::get('/', [BroadcastController::class, 'index'])->name('index');
+            Route::get('/create', [BroadcastController::class, 'create'])->name('create');
+            Route::post('/', [BroadcastController::class, 'store'])->name('store');
+            Route::get('/{broadcast}', [BroadcastController::class, 'show'])->name('show');
+            Route::get('/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('edit');
+            Route::put('/{broadcast}', [BroadcastController::class, 'update'])->name('update');
+            Route::delete('/{broadcast}', [BroadcastController::class, 'destroy'])->name('destroy');
+        });
+    });
+    
     // --- Rute Khusus SECURITY ---
     // Route test (Bisa dihapus jika tidak perlu)
     Route::get('/test-role-middleware', function () {
