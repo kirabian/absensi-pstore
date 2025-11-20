@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\GlobalSearchController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\DashboardController;
@@ -16,6 +15,7 @@ use App\Http\Controllers\WorkHistoryController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\WorkScheduleController;
 use App\Http\Controllers\BroadcastController;
+use App\Http\Controllers\GlobalSearchController;
 
 /*
 |--------------------------------------------------------------------------
@@ -57,8 +57,6 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
-    // CATATAN: RUTE BROADCAST DIPINDAHKAN KE BAWAH UNTUK MELINDUNGINYA DENGAN role:admin
-
     // === RUTE WORK SCHEDULES ===
     Route::prefix('work-schedules')->name('work-schedules.')->group(function () {
         Route::get('/', [WorkScheduleController::class, 'index'])->name('index');
@@ -96,22 +94,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/izin-telat', [AuditController::class, 'showLatePermissions'])->name('audit.late.list');
     });
 
-    // // --- Rute Khusus ADMIN (Hanya untuk Admin untuk mengelola Broadcast) ---
-    // Route::middleware(['role:admin'])->group(function () {
-    //     // === RUTE BROADCAST ===
-    //     Route::prefix('broadcast')->name('broadcast.')->group(function () {
-    //         Route::get('/', [BroadcastController::class, 'index'])->name('index');
-    //         Route::get('/create', [BroadcastController::class, 'create'])->name('create');
-    //         Route::post('/', [BroadcastController::class, 'store'])->name('store');
-    //         Route::get('/{broadcast}', [BroadcastController::class, 'show'])->name('show');
-    //         Route::get('/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('edit');
-    //         Route::put('/{broadcast}', [BroadcastController::class, 'update'])->name('update');
-    //         Route::delete('/{broadcast}', [BroadcastController::class, 'destroy'])->name('destroy');
-    //     });
-    // });
-
     // --- Rute Khusus SECURITY ---
-    // Route test (Bisa dihapus jika tidak perlu)
     Route::get('/test-role-middleware', function () {
         $user = auth()->user();
         return response()->json([
@@ -125,17 +108,9 @@ Route::middleware(['auth'])->group(function () {
 
     // === RUTE SECURITY ===
     Route::middleware(['role:security'])->prefix('security')->name('security.')->group(function () {
-
-        // Halaman utama scanner (GET)
         Route::get('/scan', [ScanController::class, 'index'])->name('scan');
-
-        // Step 1: Validasi QR, kirim balik data user (POST)
         Route::post('/check-user', [ScanController::class, 'checkUser'])->name('check-user');
-
-        // Step 2: Simpan absensi (Masuk/Pulang) + Foto (POST)
         Route::post('/store-attendance', [ScanController::class, 'storeAttendance'])->name('store-attendance');
-
-        // Stats untuk dashboard security
         Route::get('/stats', [ScanController::class, 'getStats'])->name('stats');
     });
 
@@ -148,10 +123,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:user_biasa,leader'])->group(function () {
         Route::get('/absen-mandiri', [SelfAttendanceController::class, 'create'])->name('self.attend.create');
         Route::post('/absen-mandiri', [SelfAttendanceController::class, 'store'])->name('self.attend.store');
-
         Route::post('/hapus-telat', [SelfAttendanceController::class, 'deleteLateStatus'])->name('late.status.delete');
-
-        // --- Rute Pengajuan Izin/Cuti/Sakit/Telat Baru ---
         Route::get('/leave/create', [LeaveRequestController::class, 'create'])->name('leave.create');
         Route::post('/leave/store', [LeaveRequestController::class, 'store'])->name('leave.store');
     });
