@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Models\Broadcast;
 use App\Models\Division;
 use App\Models\Branch;
-use App\Models\Attendance;
 
 class GlobalSearchController extends Controller
 {
@@ -29,7 +28,7 @@ class GlobalSearchController extends Controller
             return response()->json(['results' => []]);
         }
 
-        // Search Users
+        // Search Users - sesuai dengan relasi di model User
         $users = User::where('name', 'like', "%{$query}%")
             ->orWhere('email', 'like', "%{$query}%")
             ->orWhere('role', 'like', "%{$query}%")
@@ -37,10 +36,13 @@ class GlobalSearchController extends Controller
             ->limit(5)
             ->get()
             ->map(function ($user) {
+                $divisionName = $user->division ? $user->division->name : 'No Division';
+                $branchName = $user->branch ? $user->branch->name : 'No Branch';
+                
                 return [
                     'type' => 'user',
                     'title' => $user->name,
-                    'description' => $user->email . ' - ' . $user->role,
+                    'description' => $user->email . ' - ' . $divisionName . ' (' . $branchName . ')',
                     'url' => route('users.edit', $user->id),
                     'icon' => 'mdi-account'
                 ];
@@ -61,23 +63,25 @@ class GlobalSearchController extends Controller
                 ];
             });
 
-        // Search Divisions
+        // Search Divisions - sesuai dengan relasi di model Division
         $divisions = Division::where('name', 'like', "%{$query}%")
             ->orWhere('description', 'like', "%{$query}%")
             ->with('branch')
             ->limit(5)
             ->get()
             ->map(function ($division) {
+                $branchName = $division->branch ? $division->branch->name : 'No Branch';
+                
                 return [
                     'type' => 'division',
                     'title' => $division->name,
-                    'description' => $division->branch->name ?? 'No Branch',
+                    'description' => $branchName . ' - ' . ($division->description ?? 'No description'),
                     'url' => route('divisions.edit', $division->id),
                     'icon' => 'mdi-sitemap'
                 ];
             });
 
-        // Search Branches
+        // Search Branches - sesuai dengan model Branch Anda
         $branches = Branch::where('name', 'like', "%{$query}%")
             ->orWhere('address', 'like', "%{$query}%")
             ->limit(5)

@@ -10,7 +10,6 @@
             </button>
         </div>
         <div>
-            {{-- Arahkan logo ke Dashboard --}}
             <a class="navbar-brand brand-logo" href="{{ route('dashboard') }}">
                 <img src="{{ asset('assets/images/logo-pstore.png') }}" alt="logo"
                     style="width: 150px; height: auto;" />
@@ -24,7 +23,6 @@
     <div class="navbar-menu-wrapper d-flex align-items-top">
         <ul class="navbar-nav">
             <li class="nav-item fw-semibold d-none d-lg-block ms-0">
-                {{-- Dibuat Dinamis --}}
                 <h1 class="welcome-text">@yield('heading')</h1>
                 <h3 class="welcome-sub-text">{{ Auth::user()->role }} - {{ Auth::user()->division->name ?? 'N/A' }}</h3>
             </li>
@@ -44,7 +42,7 @@
                         <i class="icon-search position-absolute"
                             style="left: 15px; top: 50%; transform: translateY(-50%); z-index: 10; pointer-events: none;"></i>
                         <input type="search" class="form-control ps-4" id="globalSearch"
-                            placeholder="Search users, broadcasts, divisions..." title="Search here" autocomplete="off">
+                            placeholder="Search users, broadcasts, divisions, branches..." title="Search here" autocomplete="off">
                         <div class="search-results dropdown-menu" id="searchResults" style="display: none;"></div>
                     </div>
                 </li>
@@ -131,38 +129,26 @@
             <li class="nav-item dropdown user-dropdown">
                 <a class="nav-link" id="UserDropdown" href="#" data-bs-toggle="dropdown"
                     aria-expanded="false">
-                    {{-- =================================== --}}
-                    {{--   LOGIKA FOTO/INISIAL (KECIL)   --}}
-                    {{-- =================================== --}}
                     @if (Auth::user()->profile_photo_path)
-                        {{-- JIKA FOTO ADA, tampilkan foto --}}
                         <img class="img-xs rounded-circle" src="{{ Storage::url(Auth::user()->profile_photo_path) }}"
                             alt="Profile image">
                     @else
-                        {{-- JIKA TIDAK, tampilkan inisial --}}
                         <div class="profile-initial-nav">
                             {{ getInitials(Auth::user()->name) }}
                         </div>
                     @endif
-                    {{-- =================================== --}}
                 </a>
                 <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="UserDropdown">
                     <div class="dropdown-header text-center">
-                        {{-- =================================== --}}
-                        {{--   LOGIKA FOTO/INISIAL (BESAR)   --}}
-                        {{-- =================================== --}}
                         @if (Auth::user()->profile_photo_path)
-                            {{-- JIKA FOTO ADA, tampilkan foto --}}
                             <img class="img-md rounded-circle"
                                 src="{{ Storage::url(Auth::user()->profile_photo_path) }}" alt="Profile image"
                                 style="width: 60px; height: 60px; object-fit: cover;">
                         @else
-                            {{-- JIKA TIDAK, tampilkan inisial --}}
                             <div class="profile-initial-dropdown mb-2">
                                 {{ getInitials(Auth::user()->name) }}
                             </div>
                         @endif
-                        {{-- =================================== --}}
 
                         <p class="mb-1 mt-3 fw-semibold">{{ Auth::user()->name }}</p>
                         <p class="fw-light text-muted mb-0">{{ Auth::user()->email }}</p>
@@ -170,7 +156,6 @@
                             {{ Auth::user()->division->name ?? 'N/A' }}</small>
                     </div>
 
-                    {{-- Link "My Profile" --}}
                     <a href="{{ route('profile.edit') }}" class="dropdown-item">
                         <i class="dropdown-item-icon mdi mdi-account-outline text-primary me-2"></i> My Profile
                     </a>
@@ -186,7 +171,6 @@
 
                     <div class="dropdown-divider"></div>
 
-                    {{-- Link "Sign Out" --}}
                     <a href="{{ route('logout') }}" class="dropdown-item"
                         onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                         <i class="dropdown-item-icon mdi mdi-power text-primary me-2"></i>Sign Out
@@ -212,21 +196,21 @@
             !document.msFullscreenElement) {
             if (document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen();
-            } else if (document.documentElement.webkitRequestFullscreen) { // Safari
+            } else if (document.documentElement.webkitRequestFullscreen) {
                 document.documentElement.webkitRequestFullscreen();
-            } else if (document.documentElement.mozRequestFullScreen) { // Firefox
+            } else if (document.documentElement.mozRequestFullScreen) {
                 document.documentElement.mozRequestFullScreen();
-            } else if (document.documentElement.msRequestFullscreen) { // IE/Edge
+            } else if (document.documentElement.msRequestFullscreen) {
                 document.documentElement.msRequestFullscreen();
             }
         } else {
             if (document.exitFullscreen) {
                 document.exitFullscreen();
-            } else if (document.webkitExitFullscreen) { // Safari
+            } else if (document.webkitExitFullscreen) {
                 document.webkitExitFullscreen();
-            } else if (document.mozCancelFullScreen) { // Firefox
+            } else if (document.mozCancelFullScreen) {
                 document.mozCancelFullScreen();
-            } else if (document.msExitFullscreen) { // IE/Edge
+            } else if (document.msExitFullscreen) {
                 document.msExitFullscreen();
             }
         }
@@ -234,7 +218,7 @@
 </script>
 
 <style>
-    /* Search Form Styles - FIXED */
+    /* Search Form Styles */
     .search-form {
         position: relative;
         margin-right: 15px;
@@ -247,13 +231,13 @@
         transform: translateY(-50%);
         color: #6c757d;
         z-index: 10;
-        pointer-events: none; /* Prevent icon from blocking input */
+        pointer-events: none;
     }
 
     .search-form .form-control {
         border-radius: 25px;
         border: 2px solid #e2e8f0;
-        padding-left: 40px !important; /* Important untuk override bootstrap */
+        padding-left: 40px !important;
         padding-right: 15px;
         transition: all 0.3s ease;
         background: #f8f9fa;
@@ -270,21 +254,6 @@
         outline: none;
     }
 
-    .search-form .form-control::placeholder {
-        color: #6c757d;
-        opacity: 0.8;
-    }
-
-    /* Hover effects untuk search container */
-    .search-form:hover .form-control {
-        border-color: #000;
-        background: white;
-    }
-
-    .search-form:hover .icon-search {
-        color: #000;
-    }
-
     .search-results {
         position: absolute;
         top: 100%;
@@ -297,55 +266,10 @@
         box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         margin-top: 5px;
         display: none;
+        max-height: 400px;
+        overflow-y: auto;
     }
 
-    .search-results .dropdown-item {
-        border-bottom: 1px solid #f8f9fa;
-        padding: 12px 15px;
-        transition: all 0.2s ease;
-        text-decoration: none;
-        color: #333;
-        display: block;
-    }
-
-    .search-results .dropdown-item:last-child {
-        border-bottom: none;
-    }
-
-    .search-results .dropdown-item:hover {
-        background-color: #f8f9fa;
-        transform: translateX(2px);
-        color: #000;
-    }
-
-    .search-results .dropdown-item:focus {
-        background-color: #e9ecef;
-        outline: none;
-    }
-
-    .search-results .badge {
-        font-size: 0.7em;
-        padding: 4px 8px;
-        border-radius: 4px;
-    }
-
-    /* Animasi untuk search results */
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .search-results {
-        animation: slideDown 0.2s ease-out;
-    }
-
-    /* Profile Initial Styles */
     .profile-initial-nav {
         width: 40px;
         height: 40px;
@@ -359,13 +283,6 @@
         font-size: 14px;
         cursor: pointer;
         transition: all 0.3s ease;
-        border: 2px solid transparent;
-    }
-
-    .profile-initial-nav:hover {
-        background: #333;
-        transform: scale(1.05);
-        border-color: #000;
     }
 
     .profile-initial-dropdown {
@@ -384,108 +301,6 @@
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
 
-    /* General Navbar Styles */
-    .navbar-brand img {
-        transition: transform 0.3s ease;
-    }
-
-    .navbar-brand:hover img {
-        transform: scale(1.05);
-    }
-
-    .nav-link {
-        transition: color 0.3s ease;
-        color: #6c757d !important;
-    }
-
-    .nav-link:hover {
-        color: #000 !important;
-    }
-
-    .dropdown-menu {
-        border-radius: 10px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        padding: 10px 0;
-    }
-
-    .dropdown-item {
-        border-radius: 6px;
-        margin: 2px 8px;
-        transition: all 0.3s ease;
-        padding: 8px 16px;
-    }
-
-    .dropdown-item:hover {
-        background: #f8f9fa;
-        color: #000;
-        transform: translateX(5px);
-    }
-
-    .dropdown-header {
-        padding: 15px 20px;
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-radius: 8px 8px 0 0;
-    }
-
-    /* Notification and Message Styles */
-    .count-indicator {
-        position: relative;
-    }
-
-    .count {
-        position: absolute;
-        top: -5px;
-        right: -5px;
-        background: #dc3545;
-        color: white;
-        border-radius: 50%;
-        width: 18px;
-        height: 18px;
-        font-size: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-    }
-
-    .preview-item {
-        display: flex;
-        align-items: center;
-        padding: 10px 15px;
-        border-bottom: 1px solid #f8f9fa;
-    }
-
-    .preview-item:last-child {
-        border-bottom: none;
-    }
-
-    .preview-thumbnail {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 15px;
-        background: #f8f9fa;
-    }
-
-    .preview-item-content {
-        flex: 1;
-    }
-
-    .preview-subject {
-        font-size: 14px;
-        margin-bottom: 2px;
-    }
-
-    .small-text {
-        font-size: 12px;
-        color: #6c757d;
-    }
-
-    /* Responsive design */
     @media (max-width: 768px) {
         .search-form {
             margin: 10px 0;
@@ -495,56 +310,6 @@
         .search-form .form-control {
             width: 100% !important;
         }
-        
-        .search-results {
-            position: fixed;
-            left: 10px;
-            right: 10px;
-            width: auto !important;
-        }
-
-        .navbar-menu-wrapper {
-            padding: 10px 0;
-        }
-
-        .welcome-text {
-            font-size: 1.2rem;
-        }
-
-        .welcome-sub-text {
-            font-size: 0.9rem;
-        }
-    }
-
-    @media (max-width: 576px) {
-        .search-form .form-control {
-            width: 200px !important;
-        }
-    }
-
-    /* Loading animation */
-    .mdi-spin {
-        animation: mdi-spin 1s infinite linear;
-    }
-
-    @keyframes mdi-spin {
-        0% {
-            transform: rotate(0deg);
-        }
-        100% {
-            transform: rotate(359deg);
-        }
-    }
-
-    /* Focus state untuk accessibility */
-    .search-form.focused .form-control {
-        border-color: #000;
-        background: white;
-        box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
-    }
-
-    .search-form.focused .icon-search {
-        color: #000;
     }
 </style>
 
@@ -553,28 +318,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('globalSearch');
     const searchResults = document.getElementById('searchResults');
-    const searchForm = document.querySelector('.search-form');
     
-    // Jika search input tidak ada (bukan admin), skip
     if (!searchInput) return;
     
     let searchTimeout;
-
-    // Ikon berdasarkan tipe
-    const typeIcons = {
-        'user': 'mdi-account',
-        'broadcast': 'mdi-bullhorn',
-        'division': 'mdi-sitemap',
-        'branch': 'mdi-office-building'
-    };
-
-    // Warna berdasarkan tipe
-    const typeColors = {
-        'user': 'text-primary',
-        'broadcast': 'text-warning',
-        'division': 'text-info',
-        'branch': 'text-success'
-    };
 
     searchInput.addEventListener('input', function(e) {
         clearTimeout(searchTimeout);
@@ -590,95 +337,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 300);
     });
 
-    // Focus effects
-    searchInput.addEventListener('focus', function() {
-        searchForm.classList.add('focused');
-        const query = this.value.trim();
-        if (query.length >= 2) {
-            performSearch(query);
-        }
-    });
-
-    searchInput.addEventListener('blur', function() {
-        // Delay hiding results to allow clicking on them
-        setTimeout(() => {
-            if (!searchResults.matches(':hover')) {
-                searchForm.classList.remove('focused');
-                hideResults();
-            }
-        }, 200);
-    });
-
     // Hide results when clicking outside
     document.addEventListener('click', function(e) {
-        if (!searchForm.contains(e.target)) {
-            searchForm.classList.remove('focused');
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
             hideResults();
         }
-    });
-
-    // Keyboard navigation
-    searchInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            hideResults();
-            searchInput.blur();
-        }
-        
-        // Enter key - go to first result
-        if (e.key === 'Enter' && searchResults.style.display === 'block') {
-            const firstResult = searchResults.querySelector('a');
-            if (firstResult) {
-                e.preventDefault();
-                firstResult.click();
-            }
-        }
-        
-        // Arrow down - focus first result
-        if (e.key === 'ArrowDown' && searchResults.style.display === 'block') {
-            e.preventDefault();
-            const firstResult = searchResults.querySelector('a');
-            if (firstResult) {
-                firstResult.focus();
-            }
-        }
-    });
-
-    // Keyboard navigation for results
-    searchResults.addEventListener('keydown', function(e) {
-        if (e.target.tagName === 'A') {
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                const next = e.target.nextElementSibling;
-                if (next) next.focus();
-            }
-            if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                const prev = e.target.previousElementSibling || searchInput;
-                prev.focus();
-            }
-            if (e.key === 'Escape') {
-                hideResults();
-                searchInput.focus();
-            }
-        }
-    });
-
-    // Keep results visible when hovering over them
-    searchResults.addEventListener('mouseenter', function() {
-        searchForm.classList.add('focused');
-    });
-
-    searchResults.addEventListener('mouseleave', function() {
-        setTimeout(() => {
-            if (!searchInput.matches(':focus')) {
-                searchForm.classList.remove('focused');
-                hideResults();
-            }
-        }, 300);
     });
 
     function performSearch(query) {
-        // Show loading state
         searchResults.innerHTML = `
             <div class="dropdown-item text-muted">
                 <i class="mdi mdi-loading mdi-spin me-2"></i>Searching...
@@ -688,9 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         fetch(`/search?q=${encodeURIComponent(query)}`)
             .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
+                if (!response.ok) throw new Error('Network response was not ok');
                 return response.json();
             })
             .then(data => {
@@ -720,7 +384,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const resultsHtml = results.map(result => `
             <a class="dropdown-item d-flex align-items-center py-2" href="${result.url}" tabindex="0">
-                <div class="me-3 ${typeColors[result.type]}">
+                <div class="me-3 ${result.type === 'user' ? 'text-primary' : result.type === 'broadcast' ? 'text-warning' : result.type === 'division' ? 'text-info' : 'text-success'}">
                     <i class="mdi ${result.icon}"></i>
                 </div>
                 <div class="flex-grow-1">
@@ -738,26 +402,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function showResults() {
         searchResults.style.display = 'block';
         searchResults.style.width = searchInput.offsetWidth + 'px';
-        searchResults.style.maxHeight = '400px';
-        searchResults.style.overflowY = 'auto';
-        
-        // Position the results dropdown
-        searchResults.style.left = '0';
-        searchResults.style.top = '100%';
     }
 
     function hideResults() {
         searchResults.style.display = 'none';
     }
-
-    // Clear search when clicking on result
-    searchResults.addEventListener('click', function(e) {
-        if (e.target.closest('a')) {
-            searchInput.value = '';
-            hideResults();
-            searchForm.classList.remove('focused');
-        }
-    });
 });
 </script>
 @endpush
