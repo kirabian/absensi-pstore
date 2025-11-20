@@ -42,7 +42,8 @@
                         <i class="icon-search position-absolute"
                             style="left: 15px; top: 50%; transform: translateY(-50%); z-index: 10; pointer-events: none;"></i>
                         <input type="search" class="form-control ps-4" id="globalSearch"
-                            placeholder="Search users, broadcasts, divisions, branches..." title="Search here" autocomplete="off">
+                            data-url="{{ route('search') }}" placeholder="Search users, broadcasts..."
+                            autocomplete="off">
                         <div class="search-results dropdown-menu" id="searchResults" style="display: none;"></div>
                     </div>
                 </li>
@@ -263,7 +264,7 @@
         background: white;
         border: 1px solid #dee2e6;
         border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         margin-top: 5px;
         display: none;
         max-height: 400px;
@@ -298,7 +299,7 @@
         font-size: 18px;
         margin: 0 auto;
         border: 3px solid #fff;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
 
     @media (max-width: 768px) {
@@ -306,7 +307,7 @@
             margin: 10px 0;
             width: 100%;
         }
-        
+
         .search-form .form-control {
             width: 100% !important;
         }
@@ -314,75 +315,88 @@
 </style>
 
 @push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('globalSearch');
-    const searchResults = document.getElementById('searchResults');
-    
-    if (!searchInput) return;
-    
-    let searchTimeout;
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('globalSearch');
+            const searchResults = document.getElementById('searchResults');
 
-    searchInput.addEventListener('input', function(e) {
-        clearTimeout(searchTimeout);
-        const query = e.target.value.trim();
+            if (!searchInput) return;
 
-        if (query.length < 2) {
-            hideResults();
-            return;
-        }
+            let searchTimeout;
 
-        searchTimeout = setTimeout(() => {
-            performSearch(query);
-        }, 300);
-    });
+            searchInput.addEventListener('input', function(e) {
+                clearTimeout(searchTimeout);
+                const query = e.target.value.trim();
 
-    // Hide results when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
-            hideResults();
-        }
-    });
+                if (query.length < 2) {
+                    hideResults();
+                    return;
+                }
 
-    function performSearch(query) {
-        searchResults.innerHTML = `
+                searchTimeout = setTimeout(() => {
+                    performSearch(query);
+                }, 300);
+            });
+
+            // Hide results when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                    hideResults();
+                }
+            });
+
+            function performSearch(query) {
+                searchResults.innerHTML = `
             <div class="dropdown-item text-muted">
                 <i class="mdi mdi-loading mdi-spin me-2"></i>Searching...
             </div>
         `;
-        showResults();
+                showResults();
 
-        fetch(`/search?q=${encodeURIComponent(query)}`)
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.json();
-            })
-            .then(data => {
-                displayResults(data.results);
-            })
-            .catch(error => {
-                console.error('Search error:', error);
-                searchResults.innerHTML = `
+                // PERBAIKAN DISINI: Ambil URL yang benar dari atribut data-url
+                const url = searchInput.getAttribute('data-url');
+
+                fetch(`${url}?q=${encodeURIComponent(query)}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest', // Memberitahu Laravel ini request AJAX
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Handle jika backend mengirim error message
+                        if (data.error) {
+                            console.error("Backend Error:", data.error);
+                            throw new Error(data.error);
+                        }
+                        displayResults(data.results);
+                    })
+                    .catch(error => {
+                        console.error('Search error:', error);
+                        searchResults.innerHTML = `
                     <div class="dropdown-item text-danger">
-                        <i class="mdi mdi-alert-circle-outline me-2"></i>Search failed. Please try again.
+                        <i class="mdi mdi-alert-circle-outline me-2"></i>Error: Gagal memuat data.
                     </div>
                 `;
-                showResults();
-            });
-    }
+                        showResults();
+                    });
+            }
 
-    function displayResults(results) {
-        if (results.length === 0) {
-            searchResults.innerHTML = `
+            function displayResults(results) {
+                if (results.length === 0) {
+                    searchResults.innerHTML = `
                 <div class="dropdown-item text-muted">
                     <i class="mdi mdi-magnify me-2"></i>No results found for "<strong>${searchInput.value}</strong>"
                 </div>
             `;
-            showResults();
-            return;
-        }
+                    showResults();
+                    return;
+                }
 
-        const resultsHtml = results.map(result => `
+                const resultsHtml = results.map(result => `
             <a class="dropdown-item d-flex align-items-center py-2" href="${result.url}" tabindex="0">
                 <div class="me-3 ${result.type === 'user' ? 'text-primary' : result.type === 'broadcast' ? 'text-warning' : result.type === 'division' ? 'text-info' : 'text-success'}">
                     <i class="mdi ${result.icon}"></i>
@@ -395,18 +409,18 @@ document.addEventListener('DOMContentLoaded', function() {
             </a>
         `).join('');
 
-        searchResults.innerHTML = resultsHtml;
-        showResults();
-    }
+                searchResults.innerHTML = resultsHtml;
+                showResults();
+            }
 
-    function showResults() {
-        searchResults.style.display = 'block';
-        searchResults.style.width = searchInput.offsetWidth + 'px';
-    }
+            function showResults() {
+                searchResults.style.display = 'block';
+                searchResults.style.width = searchInput.offsetWidth + 'px';
+            }
 
-    function hideResults() {
-        searchResults.style.display = 'none';
-    }
-});
-</script>
+            function hideResults() {
+                searchResults.style.display = 'none';
+            }
+        });
+    </script>
 @endpush

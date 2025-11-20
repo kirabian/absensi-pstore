@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+// Import Model
 use App\Models\User;
-use App\Models\Broadcast;
+use App\Models\Broadcast; 
 use App\Models\Division;
 use App\Models\Branch;
 
@@ -14,91 +15,112 @@ class GlobalSearchController extends Controller
 {
     public function search(Request $request)
     {
+        // 1. Validasi Input
         $query = $request->get('q');
-        $results = [];
         
+        // Minimal 2 huruf untuk mencari
         if (!$query || strlen($query) < 2) {
             return response()->json(['results' => []]);
         }
 
+        // 2. Cek User Login
         $user = Auth::user();
-
-        // Hanya admin yang bisa melakukan global search
-        if ($user->role !== 'admin') {
-            return response()->json(['results' => []]);
+        if (!$user) {
+             return response()->json(['results' => []], 401);
         }
 
-        // Search Users - sesuai dengan relasi di model User
-        $users = User::where('name', 'like', "%{$query}%")
-            ->orWhere('email', 'like', "%{$query}%")
-            ->orWhere('role', 'like', "%{$query}%")
-            ->with(['division', 'branch'])
-            ->limit(5)
-            ->get()
-            ->map(function ($user) {
-                $divisionName = $user->division ? $user->division->name : 'No Division';
-                $branchName = $user->branch ? $user->branch->name : 'No Branch';
-                
-                return [
-                    'type' => 'user',
-                    'title' => $user->name,
-                    'description' => $user->email . ' - ' . $divisionName . ' (' . $branchName . ')',
-                    'url' => route('users.edit', $user->id),
-                    'icon' => 'mdi-account'
-                ];
-            });
+        // 3. Validasi Role (Hanya Admin)
+        if ($user->role !== 'admin') {
+             return response()->json(['results' => []]); 
+        }
 
-        // Search Broadcasts
-        $broadcasts = Broadcast::where('title', 'like', "%{$query}%")
-            ->orWhere('message', 'like', "%{$query}%")
-            ->limit(5)
-            ->get()
-            ->map(function ($broadcast) {
-                return [
-                    'type' => 'broadcast',
-                    'title' => $broadcast->title,
-                    'description' => Str::limit($broadcast->message, 50),
-                    'url' => route('broadcast.show', $broadcast->id),
-                    'icon' => 'mdi-bullhorn'
-                ];
-            });
+        $results = collect([]);
 
-        // Search Divisions - sesuai dengan relasi di model Division
-        $divisions = Division::where('name', 'like', "%{$query}%")
-            ->orWhere('description', 'like', "%{$query}%")
-            ->with('branch')
-            ->limit(5)
-            ->get()
-            ->map(function ($division) {
-                $branchName = $division->branch ? $division->branch->name : 'No Branch';
-                
-                return [
-                    'type' => 'division',
-                    'title' => $division->name,
-                    'description' => $branchName . ' - ' . ($division->description ?? 'No description'),
-                    'url' => route('divisions.edit', $division->id),
-                    'icon' => 'mdi-sitemap'
-                ];
-            });
+        try {
+            // === SEARCH 1: USERS ===
+            $users = User::where('name', 'like', "%{$query}%")
+                ->orWhere('email', 'like', "%{$query}%")
+                ->with(['division', 'branch']) // Eager loading
+                ->limit(5)
+                ->get()
+                ->map(function ($item) {
+                    // Gunakan ?-> (Null Safe Operator) untuk mencegah error jika data kosong
+                    $divName = $item->division?->name ?? '-'; 
+                    $branchName = $item->branch?->name ?? '-';
 
-        // Search Branches - sesuai dengan model Branch Anda
-        $branches = Branch::where('name', 'like', "%{$query}%")
-            ->orWhere('address', 'like', "%{$query}%")
-            ->limit(5)
-            ->get()
-            ->map(function ($branch) {
-                return [
-                    'type' => 'branch',
-                    'title' => $branch->name,
-                    'description' => $branch->address,
-                    'url' => route('branches.edit', $branch->id),
-                    'icon' => 'mdi-office-building'
-                ];
-            });
+                    return [
+                        'type' => 'user',
+                        'title' => $item->name,
+                        'description' => "{$item->email} - {$divName} ({$branchName})",
+                        'url' => route('users.edit', $item->id),
+                        'icon' => 'mdi-account'
+                    ];
+                });
+            $results = $results->merge($users);
 
-        // Gabungkan semua hasil
-        $results = $users->merge($broadcasts)->merge($divisions)->merge($branches)->take(10);
+            // === SEARCH 2: BROADCASTS (Sesuai Model Anda) ===
+            $broadcasts = Broadcast::where('title', 'like', "%{$query}%")
+                ->orWhere('message', 'like', "%{$query}%")
+                ->orderBy('created_at', 'desc') // Tampilkan yang terbaru
+                ->limit(5)
+                ->get()
+                ->map(function ($item) {
+                    // Logika status untuk deskripsi hasil search
+                    $status = $item->is_published ? 'Published' : 'Draft';
+                    $priority = ucfirst($item->priority); // High/Normal
+                    
+                    return [
+                        'type' => 'broadcast',
+                        'title' => $item->title,
+                        'description' => "[{$status} - {$priority}] " . Str::limit($item->message, 40),
+                        'url' => route('broadcast.show', $item->id), // Pastikan route ini ada
+                        'icon' => 'mdi-bullhorn'
+                    ];
+                });
+            $results = $results->merge($broadcasts);
 
-        return response()->json(['results' => $results]);
+            // === SEARCH 3: DIVISIONS ===
+            $divisions = Division::where('name', 'like', "%{$query}%")
+                ->with('branch')
+                ->limit(5)
+                ->get()
+                ->map(function ($item) {
+                    $branchName = $item->branch?->name ?? 'No Branch';
+                    return [
+                        'type' => 'division',
+                        'title' => $item->name,
+                        'description' => "Branch: {$branchName}",
+                        'url' => route('divisions.edit', $item->id),
+                        'icon' => 'mdi-sitemap'
+                    ];
+                });
+            $results = $results->merge($divisions);
+
+            // === SEARCH 4: BRANCHES ===
+            $branches = Branch::where('name', 'like', "%{$query}%")
+                ->orWhere('address', 'like', "%{$query}%")
+                ->limit(5)
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'type' => 'branch',
+                        'title' => $item->name,
+                        'description' => Str::limit($item->address, 40),
+                        'url' => route('branches.edit', $item->id),
+                        'icon' => 'mdi-office-building'
+                    ];
+                });
+            $results = $results->merge($branches);
+
+            // Gabungkan dan ambil maksimal 10 hasil
+            return response()->json(['results' => $results->take(10)]);
+
+        } catch (\Exception $e) {
+            // Tangkap error agar tidak White Screen of Death
+            return response()->json([
+                'results' => [],
+                'error' => $e->getMessage() // Bisa dilihat di Console Browser -> Network
+            ], 500);
+        }
     }
 }
