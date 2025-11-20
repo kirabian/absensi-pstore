@@ -14,9 +14,11 @@ class UserFactory extends Factory
 
     public function definition()
     {
-        // Untuk user biasa, tetap butuh branch dan division
+        // Ambil branch random yang ada
         $branch = Branch::inRandomOrder()->first();
-        $division = $branch ? Division::where('branch_id', $branch->id)->inRandomOrder()->first() : null;
+        
+        // Ambil division random (sekarang independent dari branch)
+        $division = Division::inRandomOrder()->first();
 
         return [
             'name' => $this->faker->name(),
@@ -43,6 +45,54 @@ class UserFactory extends Factory
                 'role' => 'admin',
                 'branch_id' => null,
                 'division_id' => null,
+            ];
+        });
+    }
+
+    /**
+     * State untuk user dengan role tertentu
+     */
+    public function withRole(string $role)
+    {
+        return $this->state(function (array $attributes) use ($role) {
+            return [
+                'role' => $role,
+            ];
+        });
+    }
+
+    /**
+     * State untuk user tanpa divisi (Admin Cabang, Security)
+     */
+    public function withoutDivision()
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'division_id' => null,
+            ];
+        });
+    }
+
+    /**
+     * State untuk user dengan branch tertentu
+     */
+    public function forBranch($branchId)
+    {
+        return $this->state(function (array $attributes) use ($branchId) {
+            return [
+                'branch_id' => $branchId,
+            ];
+        });
+    }
+
+    /**
+     * State untuk user dengan division tertentu
+     */
+    public function forDivision($divisionId)
+    {
+        return $this->state(function (array $attributes) use ($divisionId) {
+            return [
+                'division_id' => $divisionId,
             ];
         });
     }
