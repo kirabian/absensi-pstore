@@ -99,5 +99,10 @@ class User extends Authenticatable
         return $this->hasMany(Inventory::class);
     }
 
+        public function broadcasts()
+    {
+        return $this->hasMany(Broadcast::class, 'created_by');
+    }
+
     
 }

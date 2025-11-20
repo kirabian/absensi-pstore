@@ -14,7 +14,7 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\WorkHistoryController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\WorkScheduleController;
-use App\Http\Controllers\BroadcastController; 
+use App\Http\Controllers\BroadcastController;
 
 /*
 |--------------------------------------------------------------------------
@@ -77,18 +77,18 @@ Route::middleware(['auth'])->group(function () {
 
     // --- Rute Khusus ADMIN (Hanya untuk Admin untuk mengelola Broadcast) ---
     Route::middleware(['role:admin'])->group(function () {
-        // === RUTE BROADCAST DIPINDAHKAN DI SINI DAN DILINDUNGI role:admin ===
+        // === RUTE BROADCAST YANG DIPERBAIKI ===
         Route::prefix('broadcast')->name('broadcast.')->group(function () {
             Route::get('/', [BroadcastController::class, 'index'])->name('index');
             Route::get('/create', [BroadcastController::class, 'create'])->name('create');
             Route::post('/', [BroadcastController::class, 'store'])->name('store');
-            Route::get('/broadcast', [BroadcastController::class, 'show'])->name('show');
-            Route::get('/broadcast/edit', [BroadcastController::class, 'edit'])->name('edit');
-            Route::put('/broadcast', [BroadcastController::class, 'update'])->name('update');
-            Route::delete('/broadcast', [BroadcastController::class, 'destroy'])->name('destroy');
+            Route::get('/{broadcast}', [BroadcastController::class, 'show'])->name('show'); // PERBAIKAN
+            Route::get('/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('edit'); // PERBAIKAN
+            Route::put('/{broadcast}', [BroadcastController::class, 'update'])->name('update'); // PERBAIKAN
+            Route::delete('/{broadcast}', [BroadcastController::class, 'destroy'])->name('destroy'); // PERBAIKAN
         });
     });
-    
+
     // --- Rute Khusus SECURITY ---
     // Route test (Bisa dihapus jika tidak perlu)
     Route::get('/test-role-middleware', function () {
@@ -104,16 +104,16 @@ Route::middleware(['auth'])->group(function () {
 
     // === RUTE SECURITY ===
     Route::middleware(['role:security'])->prefix('security')->name('security.')->group(function () {
-        
+
         // Halaman utama scanner (GET)
         Route::get('/scan', [ScanController::class, 'index'])->name('scan');
-        
+
         // Step 1: Validasi QR, kirim balik data user (POST)
         Route::post('/check-user', [ScanController::class, 'checkUser'])->name('check-user');
-        
+
         // Step 2: Simpan absensi (Masuk/Pulang) + Foto (POST)
         Route::post('/store-attendance', [ScanController::class, 'storeAttendance'])->name('store-attendance');
-        
+
         // Stats untuk dashboard security
         Route::get('/stats', [ScanController::class, 'getStats'])->name('stats');
     });

@@ -10,14 +10,14 @@ use Illuminate\Support\Facades\Auth;
 class BroadcastController extends Controller
 {
     public function index()
-{
-    $broadcasts = Broadcast::published()
-        ->with('creator') // Tambahkan eager loading relasi 'creator'
-        ->orderBy('published_at', 'desc')
-        ->paginate(10);
+    {
+        $broadcasts = Broadcast::published()
+            ->with('creator')
+            ->orderBy('published_at', 'desc')
+            ->paginate(10);
 
-    return view('broadcast.index', compact('broadcasts'));
-}
+        return view('broadcast.index', compact('broadcasts'));
+    }
 
     public function create()
     {
@@ -64,7 +64,6 @@ class BroadcastController extends Controller
         return view('broadcast.show', compact('broadcast'));
     }
 
-    // TAMBAHKAN METHOD EDIT
     public function edit(Broadcast $broadcast)
     {
         // Hanya admin yang bisa edit broadcast
@@ -75,7 +74,6 @@ class BroadcastController extends Controller
         return view('broadcast.edit', compact('broadcast'));
     }
 
-    // TAMBAHKAN METHOD UPDATE
     public function update(Request $request, Broadcast $broadcast)
     {
         // Hanya admin yang bisa update broadcast
