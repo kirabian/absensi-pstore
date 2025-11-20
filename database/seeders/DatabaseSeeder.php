@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,        // 3. Buat User (butuh Cabang & Divisi)
 
             // Seeders lama Anda (butuh User & Divisi)
-            AuditTeamSeeder::class,
+            // AuditTeamSeeder::class,
             AttendanceSeeder::class,
             LateNotificationSeeder::class,
         ]);
