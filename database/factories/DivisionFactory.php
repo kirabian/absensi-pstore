@@ -2,16 +2,17 @@
 
 namespace Database\Factories;
 
+use App\Models\Division;
 use Illuminate\Database\Eloquent\Factories\Factory;
-// Jangan import Branch di sini, biarkan Seeder yang mengaturnya
 
 class DivisionFactory extends Factory
 {
+    protected $model = Division::class;
+
     public function definition()
     {
         return [
-            'name' => 'Tim ' . $this->faker->jobTitle(),
-            // branch_id akan kita isi lewat Seeder
+            'name' => 'Tim ' . $this->faker->unique()->jobTitle(),
         ];
     }
 }
