@@ -81,7 +81,7 @@ class UserSeeder extends Seeder
             ]);
 
             // Buat 7 Anggota Tim (User Biasa)
-            User::factory(7)->create([
+            User::factory(8)->create([
                 'role' => 'user_biasa',
                 'branch_id' => $branch->id,
                 'division_id' => $division->id,

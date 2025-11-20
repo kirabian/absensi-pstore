@@ -10,6 +10,6 @@ class AuditTeamSeeder extends Seeder
     public function run()
     {
         // Buat 10 data mapping antara audit dan divisi
-        AuditTeam::factory(10)->create();
+        AuditTeam::factory(1)->create();
     }
 }

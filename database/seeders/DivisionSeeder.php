@@ -20,7 +20,7 @@ class DivisionSeeder extends Seeder
 
         // Buat 3 divisi untuk SETIAP cabang
         foreach ($branches as $branch) {
-            Division::factory(5)->create([
+            Division::factory(1)->create([
                 'branch_id' => $branch->id
             ]);
         }

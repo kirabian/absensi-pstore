@@ -10,6 +10,6 @@ class BranchSeeder extends Seeder
     public function run()
     {
         // Buat 5 cabang dummy
-        Branch::factory(61)->create();
+        Branch::factory(1)->create();
     }
 }

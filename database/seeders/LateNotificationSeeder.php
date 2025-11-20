@@ -10,6 +10,6 @@ class LateNotificationSeeder extends Seeder
     public function run()
     {
         // Buat 10 data notifikasi terlambat
-        LateNotification::factory(10)->create();
+        LateNotification::factory(1)->create();
     }
 }
