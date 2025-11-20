@@ -95,6 +95,10 @@
                             <a href="{{ route('users.index') }}" class="btn btn-outline-dark btn-lg">
                                 <i class="mdi mdi-account-multiple me-2"></i>Kelola User
                             </a>
+                            {{-- BARU: Tambahkan tombol Kelola Broadcast --}}
+                            <a href="{{ route('broadcast.index') }}" class="btn btn-dark btn-lg">
+                                <i class="mdi mdi-bullhorn me-2"></i>Kelola Broadcast
+                            </a>
                         </div>
                     </div>
                 </div>
