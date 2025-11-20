@@ -13,7 +13,8 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\WorkHistoryController;
 use App\Http\Controllers\LeaveRequestController;
-use App\Http\Controllers\WorkScheduleController; // TAMBAHKAN INI
+use App\Http\Controllers\WorkScheduleController;
+use App\Http\Controllers\BroadcastController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,17 +36,25 @@ Route::middleware(['auth'])->group(function () {
     // --- Rute Utama ---
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-    // === TAMBAHKAN RUTE WORK SCHEDULES DI SINI ===
-    Route::prefix('work-schedules')->group(function () {
-        Route::get('/', [WorkScheduleController::class, 'index'])->name('work-schedules.index');
-        Route::get('/create', [WorkScheduleController::class, 'create'])->name('work-schedules.create');
-        Route::post('/', [WorkScheduleController::class, 'store'])->name('work-schedules.store');
-        Route::get('/{workSchedule}/edit', [WorkScheduleController::class, 'edit'])->name('work-schedules.edit');
-        Route::put('/{workSchedule}', [WorkScheduleController::class, 'update'])->name('work-schedules.update');
-        Route::delete('/{workSchedule}', [WorkScheduleController::class, 'destroy'])->name('work-schedules.destroy');
-        Route::patch('/{workSchedule}/toggle-status', [WorkScheduleController::class, 'toggleStatus'])->name('work-schedules.toggle-status');
+    // === RUTE BROADCAST ===
+    Route::prefix('broadcast')->name('broadcast.')->group(function () {
+        Route::get('/', [BroadcastController::class, 'index'])->name('index');
+        Route::get('/create', [BroadcastController::class, 'create'])->name('create');
+        Route::post('/', [BroadcastController::class, 'store'])->name('store');
+        Route::get('/{broadcast}', [BroadcastController::class, 'show'])->name('show');
+        Route::delete('/{broadcast}', [BroadcastController::class, 'destroy'])->name('destroy');
+    });
+
+    // === RUTE WORK SCHEDULES ===
+    Route::prefix('work-schedules')->name('work-schedules.')->group(function () {
+        Route::get('/', [WorkScheduleController::class, 'index'])->name('index');
+        Route::get('/create', [WorkScheduleController::class, 'create'])->name('create');
+        Route::post('/', [WorkScheduleController::class, 'store'])->name('store');
+        Route::get('/{workSchedule}/edit', [WorkScheduleController::class, 'edit'])->name('edit');
+        Route::put('/{workSchedule}', [WorkScheduleController::class, 'update'])->name('update');
+        Route::delete('/{workSchedule}', [WorkScheduleController::class, 'destroy'])->name('destroy');
+        Route::patch('/{workSchedule}/toggle-status', [WorkScheduleController::class, 'toggleStatus'])->name('toggle-status');
     })->middleware('can:access_work_schedules');
-    // === AKHIR TAMBAHAN ===
 
     // --- Rute Edit Profil (UNTUK SEMUA ROLE) ---
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -60,13 +69,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/profile/inventory', [ProfileController::class, 'storeInventory'])->name('profile.inventory.store');
     Route::delete('/profile/inventory/{inventory}', [ProfileController::class, 'destroyInventory'])->name('profile.inventory.destroy');
 
-    // --- Rute Khusus ADMIN ---
-    Route::middleware(['role:admin'])->group(function () {
-        Route::resource('branches', BranchController::class);
-    });
-
     // --- Rute Khusus ADMIN & AUDIT ---
     Route::middleware(['role:admin,audit'])->group(function () {
+        Route::resource('branches', BranchController::class);
         Route::resource('divisions', DivisionController::class);
         Route::resource('users', UserController::class);
 
@@ -75,28 +80,10 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/verifikasi/tolak/{attendance}', [AuditController::class, 'reject'])->name('audit.reject');
 
         Route::get('/izin-telat', [AuditController::class, 'showLatePermissions'])->name('audit.late.list');
-
-        // Nanti Anda perlu halaman untuk memverifikasi pengajuan baru
-        // Route::get('/verifikasi-izin', [LeaveRequestController::class, 'adminIndex'])->name('leave.admin.index');
     });
 
     // --- Rute Khusus SECURITY ---
-    // Route test (Bisa dihapus jika tidak perlu)
-    Route::get('/test-role-middleware', function () {
-        $user = auth()->user();
-        return response()->json([
-            'user_id' => $user->id,
-            'user_name' => $user->name,
-            'user_role' => $user->role,
-            'user_branch' => $user->branch_id,
-            'message' => 'Middleware test berhasil'
-        ]);
-    })->middleware(['auth', 'role:security']);
-
-    // === [ UPDATE PENTING DISINI ] ===
-    // Menggunakan grup middleware baru yang lebih bersih
     Route::middleware(['role:security'])->prefix('security')->name('security.')->group(function () {
-        
         // Halaman utama scanner (GET)
         Route::get('/scan', [ScanController::class, 'index'])->name('scan');
         
@@ -109,7 +96,6 @@ Route::middleware(['auth'])->group(function () {
         // Stats untuk dashboard security
         Route::get('/stats', [ScanController::class, 'getStats'])->name('stats');
     });
-    // === [ AKHIR UPDATE ] ===
 
     // --- Rute Khusus USER_BIASA, LEADER, & AUDIT ---
     Route::middleware(['role:user_biasa,leader,audit'])->group(function () {
@@ -127,4 +113,16 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/leave/create', [LeaveRequestController::class, 'create'])->name('leave.create');
         Route::post('/leave/store', [LeaveRequestController::class, 'store'])->name('leave.store');
     });
+
+    // --- Route Test Middleware (Opsional, bisa dihapus) ---
+    Route::get('/test-role-middleware', function () {
+        $user = auth()->user();
+        return response()->json([
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'user_role' => $user->role,
+            'user_branch' => $user->branch_id,
+            'message' => 'Middleware test berhasil'
+        ]);
+    })->middleware(['auth', 'role:security']);
 });
