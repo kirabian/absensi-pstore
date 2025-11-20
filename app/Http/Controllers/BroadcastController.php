@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Broadcast;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -60,6 +61,41 @@ class BroadcastController extends Controller
         }
 
         return view('broadcast.show', compact('broadcast'));
+    }
+
+    // TAMBAHKAN METHOD EDIT
+    public function edit(Broadcast $broadcast)
+    {
+        // Hanya admin yang bisa edit broadcast
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized action.');
+        }
+
+        return view('broadcast.edit', compact('broadcast'));
+    }
+
+    // TAMBAHKAN METHOD UPDATE
+    public function update(Request $request, Broadcast $broadcast)
+    {
+        // Hanya admin yang bisa update broadcast
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'message' => 'required|string',
+            'priority' => 'required|in:low,medium,high'
+        ]);
+
+        $broadcast->update([
+            'title' => $request->title,
+            'message' => $request->message,
+            'priority' => $request->priority
+        ]);
+
+        return redirect()->route('broadcast.index')
+            ->with('success', 'Broadcast berhasil diperbarui!');
     }
 
     public function destroy(Broadcast $broadcast)

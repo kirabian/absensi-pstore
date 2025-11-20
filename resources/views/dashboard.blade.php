@@ -100,25 +100,6 @@
                 </div>
             </div>
         </div>
-        <div class="row mt-4">
-        <div class="col-12 grid-margin stretch-card">
-            <div class="card card-action">
-                <div class="card-body text-center py-4">
-                    <i class="mdi mdi-bullhorn-outline display-3 text-primary mb-4"></i>
-                    <h4 class="card-title mb-3">Broadcast Message</h4>
-                    <p class="text-muted mb-4">Kirim pengumuman penting ke semua user sistem.</p>
-                    <div class="d-flex justify-content-center gap-3 flex-wrap">
-                        <a href="{{ route('broadcast.create') }}" class="btn btn-primary btn-lg">
-                            <i class="mdi mdi-plus-circle me-2"></i>Buat Broadcast Baru
-                        </a>
-                        <a href="{{ route('broadcast.index') }}" class="btn btn-outline-primary btn-lg">
-                            <i class="mdi mdi-format-list-bulleted me-2"></i>Lihat Semua Broadcast
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
         {{-- ======================================================================= --}}
         {{-- TAMPILAN UNTUK AUDIT --}}

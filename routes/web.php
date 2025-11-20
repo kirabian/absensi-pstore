@@ -36,12 +36,14 @@ Route::middleware(['auth'])->group(function () {
     // --- Rute Utama ---
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-    // === RUTE BROADCAST ===
+     // === RUTE BROADCAST ===
     Route::prefix('broadcast')->name('broadcast.')->group(function () {
         Route::get('/', [BroadcastController::class, 'index'])->name('index');
         Route::get('/create', [BroadcastController::class, 'create'])->name('create');
         Route::post('/', [BroadcastController::class, 'store'])->name('store');
         Route::get('/{broadcast}', [BroadcastController::class, 'show'])->name('show');
+        Route::get('/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('edit'); // TAMBAH INI
+        Route::put('/{broadcast}', [BroadcastController::class, 'update'])->name('update'); // TAMBAH INI
         Route::delete('/{broadcast}', [BroadcastController::class, 'destroy'])->name('destroy');
     });
 
