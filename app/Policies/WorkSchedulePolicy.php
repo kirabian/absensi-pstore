@@ -12,31 +12,31 @@ class WorkSchedulePolicy
 
     public function viewAny(User $user)
     {
-        return in_array($user->role, ['super_admin', 'admin', 'audit', 'leader']);
+        return in_array($user->role, ['admin', 'audit', 'leader']);
     }
 
     public function view(User $user, WorkSchedule $workSchedule)
     {
-        return in_array($user->role, ['super_admin', 'admin', 'audit', 'leader']);
+        return in_array($user->role, ['admin', 'audit', 'leader']);
     }
 
     public function create(User $user)
     {
-        return in_array($user->role, ['super_admin', 'admin', 'audit']);
+        return in_array($user->role, ['admin', 'audit']);
     }
 
     public function update(User $user, WorkSchedule $workSchedule)
     {
-        return in_array($user->role, ['super_admin', 'admin', 'audit']);
+        return in_array($user->role, ['admin', 'audit']);
     }
 
     public function delete(User $user, WorkSchedule $workSchedule)
     {
-        return in_array($user->role, ['super_admin', 'admin']);
+        return in_array($user->role, ['admin']);
     }
 
     public function access_work_schedules(User $user)
     {
-        return in_array($user->role, ['super_admin', 'admin', 'audit', 'leader']);
+        return in_array($user->role, ['admin', 'audit', 'leader']);
     }
 }

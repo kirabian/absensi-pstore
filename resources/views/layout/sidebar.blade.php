@@ -43,7 +43,7 @@
         {{-- =================================== --}}
         {{--   MENU MANAGEMENT JAM KERJA BARU  --}}
         {{-- =================================== --}}
-        @if (auth()->user()->role == 'super_admin' || auth()->user()->role == 'admin' || auth()->user()->role == 'audit' || auth()->user()->role == 'leader')
+        @if (auth()->user()->role == 'admin' || auth()->user()->role == 'audit' || auth()->user()->role == 'leader')
             <li class="nav-item nav-category">Management Jam Kerja</li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('work-schedules.index') }}">
@@ -56,7 +56,7 @@
         {{-- =================================== --}}
         {{--   MENU KHUSUS VERIFIKASI (Super Admin & Audit) --}}
         {{-- =================================== --}}
-        @if (auth()->user()->role == 'super_admin' || auth()->user()->role == 'audit')
+        @if (auth()->user()->role == 'audit' || auth()->user()->role == 'admin')
             <li class="nav-item nav-category">Verifikasi</li>
             <li class="nav-item"> 
                 <a class="nav-link" href="{{ route('audit.verify.list') }}">

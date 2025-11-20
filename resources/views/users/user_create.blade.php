@@ -45,7 +45,7 @@
                         <label for="role">Role</label>
                         <select class="form-control" id="role" name="role" required>
                             <option value="">-- Pilih Role --</option>
-                            <option value="super_admin" {{ old('role') == 'super_admin' ? 'selected' : '' }}>Super Admin</option>
+                            <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Super Admin</option>
                             <option value="audit" {{ old('role') == 'audit' ? 'selected' : '' }}>Audit</option>
                             <option value="leader" {{ old('role') == 'leader' ? 'selected' : '' }}>Leader</option>
                             <option value="security" {{ old('role') == 'security' ? 'selected' : '' }}>Security</option>
@@ -82,7 +82,7 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <small class="text-muted">Pilih "Super Admin" jika role-nya 'super_admin'.</small>
+                            <small class="text-muted">Pilih "Super Admin" jika role-nya 'admin'.</small>
                         @endif
                     </div>
                     
