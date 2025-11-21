@@ -101,65 +101,37 @@ class DashboardController extends Controller
     /**
      * Get common data for ALL roles (ID Card & Attendance Status)
      */
-   /**
-     * Get common data for ALL roles (ID Card & Attendance Status)
-     */
     private function getCommonDataForAllRoles($user, $data)
     {
-        // ------------------------------------------------------------
-        // 1. LOGIKA ABSENSI (EXISTING)
-        // ------------------------------------------------------------
+        // AMBIL SEMUA absensi hari ini untuk user yang login
         $todayAttendances = Attendance::where('user_id', $user->id)
             ->whereDate('check_in_time', today())
             ->orderBy('check_in_time', 'desc')
             ->get();
 
-        // Cari yang SUDAH PULANG (check_out_time NOT NULL)
+        // LOGIC PRIORITY untuk semua role:
+        // 1. Cari yang SUDAH PULANG (check_out_time NOT NULL)
         $attendanceWithCheckout = $todayAttendances->first(function ($attendance) {
             return !is_null($attendance->check_out_time);
         });
 
         if ($attendanceWithCheckout) {
+            // JIKA ADA YANG SUDAH PULANG
             $data['myAttendanceToday'] = $attendanceWithCheckout;
         } else {
-            // Cari yang punya photo_out_path (data rusak tapi sudah pulang)
+            // 2. Cari yang punya photo_out_path (data rusak tapi sudah pulang)
             $attendanceWithPhotoOut = $todayAttendances->first(function ($attendance) {
                 return !is_null($attendance->photo_out_path);
             });
 
             if ($attendanceWithPhotoOut) {
+                // JIKA ADA YANG SUDAH PULANG (tapi check_out_time NULL)
                 $data['myAttendanceToday'] = $attendanceWithPhotoOut;
             } else {
-                // Ambil yang terakhir (masih masuk)
+                // 3. Ambil yang terakhir (masih masuk)
                 $data['myAttendanceToday'] = $todayAttendances->first();
             }
         }
-
-        // ------------------------------------------------------------
-        // 2. LOGIKA IZIN / SAKIT / TELAT (BARU DITAMBAHKAN)
-        // ------------------------------------------------------------
-        $today = Carbon::today();
-        
-        $myLeaveToday = LeaveRequest::where('user_id', $user->id)
-            ->where('status', '!=', 'rejected') // Abaikan yang sudah ditolak
-            ->where(function ($query) use ($today) {
-                $query->where(function ($q) use ($today) {
-                    // Kasus A: Sakit/Izin (Cek Rentang Tanggal)
-                    // Start date <= hari ini DAN End date >= hari ini
-                    $q->whereIn('type', ['sakit', 'izin'])
-                      ->whereDate('start_date', '<=', $today)
-                      ->whereDate('end_date', '>=', $today);
-                })->orWhere(function ($q) use ($today) {
-                    // Kasus B: Telat (Cek Tanggal Spesifik Hari Ini)
-                    $q->where('type', 'telat')
-                      ->whereDate('start_date', $today);
-                });
-            })
-            ->latest() // Ambil yang paling baru diajukan jika ada duplikat
-            ->first();
-
-        // Masukkan ke array data agar bisa dipanggil di Blade
-        $data['myLeaveToday'] = $myLeaveToday; 
 
         return $data;
     }
