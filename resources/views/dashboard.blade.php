@@ -429,7 +429,7 @@
                     <div class="card-body py-4">
                         <h5 class="card-title mb-4"><i class="mdi mdi-lightning-bolt me-2"></i>Aksi Cepat</h5>
                         <div class="d-grid gap-3">
-                            <a href="{{ route('leave-requests.create') }}" class="btn btn-light text-start p-3 border">
+                            <a href="{{ route('leave.create') }}" class="btn btn-light text-start p-3 border">
                                 <div class="d-flex align-items-center">
                                     <div class="bg-danger text-white rounded p-2 me-3">
                                         <i class="mdi mdi-hospital-box"></i>
