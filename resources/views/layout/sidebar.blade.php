@@ -66,7 +66,7 @@
             </li>
            <li class="nav-item">
                 {{-- Mengarah ke LeaveRequestController@index --}}
-                <a class="nav-link" href="{{ route('leave.index') }}">
+                <a class="nav-link" href="{{ route('leave-requests.index') }}">
                     <i class="menu-icon mdi mdi-clock-alert-outline"></i>
                     {{-- Saya sarankan ubah judulnya karena isinya Izin Sakit juga --}}
                     <span class="menu-title">Daftar Izin / Telat</span>
