@@ -308,19 +308,61 @@
 
                                 {{-- KONDISI 2: BARU MASUK (BELUM PULANG) --}}
                             @else
-                                <div class="status-card status-success mb-3">
+                                @php
+                                    // Tentukan Warna dan Icon berdasarkan Status & Tipe Absen
+                                    if (
+                                        $myAttendanceToday->attendance_type == 'scan' ||
+                                        $myAttendanceToday->status == 'present'
+                                    ) {
+                                        // Jika Scan Security ATAU Sudah Diapprove Audit -> HIJAU
+                                        $cardClass = 'status-success';
+                                        $iconClass = 'mdi-check-circle';
+                                        $statusText = 'Sedang Bekerja (Terverifikasi)';
+                                    } else {
+                                        // Jika Absen Mandiri DAN Masih Pending -> KUNING/ORANGE
+                                        $cardClass = 'status-warning';
+                                        $iconClass = 'mdi-clock-alert';
+                                        $statusText = 'Menunggu Verifikasi Audit';
+                                    }
+                                @endphp
+
+                                <div class="status-card {{ $cardClass }} mb-3">
                                     <div class="d-flex align-items-center">
                                         <div class="status-icon">
-                                            <i class="mdi mdi-check-circle"></i>
+                                            <i class="mdi {{ $iconClass }}"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <h5 class="mb-1 fw-bold">Sedang Bekerja</h5>
+                                            <h5 class="mb-1 fw-bold">{{ $statusText }}</h5>
                                             <p class="mb-0">
                                                 Masuk Pukul:
                                                 <strong>{{ $myAttendanceToday->check_in_time->format('H:i') }}</strong>
                                             </p>
+
+                                            {{-- Badge Tipe Absen --}}
+                                            <div class="mt-1">
+                                                @if ($myAttendanceToday->attendance_type == 'scan')
+                                                    <span class="badge bg-success text-white" style="font-size: 10px;">
+                                                        <i class="mdi mdi-security me-1"></i>Security Scan
+                                                    </span>
+                                                @elseif($myAttendanceToday->attendance_type == 'self')
+                                                    <span class="badge bg-warning text-dark" style="font-size: 10px;">
+                                                        <i class="mdi mdi-face-recognition me-1"></i>Selfie Mandiri
+                                                    </span>
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
+
+                                    {{-- Tombol Absen Pulang (Muncul jika Self Attendance & Belum Pulang) --}}
+                                    @if ($myAttendanceToday->attendance_type == 'self' && !$myAttendanceToday->check_out_time)
+                                        <div class="mt-3 pt-3 border-top text-center">
+                                            <p class="text-muted small mb-2">Ingin pulang? Lakukan absen mandiri lagi.</p>
+                                            <a href="{{ route('self.attend.create') }}"
+                                                class="btn btn-danger btn-sm w-100">
+                                                <i class="mdi mdi-logout me-1"></i>Absen Pulang Mandiri
+                                            </a>
+                                        </div>
+                                    @endif
 
                                     {{-- Tampilkan Foto Masuk --}}
                                     @if ($myAttendanceToday->photo_path)
@@ -333,10 +375,14 @@
                                         </div>
                                     @endif
                                 </div>
-                                <div class="alert alert-info border-0 bg-light text-dark">
-                                    <i class="mdi mdi-information me-2"></i> Jangan lupa melakukan scan QR
-                                    <strong>Pulang</strong> sebelum meninggalkan kantor.
-                                </div>
+
+                                {{-- Pesan Info --}}
+                                @if ($myAttendanceToday->attendance_type == 'scan')
+                                    <div class="alert alert-info border-0 bg-light text-dark mt-2">
+                                        <i class="mdi mdi-information me-2"></i> Jangan lupa scan QR
+                                        <strong>Pulang</strong> di Security.
+                                    </div>
+                                @endif
                             @endif
 
                             {{-- KONDISI 3: BELUM ABSEN SAMA SEKALI --}}

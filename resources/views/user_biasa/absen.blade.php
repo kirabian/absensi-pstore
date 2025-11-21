@@ -1,11 +1,11 @@
 @extends('layout.master')
 
 @section('title')
-    Absen Mandiri
+    Absen Mandiri ({{ ucfirst($mode) }})
 @endsection
 
 @section('heading')
-    Absen Mandiri
+    Absen Mandiri ({{ ucfirst($mode) }})
 @endsection
 
 @section('content')
@@ -14,15 +14,15 @@
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h4 class="card-title mb-0">Form Absen Mandiri</h4>
+                        <h4 class="card-title mb-0">Form Absen Mandiri ({{ ucfirst($mode) }})</h4>
                         <div class="badge badge-dark badge-pill">
                             <i class="mdi mdi-camera me-1"></i>Selfie
                         </div>
                     </div>
 
                     <p class="text-muted mb-4">
-                        Ambil foto selfie dan pastikan lokasi Anda akurat. Foto akan otomatis ditambahkan watermark
-                        timestamp.
+                        Ambil foto selfie untuk melakukan absen <strong>{{ strtoupper($mode) }}</strong>. 
+                        Pastikan lokasi Anda akurat. Foto akan otomatis ditambahkan watermark timestamp.
                     </p>
 
                     <form class="forms-sample" action="{{ route('self.attend.store') }}" method="POST"
@@ -74,61 +74,62 @@
                                         </small>
                                     </div>
                                 </div>
+                            </div>
 
-                                {{-- Location Info --}}
-                                <div class="col-md-6">
-                                    <div class="location-info p-4 rounded bg-light">
-                                        <h6 class="fw-semibold mb-3">
-                                            <i class="mdi mdi-map-marker-outline me-2"></i>Informasi Lokasi
-                                        </h6>
+                            {{-- Location Info --}}
+                            <div class="col-md-6">
+                                <div class="location-info p-4 rounded bg-light">
+                                    <h6 class="fw-semibold mb-3">
+                                        <i class="mdi mdi-map-marker-outline me-2"></i>Informasi Lokasi
+                                    </h6>
 
-                                        <div id="location-status" class="alert alert-info mb-3">
-                                            <div class="d-flex align-items-center">
-                                                <i class="mdi mdi-loading mdi-spin me-2"></i>
-                                                <span>Sedang mengambil lokasi...</span>
-                                            </div>
+                                    <div id="location-status" class="alert alert-info mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="mdi mdi-loading mdi-spin me-2"></i>
+                                            <span>Sedang mengambil lokasi...</span>
                                         </div>
-
-                                        <div id="location-details" class="d-none">
-                                            <div class="mb-2">
-                                                <small class="text-muted">Koordinat:</small>
-                                                <div class="fw-semibold" id="coordinates-display"></div>
-                                            </div>
-                                            <div class="mb-2">
-                                                <small class="text-muted">Akurasi:</small>
-                                                <div class="fw-semibold" id="accuracy-display"></div>
-                                            </div>
-                                            <div class="mb-2">
-                                                <small class="text-muted">Waktu:</small>
-                                                <div class="fw-semibold" id="time-display">
-                                                    {{ \Carbon\Carbon::now()->locale('id')->translatedFormat('l, d F Y H:i:s') }}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {{-- Input tersembunyi untuk Lokasi --}}
-                                        <input type="hidden" id="latitude" name="latitude">
-                                        <input type="hidden" id="longitude" name="longitude">
-                                        <input type="hidden" id="accuracy" name="accuracy">
                                     </div>
+
+                                    <div id="location-details" class="d-none">
+                                        <div class="mb-2">
+                                            <small class="text-muted">Koordinat:</small>
+                                            <div class="fw-semibold" id="coordinates-display"></div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small class="text-muted">Akurasi:</small>
+                                            <div class="fw-semibold" id="accuracy-display"></div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small class="text-muted">Waktu:</small>
+                                            <div class="fw-semibold" id="time-display">
+                                                {{ \Carbon\Carbon::now()->locale('id')->translatedFormat('l, d F Y H:i:s') }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- Input tersembunyi untuk Lokasi --}}
+                                    <input type="hidden" id="latitude" name="latitude">
+                                    <input type="hidden" id="longitude" name="longitude">
+                                    <input type="hidden" id="accuracy" name="accuracy">
                                 </div>
                             </div>
+                        </div>
 
-                            {{-- Additional Information --}}
-                            <div class="form-group mb-4">
-                                <label class="fw-semibold mb-2">Catatan Tambahan (Opsional)</label>
-                                <textarea name="notes" class="form-control" rows="3"
-                                    placeholder="Tambahkan catatan jika diperlukan, misal: Work From Home, meeting di luar kantor, dll."></textarea>
-                            </div>
+                        {{-- Additional Information --}}
+                        <div class="form-group mb-4">
+                            <label class="fw-semibold mb-2">Catatan Tambahan (Opsional)</label>
+                            <textarea name="notes" class="form-control" rows="3"
+                                placeholder="Tambahkan catatan jika diperlukan, misal: Work From Home, meeting di luar kantor, dll."></textarea>
+                        </div>
 
-                            <div class="d-flex gap-2 flex-wrap">
-                                <button type="submit" id="submit-button" class="btn btn-dark" disabled>
-                                    <i class="mdi mdi-send me-1"></i>Kirim Absen
-                                </button>
-                                <a href="{{ route('dashboard') }}" class="btn btn-outline-dark">
-                                    <i class="mdi mdi-close me-1"></i>Batal
-                                </a>
-                            </div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="submit" id="submit-button" class="btn btn-dark" disabled>
+                                <i class="mdi mdi-send me-1"></i>Kirim Absen {{ ucfirst($mode) }}
+                            </button>
+                            <a href="{{ route('dashboard') }}" class="btn btn-outline-dark">
+                                <i class="mdi mdi-close me-1"></i>Batal
+                            </a>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -252,6 +253,9 @@
             const accuracyDisplay = document.getElementById('accuracy-display');
             const timeDisplay = document.getElementById('time-display');
             const watermarkPreview = document.getElementById('watermark-preview');
+
+            // Variable MODE dari PHP Controller
+            const attendanceMode = "{{ ucfirst($mode) }}";
 
             // Update timestamp every second
             function updateTimestamp() {
@@ -389,10 +393,12 @@
 
                 submitButton.disabled = !(hasPhoto && hasLocation);
 
+                const btnText = `<i class="mdi mdi-send me-1"></i>Kirim Absen ${attendanceMode}`;
+
                 if (submitButton.disabled) {
-                    submitButton.innerHTML = '<i class="mdi mdi-send me-1"></i>Kirim Absen';
+                    submitButton.innerHTML = btnText;
                 } else {
-                    submitButton.innerHTML = '<i class="mdi mdi-send me-1"></i>Kirim Absen';
+                    submitButton.innerHTML = btnText;
                 }
             }
 
