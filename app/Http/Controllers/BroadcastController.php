@@ -11,9 +11,12 @@ class BroadcastController extends Controller
 {
     public function index()
     {
-        // SEMUA user yang login bisa melihat broadcast
-        $broadcasts = Broadcast::published()
-            ->with('creator')
+        // Hanya admin yang bisa melihat halaman index
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $broadcasts = Broadcast::with('creator')
             ->orderBy('published_at', 'desc')
             ->paginate(10);
 
@@ -56,14 +59,39 @@ class BroadcastController extends Controller
             ->with('success', 'Broadcast berhasil dikirim!');
     }
 
-    public function show(Broadcast $broadcast)
+    // Method untuk mendapatkan notifikasi broadcast
+    // Di method getNotifications()
+    public function getNotifications()
     {
-        // SEMUA user yang login bisa melihat detail broadcast
-        if (!$broadcast->is_published) {
-            abort(404);
-        }
+        $broadcasts = Broadcast::published()
+            ->recent(7)
+            ->orderBy('published_at', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(function ($broadcast) {
+                return [
+                    'id' => $broadcast->id,
+                    'title' => $broadcast->title,
+                    'message' => $broadcast->message,
+                    'priority' => $broadcast->priority,
+                    'priority_icon' => $broadcast->getPriorityIcon(),
+                    'priority_color' => $broadcast->getPriorityColor(),
+                    'published_at' => $broadcast->published_at->toISOString(),
+                    'time_ago' => $broadcast->published_at->diffForHumans()
+                ];
+            });
 
-        return view('broadcast.show', compact('broadcast'));
+        return response()->json([
+            'broadcasts' => $broadcasts,
+            'unread_count' => $broadcasts->count()
+        ]);
+    }
+
+    // Method untuk mark as read (jika diperlukan)
+    public function markAsRead($id)
+    {
+        // Implementasi jika ingin menandai broadcast sudah dibaca
+        return response()->json(['success' => true]);
     }
 
     public function edit(Broadcast $broadcast)

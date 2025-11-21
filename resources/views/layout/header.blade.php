@@ -48,44 +48,30 @@
                 </li>
             @endif
 
-            {{-- Notifications --}}
+            {{-- Broadcast Notifications --}}
             <li class="nav-item dropdown">
-                <a class="nav-link count-indicator" id="notificationDropdown" href="#" data-bs-toggle="dropdown">
+                <a class="nav-link count-indicator" id="broadcastDropdown" href="#" data-bs-toggle="dropdown">
                     <i class="icon-bell"></i>
-                    <span class="count">4</span>
+                    <span class="count" id="broadcastCount">0</span>
                 </a>
                 <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list pb-0"
-                    aria-labelledby="notificationDropdown">
+                    aria-labelledby="broadcastDropdown" style="min-width: 350px;">
                     <a class="dropdown-item py-3 border-bottom">
-                        <p class="mb-0 fw-medium float-start">You have 4 new notifications</p>
-                        <span class="badge badge-pill badge-primary float-end">View all</span>
+                        <p class="mb-0 fw-medium float-start">Pesan Broadcast</p>
+                        <span class="badge badge-pill badge-primary float-end" id="broadcastTotal">0 baru</span>
                     </a>
-                    <a class="dropdown-item preview-item py-3">
-                        <div class="preview-thumbnail">
-                            <i class="mdi mdi-alert m-auto text-primary"></i>
+                    <div id="broadcastList">
+                        {{-- Broadcast items akan di-load via JavaScript --}}
+                        <div class="dropdown-item text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="text-muted mt-2 mb-0">Memuat broadcast...</p>
                         </div>
-                        <div class="preview-item-content">
-                            <h6 class="preview-subject fw-normal text-dark mb-1">Application Error</h6>
-                            <p class="fw-light small-text mb-0">Just now</p>
-                        </div>
-                    </a>
-                    <a class="dropdown-item preview-item py-3">
-                        <div class="preview-thumbnail">
-                            <i class="mdi mdi-settings m-auto text-primary"></i>
-                        </div>
-                        <div class="preview-item-content">
-                            <h6 class="preview-subject fw-normal text-dark mb-1">Settings</h6>
-                            <p class="fw-light small-text mb-0">Private message</p>
-                        </div>
-                    </a>
-                    <a class="dropdown-item preview-item py-3">
-                        <div class="preview-thumbnail">
-                            <i class="mdi mdi-airballoon m-auto text-primary"></i>
-                        </div>
-                        <div class="preview-item-content">
-                            <h6 class="preview-subject fw-normal text-dark mb-1">New user registration</h6>
-                            <p class="fw-light small-text mb-0">2 days ago</p>
-                        </div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="javascript:void(0)" class="dropdown-item text-center text-primary" id="viewAllBroadcasts">
+                        <i class="mdi mdi-bullhorn-outline me-1"></i>Lihat Semua Broadcast
                     </a>
                 </div>
             </li>
@@ -127,8 +113,7 @@
 
             {{-- User Profile --}}
             <li class="nav-item dropdown user-dropdown">
-                <a class="nav-link" id="UserDropdown" href="#" data-bs-toggle="dropdown"
-                    aria-expanded="false">
+                <a class="nav-link" id="UserDropdown" href="#" data-bs-toggle="dropdown" aria-expanded="false">
                     @if (Auth::user()->profile_photo_path)
                         <img class="img-xs rounded-circle" src="{{ Storage::url(Auth::user()->profile_photo_path) }}"
                             alt="Profile image">
@@ -189,6 +174,173 @@
 </nav>
 
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const broadcastDropdown = document.getElementById('broadcastDropdown');
+        const broadcastList = document.getElementById('broadcastList');
+        const broadcastCount = document.getElementById('broadcastCount');
+        const broadcastTotal = document.getElementById('broadcastTotal');
+        const viewAllBroadcasts = document.getElementById('viewAllBroadcasts');
+
+        // Load broadcast notifications
+        function loadBroadcastNotifications() {
+            fetch('{{ route('broadcast.notifications') }}', {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    updateBroadcastUI(data);
+                })
+                .catch(error => {
+                    console.error('Error loading broadcasts:', error);
+                    showBroadcastError();
+                });
+        }
+
+        function updateBroadcastUI(data) {
+            const broadcasts = data.broadcasts || [];
+            const unreadCount = data.unread_count || 0;
+
+            // Update count badges
+            broadcastCount.textContent = unreadCount;
+            broadcastTotal.textContent = unreadCount + ' baru';
+
+            // Show/hide count badge
+            if (unreadCount > 0) {
+                broadcastCount.style.display = 'inline';
+            } else {
+                broadcastCount.style.display = 'none';
+            }
+
+            // Update broadcast list
+            if (broadcasts.length === 0) {
+                broadcastList.innerHTML = `
+                <div class="dropdown-item text-center py-4">
+                    <i class="mdi mdi-bullhorn-outline display-4 text-muted mb-2"></i>
+                    <p class="text-muted mb-0">Tidak ada broadcast baru</p>
+                </div>
+            `;
+            } else {
+                const broadcastItems = broadcasts.map(broadcast => `
+                <a class="dropdown-item preview-item py-3 broadcast-item" 
+                   href="javascript:void(0)" 
+                   data-broadcast-id="${broadcast.id}">
+                    <div class="preview-thumbnail">
+                        <i class="${broadcast.priority_icon} m-auto ${broadcast.priority_color}"></i>
+                    </div>
+                    <div class="preview-item-content">
+                        <h6 class="preview-subject fw-normal text-dark mb-1">${escapeHtml(broadcast.title)}</h6>
+                        <p class="fw-light small-text mb-0 text-muted">${escapeHtml(broadcast.message.substring(0, 50))}${broadcast.message.length > 50 ? '...' : ''}</p>
+                        <small class="text-muted">${formatTimeAgo(broadcast.published_at)}</small>
+                    </div>
+                </a>
+            `).join('');
+
+                broadcastList.innerHTML = broadcastItems;
+
+                // Add click handlers for broadcast items
+                document.querySelectorAll('.broadcast-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        const broadcastId = this.getAttribute('data-broadcast-id');
+                        showBroadcastModal(broadcastId);
+                    });
+                });
+            }
+        }
+
+        function showBroadcastError() {
+            broadcastList.innerHTML = `
+            <div class="dropdown-item text-center py-4">
+                <i class="mdi mdi-alert-circle-outline display-4 text-danger mb-2"></i>
+                <p class="text-danger mb-0">Gagal memuat broadcast</p>
+            </div>
+        `;
+        }
+
+        function showBroadcastModal(broadcastId) {
+            // Implement modal untuk menampilkan detail broadcast
+            // Anda bisa menggunakan Bootstrap modal atau sweetalert2
+            alert('Show broadcast detail for ID: ' + broadcastId);
+
+            // Optional: Mark as read
+            markBroadcastAsRead(broadcastId);
+        }
+
+        function markBroadcastAsRead(broadcastId) {
+            fetch(`/broadcast/${broadcastId}/mark-read`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update UI
+                        loadBroadcastNotifications();
+                    }
+                })
+                .catch(error => console.error('Error marking as read:', error));
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return 'Baru saja';
+            if (diffMins < 60) return `${diffMins} menit lalu`;
+            if (diffHours < 24) return `${diffHours} jam lalu`;
+            if (diffDays < 7) return `${diffDays} hari lalu`;
+
+            return date.toLocaleDateString('id-ID');
+        }
+
+        // Event listener untuk view all broadcasts
+        viewAllBroadcasts.addEventListener('click', function() {
+            @if (auth()->user()->role == 'admin')
+                window.location.href = '{{ route('broadcast.index') }}';
+            @else
+                // Untuk non-admin, tampilkan modal dengan semua broadcast
+                showAllBroadcastsModal();
+            @endif
+        });
+
+        function showAllBroadcastsModal() {
+            // Implement modal untuk menampilkan semua broadcast
+            alert('Show all broadcasts modal');
+        }
+
+        // Load notifications on page load
+        loadBroadcastNotifications();
+
+        // Refresh notifications every 30 seconds
+        setInterval(loadBroadcastNotifications, 30000);
+
+        // Load notifications when dropdown is opened
+        if (broadcastDropdown) {
+            broadcastDropdown.addEventListener('click', function() {
+                loadBroadcastNotifications();
+            });
+        }
+    });
+
     function toggleFullScreen() {
         if (!document.fullscreenElement &&
             !document.webkitFullscreenElement &&
@@ -218,6 +370,56 @@
 </script>
 
 <style>
+    /* Broadcast Notification Styles */
+    .broadcast-item {
+        border-left: 3px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    .broadcast-item:hover {
+        background-color: #f8f9fa;
+        border-left-color: #007bff;
+    }
+
+    .broadcast-item.priority-high {
+        border-left-color: #dc3545;
+    }
+
+    .broadcast-item.priority-medium {
+        border-left-color: #ffc107;
+    }
+
+    .broadcast-item.priority-low {
+        border-left-color: #17a2b8;
+    }
+
+    .preview-thumbnail .mdi {
+        font-size: 20px;
+    }
+
+    .count {
+        background: #dc3545;
+        color: white;
+        border-radius: 50%;
+        padding: 2px 6px;
+        font-size: 11px;
+        position: absolute;
+        top: -5px;
+        right: -5px;
+    }
+
+    /* Badge styles */
+    .badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 500;
+    }
+
+    .badge-pill {
+        border-radius: 10px;
+    }
+
     /* Search Form Styles */
     .search-form {
         position: relative;

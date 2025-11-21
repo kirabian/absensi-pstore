@@ -37,4 +37,31 @@ class Broadcast extends Model
     {
         return $query->where('priority', 'high');
     }
+
+    public function scopeRecent($query, $days = 7)
+    {
+        return $query->where('published_at', '>=', now()->subDays($days));
+    }
+
+    // Helper untuk mendapatkan icon berdasarkan priority
+    public function getPriorityIcon()
+    {
+        return match($this->priority) {
+            'high' => 'mdi mdi-alert',
+            'medium' => 'mdi mdi-information',
+            'low' => 'mdi mdi-bullhorn-outline',
+            default => 'mdi mdi-bullhorn-outline'
+        };
+    }
+
+    // Helper untuk mendapatkan color berdasarkan priority
+    public function getPriorityColor()
+    {
+        return match($this->priority) {
+            'high' => 'text-danger',
+            'medium' => 'text-warning',
+            'low' => 'text-info',
+            default => 'text-primary'
+        };
+    }
 }

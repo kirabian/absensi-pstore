@@ -44,19 +44,21 @@ Route::middleware(['auth'])->group(function () {
 
     // === RUTE BROADCAST ===
     Route::prefix('broadcast')->name('broadcast.')->group(function () {
-        // Rute untuk SEMUA USER yang login (bisa lihat broadcast)
-        Route::get('/', [BroadcastController::class, 'index'])->name('index');
-        Route::get('/{broadcast}', [BroadcastController::class, 'show'])->name('show');
-        
-        // Rute Khusus ADMIN (untuk mengelola broadcast)
+        // Rute untuk ADMIN saja (untuk mengelola broadcast)
         Route::middleware(['role:admin'])->group(function () {
+            Route::get('/', [BroadcastController::class, 'index'])->name('index');
             Route::get('/create', [BroadcastController::class, 'create'])->name('create');
             Route::post('/', [BroadcastController::class, 'store'])->name('store');
             Route::get('/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('edit');
             Route::put('/{broadcast}', [BroadcastController::class, 'update'])->name('update');
             Route::delete('/{broadcast}', [BroadcastController::class, 'destroy'])->name('destroy');
         });
+
+        // Rute untuk SEMUA USER yang login (untuk notifikasi)
+        Route::get('/notifications', [BroadcastController::class, 'getNotifications'])->name('notifications');
+        Route::post('/{broadcast}/mark-read', [BroadcastController::class, 'markAsRead'])->name('mark-read');
     });
+
 
     // === RUTE WORK SCHEDULES ===
     Route::prefix('work-schedules')->name('work-schedules.')->group(function () {
@@ -73,20 +75,20 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('profile')->name('profile.')->group(function () {
         Route::get('/', [ProfileController::class, 'edit'])->name('edit');
         Route::put('/', [ProfileController::class, 'update'])->name('update');
-        
+
         // Photo Management
         Route::delete('/photo', [ProfileController::class, 'deleteProfilePhoto'])->name('photo.delete');
         Route::put('/photo', [ProfileController::class, 'updatePhoto'])->name('photo.update');
         Route::get('/photo/{user}', [ProfileController::class, 'getProfilePhoto'])->name('photo.get');
-        
+
         // KTP Management
         Route::put('/ktp', [ProfileController::class, 'updateKtp'])->name('ktp.update');
         Route::get('/ktp/{user}', [ProfileController::class, 'getKtpPhoto'])->name('ktp.get');
-        
+
         // Work History
         Route::post('/work-history', [WorkHistoryController::class, 'store'])->name('work-history.store');
         Route::delete('/work-history/{history}', [WorkHistoryController::class, 'destroy'])->name('work-history.destroy');
-        
+
         // Inventory
         Route::post('/inventory', [ProfileController::class, 'storeInventory'])->name('inventory.store');
         Route::delete('/inventory/{inventory}', [ProfileController::class, 'destroyInventory'])->name('inventory.destroy');
@@ -108,16 +110,16 @@ Route::middleware(['auth'])->group(function () {
         // Branch Management
         Route::resource('branches', BranchController::class);
         Route::post('/branches/{branch}/toggle-status', [BranchController::class, 'toggleStatus'])->name('branches.toggle-status');
-        
+
         // Division Management
         Route::resource('divisions', DivisionController::class);
         Route::post('/divisions/{division}/toggle-status', [DivisionController::class, 'toggleStatus'])->name('divisions.toggle-status');
-        
+
         // User Management
         Route::resource('users', UserController::class);
         Route::post('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
         Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
-        
+
         // Attendance Verification
         Route::prefix('verifikasi')->name('audit.')->group(function () {
             Route::get('/absensi', [AuditController::class, 'showVerificationList'])->name('verify.list');
@@ -125,7 +127,7 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/tolak/{attendance}', [AuditController::class, 'reject'])->name('reject');
             Route::get('/laporan', [AuditController::class, 'showReports'])->name('reports');
         });
-        
+
         // Late Permissions
         Route::get('/izin-telat', [AuditController::class, 'showLatePermissions'])->name('audit.late.list');
         Route::post('/izin-telat/{lateNotification}/approve', [AuditController::class, 'approveLatePermission'])->name('late.approve');
@@ -158,7 +160,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/history', [SelfAttendanceController::class, 'history'])->name('history');
             Route::post('/hapus-telat', [SelfAttendanceController::class, 'deleteLateStatus'])->name('late.status.delete');
         });
-        
+
         // Leave Requests
         Route::prefix('leave')->name('leave.')->group(function () {
             Route::get('/create', [LeaveRequestController::class, 'create'])->name('create');
@@ -229,7 +231,7 @@ if (app()->environment('local')) {
             'csrf_token' => csrf_token()
         ]);
     });
-    
+
     Route::get('/debug-routes', function () {
         $routes = collect(Route::getRoutes())->map(function ($route) {
             return [
@@ -240,7 +242,7 @@ if (app()->environment('local')) {
                 'middleware' => $route->middleware(),
             ];
         });
-        
+
         return response()->json($routes);
     });
 }
