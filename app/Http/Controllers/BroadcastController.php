@@ -60,21 +60,20 @@ class BroadcastController extends Controller
     }
 
     // TAMBAHKAN METHOD SHOW YANG MISSING
-    public function show(Broadcast $broadcast)
-{
-    // Hapus atau komentar pengecekan ini agar user biasa bisa BACA detail pengumuman
-    /* if (Auth::user()->role !== 'admin') {
-        abort(403, 'Unauthorized action.');
-    }
-    */
+   public function show(Broadcast $broadcast)
+    {
+        // Pastikan kode ini TETAP DIKOMENTARI atau DIHAPUS agar user biasa bisa baca
+        /* if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized action.');
+        } */
 
-    // Pastikan broadcast sudah publish (opsional, untuk keamanan tambahan)
-    if (!$broadcast->is_published && Auth::user()->role !== 'admin') {
-        abort(404);
-    }
+        // Validasi opsional: hanya tampilkan jika published
+        if (!$broadcast->is_published && Auth::user()->role !== 'admin') {
+            abort(404);
+        }
 
-    return view('broadcast.show', compact('broadcast'));
-}
+        return view('broadcast.show', compact('broadcast'));
+    }
 
     // Method untuk mendapatkan notifikasi broadcast
     public function getNotifications()

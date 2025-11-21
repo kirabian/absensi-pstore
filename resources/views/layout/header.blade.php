@@ -211,11 +211,7 @@
             broadcastTotal.textContent = unreadCount + ' baru';
 
             // Show/hide count badge
-            if (unreadCount > 0) {
-                broadcastCount.style.display = 'inline';
-            } else {
-                broadcastCount.style.display = 'none';
-            }
+            broadcastCount.style.display = unreadCount > 0 ? 'inline' : 'none';
 
             // Update broadcast list
             if (broadcasts.length === 0) {
@@ -226,30 +222,46 @@
                 </div>
             `;
             } else {
-                const broadcastItems = broadcasts.map(broadcast => `
-                <a class="dropdown-item preview-item py-3 broadcast-item" 
-                   href="javascript:void(0)" 
-                   data-broadcast-id="${broadcast.id}">
-                    <div class="preview-thumbnail">
-                        <i class="${broadcast.priority_icon} m-auto ${broadcast.priority_color}"></i>
-                    </div>
-                    <div class="preview-item-content">
-                        <h6 class="preview-subject fw-normal text-dark mb-1">${escapeHtml(broadcast.title)}</h6>
-                        <p class="fw-light small-text mb-0 text-muted">${escapeHtml(broadcast.message.substring(0, 50))}${broadcast.message.length > 50 ? '...' : ''}</p>
-                        <small class="text-muted">${formatTimeAgo(broadcast.published_at)}</small>
-                    </div>
-                </a>
-            `).join('');
+                // Base URL untuk detail broadcast
+                // Kita buat placeholder ':id' yang nanti direplace oleh ID broadcast asli
+                const baseUrl = "{{ route('broadcast.show', ':id') }}";
+
+                const broadcastItems = broadcasts.map(broadcast => {
+                    // Generate URL spesifik untuk broadcast ini
+                    const detailUrl = baseUrl.replace(':id', broadcast.id);
+                    
+                    // Batasi teks pesan (misal 60 karakter)
+                    const limit = 60;
+                    const shortMessage = broadcast.message.length > limit 
+                        ? broadcast.message.substring(0, limit) + '...' 
+                        : broadcast.message;
+
+                    return `
+                    <a class="dropdown-item preview-item py-3 broadcast-item" href="${detailUrl}">
+                        <div class="preview-thumbnail">
+                            <i class="${broadcast.priority_icon} m-auto ${broadcast.priority_color}"></i>
+                        </div>
+                        <div class="preview-item-content flex-grow-1">
+                            <h6 class="preview-subject fw-normal text-dark mb-1">${escapeHtml(broadcast.title)}</h6>
+                            
+                            <p class="fw-light small-text mb-1 text-muted" style="white-space: normal; line-height: 1.3;">
+                                ${escapeHtml(shortMessage)}
+                            </p>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <span class="text-primary" style="font-size: 11px; font-weight: 600;">
+                                    Baca Selengkapnya <i class="mdi mdi-arrow-right"></i>
+                                </span>
+                                <small class="text-muted" style="font-size: 10px;">
+                                    ${formatTimeAgo(broadcast.published_at)}
+                                </small>
+                            </div>
+                        </div>
+                    </a>
+                    `;
+                }).join('');
 
                 broadcastList.innerHTML = broadcastItems;
-
-                // Add click handlers for broadcast items
-                document.querySelectorAll('.broadcast-item').forEach(item => {
-                    item.addEventListener('click', function() {
-                        const broadcastId = this.getAttribute('data-broadcast-id');
-                        showBroadcastModal(broadcastId);
-                    });
-                });
             }
         }
 

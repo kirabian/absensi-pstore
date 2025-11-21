@@ -96,11 +96,11 @@
                     <span class="menu-title">Tim Saya</span>
                 </a>
             </li>
-            <li class="nav-item">
+            {{-- <li class="nav-item">
                 <a class="nav-link" href="{{ route('broadcast.index') }}">
                     <i class="mdi mdi-bullhorn"></i> Pesan Broadcast
                 </a>
-            </li>
+            </li> --}}
         @endif
     </ul>
 </nav>
