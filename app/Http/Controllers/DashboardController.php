@@ -6,7 +6,7 @@ use App\Models\User;
 use App\Models\Division;
 use App\Models\Attendance;
 use App\Models\LateNotification;
-use App\Models\LeaveRequest; // ADD THIS IMPORT
+use App\Models\LeaveRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -101,7 +101,10 @@ class DashboardController extends Controller
     /**
      * Get common data for ALL roles (ID Card & Attendance Status)
      */
-    private function getCommonDataForAllRoles($user, $data) // REMOVED DUPLICATE METHOD DEFINITION
+   /**
+     * Get common data for ALL roles (ID Card & Attendance Status)
+     */
+    private function getCommonDataForAllRoles($user, $data)
     {
         // ------------------------------------------------------------
         // 1. LOGIKA ABSENSI (EXISTING)
@@ -161,7 +164,9 @@ class DashboardController extends Controller
         return $data;
     }
 
-    // ... rest of your methods remain the same
+    /**
+     * Get attendance statistics for Admin
+     */
     private function getAdminAttendanceStats($branch_id = null)
     {
         $query = Attendance::query();
@@ -189,6 +194,9 @@ class DashboardController extends Controller
         ];
     }
 
+    /**
+     * Get attendance statistics for Audit
+     */
     private function getAuditAttendanceStats($branch_id = null)
     {
         $query = Attendance::query();
@@ -213,6 +221,9 @@ class DashboardController extends Controller
         ];
     }
 
+    /**
+     * Get attendance statistics for Security
+     */
     private function getSecurityAttendanceStats($security_id, $branch_id = null)
     {
         $query = Attendance::where('scanned_by_user_id', $security_id);
@@ -234,6 +245,9 @@ class DashboardController extends Controller
         ];
     }
 
+    /**
+     * Get attendance statistics for User Biasa & Leader
+     */
     private function getUserAttendanceStats($user_id, $branch_id = null)
     {
         $query = Attendance::where('user_id', $user_id)
