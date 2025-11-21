@@ -39,12 +39,11 @@
             @if (auth()->user()->role == 'admin')
                 <li class="nav-item">
                     <div class="search-form position-relative">
-                        <i class="icon-search position-absolute"
-                            style="left: 15px; top: 50%; transform: translateY(-50%); z-index: 10; pointer-events: none;"></i>
-                        <input type="search" class="form-control ps-4" id="globalSearch"
+                        <i class="icon-search position-absolute search-icon"></i>
+                        <input type="search" class="form-control search-input" id="globalSearch"
                             data-url="{{ route('search') }}" placeholder="Search users, broadcasts..."
                             autocomplete="off">
-                        <div class="search-results dropdown-menu" id="searchResults" style="display: none;"></div>
+                        <div class="search-results dropdown-menu" id="searchResults"></div>
                     </div>
                 </li>
             @endif
@@ -225,8 +224,7 @@
         margin-right: 15px;
     }
 
-    .search-form .icon-search {
-        position: absolute;
+    .search-icon {
         left: 15px;
         top: 50%;
         transform: translateY(-50%);
@@ -235,42 +233,56 @@
         pointer-events: none;
     }
 
-    .search-form .form-control {
-        border-radius: 25px;
-        border: 2px solid #e2e8f0;
-        padding-left: 40px !important;
-        padding-right: 15px;
-        transition: all 0.3s ease;
+    .search-input {
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        padding: 8px 15px 8px 40px;
         background: #f8f9fa;
         width: 300px;
-        height: 40px;
-        position: relative;
-        z-index: 5;
+        height: 38px;
+        font-size: 14px;
     }
 
-    .search-form .form-control:focus {
+    .search-input:focus {
         border-color: #000;
-        box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
         background: white;
         outline: none;
     }
 
     .search-results {
         position: absolute;
-        top: 100%;
+        top: calc(100% + 5px);
         left: 0;
         right: 0;
         z-index: 1050;
         background: white;
         border: 1px solid #dee2e6;
         border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        margin-top: 5px;
-        display: none;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
         max-height: 400px;
         overflow-y: auto;
+        display: none;
     }
 
+    .search-results.show {
+        display: block;
+    }
+
+    .search-results .dropdown-item {
+        padding: 12px 16px;
+        border-bottom: 1px solid #f1f3f5;
+    }
+
+    .search-results .dropdown-item:last-child {
+        border-bottom: none;
+    }
+
+    .search-results .dropdown-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    /* Profile Initial Styles */
     .profile-initial-nav {
         width: 40px;
         height: 40px;
@@ -283,7 +295,6 @@
         font-weight: 600;
         font-size: 14px;
         cursor: pointer;
-        transition: all 0.3s ease;
     }
 
     .profile-initial-dropdown {
@@ -299,18 +310,50 @@
         font-size: 18px;
         margin: 0 auto;
         border: 3px solid #fff;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
+    /* Badge Styles */
+    .badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 500;
+    }
+
+    /* Result Item Styles */
+    .search-results .mdi {
+        font-size: 20px;
+    }
+
+    /* Responsive */
     @media (max-width: 768px) {
         .search-form {
             margin: 10px 0;
             width: 100%;
         }
 
-        .search-form .form-control {
-            width: 100% !important;
+        .search-input {
+            width: 100%;
         }
+    }
+
+    /* Scrollbar */
+    .search-results::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .search-results::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .search-results::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 3px;
+    }
+
+    .search-results::-webkit-scrollbar-thumb:hover {
+        background: #555;
     }
 </style>
 
@@ -345,20 +388,26 @@
                 }
             });
 
+            // Hide on ESC key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    hideResults();
+                }
+            });
+
             function performSearch(query) {
                 searchResults.innerHTML = `
-            <div class="dropdown-item text-muted">
-                <i class="mdi mdi-loading mdi-spin me-2"></i>Searching...
-            </div>
-        `;
+                    <div class="dropdown-item text-muted">
+                        <i class="mdi mdi-loading mdi-spin me-2"></i>Searching...
+                    </div>
+                `;
                 showResults();
 
-                // PERBAIKAN DISINI: Ambil URL yang benar dari atribut data-url
                 const url = searchInput.getAttribute('data-url');
 
                 fetch(`${url}?q=${encodeURIComponent(query)}`, {
                         headers: {
-                            'X-Requested-With': 'XMLHttpRequest', // Memberitahu Laravel ini request AJAX
+                            'X-Requested-With': 'XMLHttpRequest',
                             'Accept': 'application/json'
                         }
                     })
@@ -367,7 +416,6 @@
                         return response.json();
                     })
                     .then(data => {
-                        // Handle jika backend mengirim error message
                         if (data.error) {
                             console.error("Backend Error:", data.error);
                             throw new Error(data.error);
@@ -377,10 +425,10 @@
                     .catch(error => {
                         console.error('Search error:', error);
                         searchResults.innerHTML = `
-                    <div class="dropdown-item text-danger">
-                        <i class="mdi mdi-alert-circle-outline me-2"></i>Error: Gagal memuat data.
-                    </div>
-                `;
+                            <div class="dropdown-item text-danger">
+                                <i class="mdi mdi-alert-circle-outline me-2"></i>Error: Failed to load data.
+                            </div>
+                        `;
                         showResults();
                     });
             }
@@ -388,38 +436,53 @@
             function displayResults(results) {
                 if (results.length === 0) {
                     searchResults.innerHTML = `
-                <div class="dropdown-item text-muted">
-                    <i class="mdi mdi-magnify me-2"></i>No results found for "<strong>${searchInput.value}</strong>"
-                </div>
-            `;
+                        <div class="dropdown-item text-muted">
+                            <i class="mdi mdi-magnify me-2"></i>No results found for "<strong>${escapeHtml(searchInput.value)}</strong>"
+                        </div>
+                    `;
                     showResults();
                     return;
                 }
 
                 const resultsHtml = results.map(result => `
-            <a class="dropdown-item d-flex align-items-center py-2" href="${result.url}" tabindex="0">
-                <div class="me-3 ${result.type === 'user' ? 'text-primary' : result.type === 'broadcast' ? 'text-warning' : result.type === 'division' ? 'text-info' : 'text-success'}">
-                    <i class="mdi ${result.icon}"></i>
-                </div>
-                <div class="flex-grow-1">
-                    <div class="fw-medium">${result.title}</div>
-                    <small class="text-muted">${result.description}</small>
-                </div>
-                <span class="badge bg-light text-dark small text-uppercase">${result.type}</span>
-            </a>
-        `).join('');
+                    <a class="dropdown-item d-flex align-items-center" href="${escapeHtml(result.url)}" tabindex="0">
+                        <div class="me-3 ${getTypeClass(result.type)}">
+                            <i class="mdi ${escapeHtml(result.icon)}"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-medium">${escapeHtml(result.title)}</div>
+                            <small class="text-muted">${escapeHtml(result.description)}</small>
+                        </div>
+                        <span class="badge bg-light text-dark small text-uppercase">${escapeHtml(result.type)}</span>
+                    </a>
+                `).join('');
 
                 searchResults.innerHTML = resultsHtml;
                 showResults();
             }
 
+            function getTypeClass(type) {
+                const typeClasses = {
+                    'user': 'text-primary',
+                    'broadcast': 'text-warning',
+                    'division': 'text-info'
+                };
+                return typeClasses[type] || 'text-success';
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
             function showResults() {
-                searchResults.style.display = 'block';
+                searchResults.classList.add('show');
                 searchResults.style.width = searchInput.offsetWidth + 'px';
             }
 
             function hideResults() {
-                searchResults.style.display = 'none';
+                searchResults.classList.remove('show');
             }
         });
     </script>
