@@ -24,20 +24,24 @@ class WorkScheduleController extends Controller
     {
         $branches = Branch::all();
         $divisions = Division::all();
-        
+
         return view('work-schedules.create', compact('branches', 'divisions'));
     }
 
     public function store(Request $request)
     {
+        // Di dalam method store dan update
         $request->validate([
             'schedule_name' => 'required|string|max:255',
             'branch_id' => 'nullable|exists:branches,id',
             'division_id' => 'nullable|exists:divisions,id',
-            'check_in_start' => 'required|date_format:H:i',
-            'check_in_end' => 'required|date_format:H:i|after:check_in_start',
-            'check_out_start' => 'required|date_format:H:i',
-            'check_out_end' => 'required|date_format:H:i|after:check_out_start',
+
+            // UBAH DARI REQUIRED KE NULLABLE
+            'check_in_start' => 'nullable|date_format:H:i',
+            'check_in_end' => 'nullable|date_format:H:i|after:check_in_start',
+            'check_out_start' => 'nullable|date_format:H:i',
+            'check_out_end' => 'nullable|date_format:H:i|after:check_out_start',
+
             'is_default' => 'boolean',
             'is_active' => 'boolean',
         ]);
@@ -59,20 +63,24 @@ class WorkScheduleController extends Controller
     {
         $branches = Branch::all();
         $divisions = Division::all();
-        
+
         return view('work-schedules.edit', compact('workSchedule', 'branches', 'divisions'));
     }
 
     public function update(Request $request, WorkSchedule $workSchedule)
     {
+        // Di dalam method store dan update
         $request->validate([
             'schedule_name' => 'required|string|max:255',
             'branch_id' => 'nullable|exists:branches,id',
             'division_id' => 'nullable|exists:divisions,id',
-            'check_in_start' => 'required|date_format:H:i',
-            'check_in_end' => 'required|date_format:H:i|after:check_in_start',
-            'check_out_start' => 'required|date_format:H:i',
-            'check_out_end' => 'required|date_format:H:i|after:check_out_start',
+
+            // UBAH DARI REQUIRED KE NULLABLE
+            'check_in_start' => 'nullable|date_format:H:i',
+            'check_in_end' => 'nullable|date_format:H:i|after:check_in_start',
+            'check_out_start' => 'nullable|date_format:H:i',
+            'check_out_end' => 'nullable|date_format:H:i|after:check_out_start',
+
             'is_default' => 'boolean',
             'is_active' => 'boolean',
         ]);
@@ -111,7 +119,7 @@ class WorkScheduleController extends Controller
         $workSchedule->update(['is_active' => !$workSchedule->is_active]);
 
         $status = $workSchedule->is_active ? 'diaktifkan' : 'dinonaktifkan';
-        
+
         return redirect()->back()
             ->with('success', "Jam kerja berhasil $status.");
     }

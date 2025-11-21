@@ -57,22 +57,46 @@ class WorkSchedule extends Model
 
     public function isValidCheckIn($time)
     {
+        // Jika settingan jam kosong, berarti BEBAS (selalu return true)
+        if ($this->check_in_start == null || $this->check_in_end == null) {
+            return true;
+        }
+
         $checkTime = \Carbon\Carbon::parse($time)->format('H:i:s');
-        return $checkTime >= $this->check_in_start->format('H:i:s') && 
-               $checkTime <= $this->check_in_end->format('H:i:s');
+        return $checkTime >= $this->check_in_start->format('H:i:s') &&
+            $checkTime <= $this->check_in_end->format('H:i:s');
     }
 
     public function isValidCheckOut($time)
     {
+        // Jika settingan jam kosong, berarti BEBAS (selalu return true)
+        if ($this->check_out_start == null || $this->check_out_end == null) {
+            return true;
+        }
+
         $checkTime = \Carbon\Carbon::parse($time)->format('H:i:s');
-        return $checkTime >= $this->check_out_start->format('H:i:s') && 
-               $checkTime <= $this->check_out_end->format('H:i:s');
+        return $checkTime >= $this->check_out_start->format('H:i:s') &&
+            $checkTime <= $this->check_out_end->format('H:i:s');
     }
 
+    /**
+     * Get formatted time range for display
+     */
+    public function getCheckInRangeAttribute()
+    {
+        if ($this->check_in_start == null) return 'Fleksibel'; // Tampilan jika kosong
+        return $this->check_in_start->format('H:i') . ' - ' . $this->check_in_end->format('H:i');
+    }
+
+    public function getCheckOutRangeAttribute()
+    {
+        if ($this->check_out_start == null) return 'Fleksibel'; // Tampilan jika kosong
+        return $this->check_out_start->format('H:i') . ' - ' . $this->check_out_end->format('H:i');
+    }
     public static function getScheduleForUser($userId)
     {
         $user = User::find($userId);
-        
+
         if (!$user) {
             return self::default()->active()->first();
         }
@@ -97,18 +121,5 @@ class WorkSchedule extends Model
 
         // Return default schedule
         return self::default()->active()->first();
-    }
-
-    /**
-     * Get formatted time range for display
-     */
-    public function getCheckInRangeAttribute()
-    {
-        return $this->check_in_start->format('H:i') . ' - ' . $this->check_in_end->format('H:i');
-    }
-
-    public function getCheckOutRangeAttribute()
-    {
-        return $this->check_out_start->format('H:i') . ' - ' . $this->check_out_end->format('H:i');
     }
 }
