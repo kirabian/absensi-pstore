@@ -108,7 +108,7 @@
                                             </td>
                                             <td>
                                                 @if(auth()->user()->role == 'admin' || auth()->user()->id == $perm->user_id)
-                                                    <form action="{{ route('leave.cancel-late', $perm->id) }}" method="POST" 
+                                                    <form action="{{ route('audit.cancel-late', $perm->id) }}" method="POST" 
                                                           class="d-inline" 
                                                           onsubmit="return confirm('Yakin ingin membatalkan izin telat ini?')">
                                                         @csrf

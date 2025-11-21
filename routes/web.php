@@ -149,6 +149,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/izin-telat', [AuditController::class, 'showLatePermissions'])->name('audit.late.list');
         Route::post('/izin-telat/{lateNotification}/approve', [AuditController::class, 'approveLatePermission'])->name('late.approve');
         Route::post('/izin-telat/{lateNotification}/reject', [AuditController::class, 'rejectLatePermission'])->name('late.reject');
+        
+        // === RUTE BARU UNTUK IZIN TELAT AKTIF (UNTUK ADMIN/AUDIT) ===
+        Route::get('/leave/active-late-permissions', [LeaveRequestController::class, 'activeLatePermissions'])->name('leave.active-late-permissions');
+        Route::delete('/leave/cancel-late/{id}', [LeaveRequestController::class, 'cancelLatePermission'])->name('leave.cancel-late');
     });
 
     // === RUTE SECURITY ===
@@ -168,30 +172,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/tim-saya/attendance/{user}', [TeamController::class, 'attendance'])->name('my.team.attendance');
     });
 
-     // === RUTE SELF ATTENDANCE & LEAVE ===
-    Route::middleware(['role:user_biasa,leader'])->group(function () {
-        // Self Attendance
-        Route::prefix('absen-mandiri')->name('self.attend.')->group(function () {
-            Route::get('/', [SelfAttendanceController::class, 'create'])->name('create');
-            Route::post('/', [SelfAttendanceController::class, 'store'])->name('store');
-            Route::get('/history', [SelfAttendanceController::class, 'history'])->name('history');
-            Route::post('/hapus-telat', [SelfAttendanceController::class, 'deleteLateStatus'])->name('late.status.delete');
-        });
-
-        // Leave Requests
-        Route::prefix('audit')->name('audit.')->group(function () {
-            Route::get('/create', [LeaveRequestController::class, 'create'])->name('create');
-            Route::post('/store', [LeaveRequestController::class, 'store'])->name('store');
-            Route::get('/history', [LeaveRequestController::class, 'history'])->name('history');
-            Route::get('/{leaveRequest}', [LeaveRequestController::class, 'show'])->name('show');
-            Route::delete('/{leaveRequest}', [LeaveRequestController::class, 'destroy'])->name('destroy');
-            
-            // === RUTE BARU UNTUK IZIN TELAT ===
-            Route::get('/active-late-permissions', [LeaveRequestController::class, 'activeLatePermissions'])->name('active-late-permissions');
-            Route::delete('/cancel-late/{id}', [LeaveRequestController::class, 'cancelLatePermission'])->name('cancel-late');
-        });
-    });
-
     // === RUTE SELF ATTENDANCE & LEAVE ===
     Route::middleware(['role:user_biasa,leader'])->group(function () {
         // Self Attendance
@@ -199,7 +179,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/', [SelfAttendanceController::class, 'create'])->name('create');
             Route::post('/', [SelfAttendanceController::class, 'store'])->name('store');
             Route::get('/history', [SelfAttendanceController::class, 'history'])->name('history');
-            // Route::post('/hapus-telat', [SelfAttendanceController::class, 'deleteLateStatus'])->name('late.status.delete');
+            Route::post('/hapus-telat', [SelfAttendanceController::class, 'deleteLateStatus'])->name('late.status.delete');
         });
 
         // Leave Requests
