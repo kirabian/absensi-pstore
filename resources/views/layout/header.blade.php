@@ -35,7 +35,7 @@
                 </a>
             </li>
 
-            {{-- Search -- Hanya untuk Admin --}}
+            {{-- Search - Hanya untuk Admin --}}
             @if (auth()->user()->role == 'admin')
                 <li class="nav-item">
                     <div class="search-form position-relative">
@@ -49,64 +49,37 @@
             @endif
 
             {{-- Broadcast Notifications --}}
-            <li class="nav-item dropdown">
-                <a class="nav-link count-indicator" id="broadcastDropdown" href="#" data-bs-toggle="dropdown">
-                    <i class="icon-bell"></i>
-                    <span class="count" id="broadcastCount">0</span>
+            <li class="nav-item dropdown notification-dropdown">
+                <a class="nav-link position-relative d-flex align-items-center justify-content-center" 
+                   id="broadcastDropdown" 
+                   href="#" 
+                   data-bs-toggle="dropdown">
+                    <i class="icon-bell notification-icon"></i>
+                    <span class="notification-badge" id="broadcastCount" style="display: none;">0</span>
                 </a>
                 <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list pb-0"
-                    aria-labelledby="broadcastDropdown" style="min-width: 350px;">
-                    <a class="dropdown-item py-3 border-bottom">
-                        <p class="mb-0 fw-medium float-start">Pesan Broadcast</p>
-                        <span class="badge badge-pill badge-primary float-end" id="broadcastTotal">0 baru</span>
-                    </a>
-                    <div id="broadcastList">
-                        {{-- Broadcast items akan di-load via JavaScript --}}
-                        <div class="dropdown-item text-center py-4">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Loading...</span>
+                    aria-labelledby="broadcastDropdown" style="min-width: 380px; max-width: 400px;">
+                    <div class="dropdown-header px-4 py-3 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0 fw-semibold">Broadcast Notifications</h6>
+                                <small class="text-muted" id="broadcastTotal">0 unread</small>
                             </div>
-                            <p class="text-muted mt-2 mb-0">Memuat broadcast...</p>
+                            <i class="mdi mdi-bullhorn text-primary" style="font-size: 24px;"></i>
                         </div>
                     </div>
-                    <div class="dropdown-divider"></div>
-                    <a href="javascript:void(0)" class="dropdown-item text-center text-primary" id="viewAllBroadcasts">
-                        <i class="mdi mdi-bullhorn-outline me-1"></i>Lihat Semua Broadcast
-                    </a>
-                </div>
-            </li>
-
-            {{-- Messages --}}
-            <li class="nav-item dropdown">
-                <a class="nav-link count-indicator" id="countDropdown" href="#" data-bs-toggle="dropdown"
-                    aria-expanded="false">
-                    <i class="icon-mail icon-lg"></i>
-                    <span class="count">7</span>
-                </a>
-                <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list pb-0"
-                    aria-labelledby="countDropdown">
-                    <a class="dropdown-item py-3">
-                        <p class="mb-0 fw-medium float-start">You have 7 unread mails</p>
-                        <span class="badge badge-pill badge-primary float-end">View all</span>
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item preview-item">
-                        <div class="preview-thumbnail">
-                            <img src="{{ asset('assets/images/faces/face10.jpg') }}" alt="image" class="profile-pic">
+                    <div id="broadcastList" style="max-height: 400px; overflow-y: auto;">
+                        {{-- Broadcast items akan di-load via JavaScript --}}
+                        <div class="dropdown-item text-center py-5">
+                            <div class="spinner-border text-primary mb-2" role="status" style="width: 2rem; height: 2rem;">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="text-muted mb-0">Loading broadcasts...</p>
                         </div>
-                        <div class="preview-item-content flex-grow py-2">
-                            <h6 class="preview-subject fw-normal text-dark mb-1">Meeting scheduled</h6>
-                            <p class="fw-light small-text mb-0">The meeting is scheduled for 3 PM</p>
-                        </div>
-                    </a>
-                    <a class="dropdown-item preview-item">
-                        <div class="preview-thumbnail">
-                            <img src="{{ asset('assets/images/faces/face12.jpg') }}" alt="image" class="profile-pic">
-                        </div>
-                        <div class="preview-item-content flex-grow py-2">
-                            <h6 class="preview-subject fw-normal text-dark mb-1">New message</h6>
-                            <p class="fw-light small-text mb-0">You have a new message from John</p>
-                        </div>
+                    </div>
+                    <div class="dropdown-divider m-0"></div>
+                    <a href="javascript:void(0)" class="dropdown-item text-center py-3 text-primary fw-medium" id="viewAllBroadcasts">
+                        <i class="mdi mdi-bullhorn-outline me-1"></i>View All Broadcasts
                     </a>
                 </div>
             </li>
@@ -206,55 +179,55 @@
             const broadcasts = data.broadcasts || [];
             const unreadCount = data.unread_count || 0;
 
-            // Update count badges
-            broadcastCount.textContent = unreadCount;
-            broadcastTotal.textContent = unreadCount + ' baru';
-
-            // Show/hide count badge
-            broadcastCount.style.display = unreadCount > 0 ? 'inline' : 'none';
+            // Update count badge
+            if (unreadCount > 0) {
+                broadcastCount.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                broadcastCount.style.display = 'flex';
+                broadcastTotal.textContent = unreadCount + ' unread';
+            } else {
+                broadcastCount.style.display = 'none';
+                broadcastTotal.textContent = 'No unread';
+            }
 
             // Update broadcast list
             if (broadcasts.length === 0) {
                 broadcastList.innerHTML = `
-                <div class="dropdown-item text-center py-4">
-                    <i class="mdi mdi-bullhorn-outline display-4 text-muted mb-2"></i>
-                    <p class="text-muted mb-0">Tidak ada broadcast baru</p>
+                <div class="empty-state text-center py-5">
+                    <div class="empty-icon mb-3">
+                        <i class="mdi mdi-bullhorn-outline"></i>
+                    </div>
+                    <h6 class="text-muted mb-1">No Broadcasts</h6>
+                    <p class="text-muted small mb-0">You're all caught up!</p>
                 </div>
             `;
             } else {
-                // Base URL untuk detail broadcast
-                // Kita buat placeholder ':id' yang nanti direplace oleh ID broadcast asli
                 const baseUrl = "{{ route('broadcast.show', ':id') }}";
 
                 const broadcastItems = broadcasts.map(broadcast => {
-                    // Generate URL spesifik untuk broadcast ini
                     const detailUrl = baseUrl.replace(':id', broadcast.id);
-                    
-                    // Batasi teks pesan (misal 60 karakter)
-                    const limit = 60;
+                    const limit = 80;
                     const shortMessage = broadcast.message.length > limit 
                         ? broadcast.message.substring(0, limit) + '...' 
                         : broadcast.message;
 
                     return `
-                    <a class="dropdown-item preview-item py-3 broadcast-item" href="${detailUrl}">
-                        <div class="preview-thumbnail">
-                            <i class="${broadcast.priority_icon} m-auto ${broadcast.priority_color}"></i>
-                        </div>
-                        <div class="preview-item-content flex-grow-1">
-                            <h6 class="preview-subject fw-normal text-dark mb-1">${escapeHtml(broadcast.title)}</h6>
-                            
-                            <p class="fw-light small-text mb-1 text-muted" style="white-space: normal; line-height: 1.3;">
-                                ${escapeHtml(shortMessage)}
-                            </p>
-                            
-                            <div class="d-flex justify-content-between align-items-center mt-1">
-                                <span class="text-primary" style="font-size: 11px; font-weight: 600;">
-                                    Baca Selengkapnya <i class="mdi mdi-arrow-right"></i>
-                                </span>
-                                <small class="text-muted" style="font-size: 10px;">
-                                    ${formatTimeAgo(broadcast.published_at)}
-                                </small>
+                    <a class="dropdown-item broadcast-item py-3 ${broadcast.is_read ? '' : 'unread'}" href="${detailUrl}">
+                        <div class="d-flex align-items-start">
+                            <div class="broadcast-icon me-3 ${broadcast.priority_color}">
+                                <i class="${broadcast.priority_icon}"></i>
+                            </div>
+                            <div class="flex-grow-1 overflow-hidden">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <h6 class="broadcast-title mb-0 fw-semibold">${escapeHtml(broadcast.title)}</h6>
+                                    ${broadcast.is_read ? '' : '<span class="unread-dot"></span>'}
+                                </div>
+                                <p class="broadcast-message text-muted mb-2">${escapeHtml(shortMessage)}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="broadcast-read-more">
+                                        Read more <i class="mdi mdi-arrow-right"></i>
+                                    </span>
+                                    <small class="broadcast-time">${formatTimeAgo(broadcast.published_at)}</small>
+                                </div>
                             </div>
                         </div>
                     </a>
@@ -267,39 +240,14 @@
 
         function showBroadcastError() {
             broadcastList.innerHTML = `
-            <div class="dropdown-item text-center py-4">
-                <i class="mdi mdi-alert-circle-outline display-4 text-danger mb-2"></i>
-                <p class="text-danger mb-0">Gagal memuat broadcast</p>
+            <div class="empty-state text-center py-5">
+                <div class="empty-icon mb-3 text-danger">
+                    <i class="mdi mdi-alert-circle-outline"></i>
+                </div>
+                <h6 class="text-danger mb-1">Failed to Load</h6>
+                <p class="text-muted small mb-0">Please try again later</p>
             </div>
         `;
-        }
-
-        function showBroadcastModal(broadcastId) {
-            // Implement modal untuk menampilkan detail broadcast
-            // Anda bisa menggunakan Bootstrap modal atau sweetalert2
-            alert('Show broadcast detail for ID: ' + broadcastId);
-
-            // Optional: Mark as read
-            markBroadcastAsRead(broadcastId);
-        }
-
-        function markBroadcastAsRead(broadcastId) {
-            fetch(`/broadcast/${broadcastId}/mark-read`, {
-                    method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Update UI
-                        loadBroadcastNotifications();
-                    }
-                })
-                .catch(error => console.error('Error marking as read:', error));
         }
 
         function escapeHtml(text) {
@@ -316,12 +264,12 @@
             const diffHours = Math.floor(diffMs / 3600000);
             const diffDays = Math.floor(diffMs / 86400000);
 
-            if (diffMins < 1) return 'Baru saja';
-            if (diffMins < 60) return `${diffMins} menit lalu`;
-            if (diffHours < 24) return `${diffHours} jam lalu`;
-            if (diffDays < 7) return `${diffDays} hari lalu`;
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays < 7) return `${diffDays}d ago`;
 
-            return date.toLocaleDateString('id-ID');
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
 
         // Event listener untuk view all broadcasts
@@ -329,13 +277,11 @@
             @if (auth()->user()->role == 'admin')
                 window.location.href = '{{ route('broadcast.index') }}';
             @else
-                // Untuk non-admin, tampilkan modal dengan semua broadcast
                 showAllBroadcastsModal();
             @endif
         });
 
         function showAllBroadcastsModal() {
-            // Implement modal untuk menampilkan semua broadcast
             alert('Show all broadcasts modal');
         }
 
@@ -382,54 +328,201 @@
 </script>
 
 <style>
-    /* Broadcast Notification Styles */
+    /* Notification Dropdown Styles */
+    .notification-dropdown .nav-link {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .notification-dropdown .nav-link:hover {
+        background: #e9ecef;
+        transform: scale(1.05);
+    }
+
+    .notification-icon {
+        font-size: 20px;
+        color: #495057;
+    }
+
+    /* Notification Badge - Angka Merah Kecil */
+    .notification-badge {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background: linear-gradient(135deg, #ff4757 0%, #dc3545 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 2px 6px;
+        font-size: 10px;
+        font-weight: 700;
+        min-width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 6px rgba(220, 53, 69, 0.4);
+        border: 2px solid white;
+        animation: badge-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes badge-pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1);
+        }
+    }
+
+    /* Dropdown Header */
+    .dropdown-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .dropdown-header h6 {
+        color: white;
+    }
+
+    .dropdown-header small {
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .dropdown-header .mdi {
+        color: white;
+        opacity: 0.9;
+    }
+
+    /* Broadcast Item Styles */
     .broadcast-item {
         border-left: 3px solid transparent;
         transition: all 0.2s ease;
+        cursor: pointer;
     }
 
     .broadcast-item:hover {
-        background-color: #f8f9fa;
-        border-left-color: #007bff;
+        background: #f8f9fa;
+        border-left-color: #667eea;
     }
 
-    .broadcast-item.priority-high {
-        border-left-color: #dc3545;
+    .broadcast-item.unread {
+        background: #f0f4ff;
+        border-left-color: #667eea;
     }
 
-    .broadcast-item.priority-medium {
-        border-left-color: #ffc107;
+    .broadcast-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
     }
 
-    .broadcast-item.priority-low {
-        border-left-color: #17a2b8;
+    .broadcast-icon.text-danger {
+        background: #ffebee;
+        color: #dc3545;
     }
 
-    .preview-thumbnail .mdi {
-        font-size: 20px;
+    .broadcast-icon.text-warning {
+        background: #fff3e0;
+        color: #ff9800;
     }
 
-    .count {
-        background: #dc3545;
-        color: white;
+    .broadcast-icon.text-info {
+        background: #e3f2fd;
+        color: #2196f3;
+    }
+
+    .broadcast-title {
+        font-size: 14px;
+        color: #212529;
+        line-height: 1.4;
+    }
+
+    .broadcast-message {
+        font-size: 13px;
+        line-height: 1.4;
+        margin: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .broadcast-read-more {
+        color: #667eea;
+        font-size: 12px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+    .broadcast-item:hover .broadcast-read-more {
+        color: #764ba2;
+    }
+
+    .broadcast-time {
+        color: #6c757d;
+        font-size: 11px;
+        white-space: nowrap;
+    }
+
+    .unread-dot {
+        width: 8px;
+        height: 8px;
+        background: #667eea;
         border-radius: 50%;
-        padding: 2px 6px;
-        font-size: 11px;
-        position: absolute;
-        top: -5px;
-        right: -5px;
+        display: inline-block;
+        margin-left: 8px;
+        flex-shrink: 0;
     }
 
-    /* Badge styles */
-    .badge {
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 500;
+    /* Empty State */
+    .empty-state {
+        padding: 40px 20px;
     }
 
-    .badge-pill {
-        border-radius: 10px;
+    .empty-icon {
+        font-size: 64px;
+        color: #dee2e6;
+        line-height: 1;
+    }
+
+    .empty-icon.text-danger {
+        color: #dc3545;
+    }
+
+    .empty-state h6 {
+        font-size: 16px;
+        margin-bottom: 4px;
+    }
+
+    .empty-state p {
+        font-size: 13px;
+    }
+
+    /* Scrollbar */
+    #broadcastList::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    #broadcastList::-webkit-scrollbar-track {
+        background: #f8f9fa;
+    }
+
+    #broadcastList::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 3px;
+    }
+
+    #broadcastList::-webkit-scrollbar-thumb:hover {
+        background: #a0aec0;
     }
 
     /* Search Form Styles */
@@ -455,11 +548,12 @@
         width: 300px;
         height: 38px;
         font-size: 14px;
+        transition: all 0.3s ease;
     }
 
     .search-input:focus {
-        border-color: #000;
-        box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         background: white;
         outline: none;
     }
@@ -473,7 +567,7 @@
         background: white;
         border: 1px solid #dee2e6;
         border-radius: 8px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
         max-height: 400px;
         overflow-y: auto;
         display: none;
@@ -500,7 +594,7 @@
     .profile-initial-nav {
         width: 40px;
         height: 40px;
-        background: #000;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border-radius: 50%;
         display: flex;
@@ -509,12 +603,18 @@
         font-weight: 600;
         font-size: 14px;
         cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .profile-initial-nav:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
 
     .profile-initial-dropdown {
         width: 60px;
         height: 60px;
-        background: #000;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border-radius: 50%;
         display: flex;
@@ -524,20 +624,7 @@
         font-size: 18px;
         margin: 0 auto;
         border: 3px solid #fff;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    /* Badge Styles */
-    .badge {
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 500;
-    }
-
-    /* Result Item Styles */
-    .search-results .mdi {
-        font-size: 20px;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
     }
 
     /* Responsive */
@@ -550,24 +637,10 @@
         .search-input {
             width: 100%;
         }
-    }
 
-    /* Scrollbar */
-    .search-results::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .search-results::-webkit-scrollbar-track {
-        background: #f1f1f1;
-    }
-
-    .search-results::-webkit-scrollbar-thumb {
-        background: #888;
-        border-radius: 3px;
-    }
-
-    .search-results::-webkit-scrollbar-thumb:hover {
-        background: #555;
+        .notification-dropdown .dropdown-menu {
+            min-width: 320px !important;
+        }
     }
 </style>
 
@@ -595,14 +668,12 @@
                 }, 300);
             });
 
-            // Hide results when clicking outside
             document.addEventListener('click', function(e) {
                 if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
                     hideResults();
                 }
             });
 
-            // Hide on ESC key
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     hideResults();
@@ -651,7 +722,7 @@
                 if (results.length === 0) {
                     searchResults.innerHTML = `
                         <div class="dropdown-item text-muted">
-                            <i class="mdi mdi-magnify me-2"></i>No results found for "<strong>${escapeHtml(searchInput.value)}</strong>"
+                            <i class="mdi mdi-magnify me-2"></i>No results found
                         </div>
                     `;
                     showResults();
