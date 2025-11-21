@@ -8,87 +8,59 @@ use App\Models\Attendance;
 use App\Models\LateNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    /**
-     * Menampilkan dashboard berdasarkan role user.
-     */
     public function index()
     {
         $user = Auth::user();
         $data = [];
         $branch_id = $user->branch_id;
 
-        // ======================================================
         // 1. QUERY DASAR (Filter Cabang)
-        // ======================================================
         $attendanceQuery = Attendance::query();
         $userQuery = User::query();
         $divisionQuery = Division::query();
         $lateQuery = LateNotification::query();
 
         if ($user->role != 'admin' || $branch_id != null) {
-            // Filter per cabang untuk User/Leader/Security/Admin Cabang
             $attendanceQuery->where('branch_id', $branch_id);
             $userQuery->where('branch_id', $branch_id);
             $divisionQuery->where('branch_id', $branch_id);
             $lateQuery->where('branch_id', $branch_id);
         }
 
-        // ======================================================
-        // 2. ISI DATA BERDASARKAN ROLE
-        // ======================================================
-
+        // 2. ISI DATA UTAMA BERDASARKAN ROLE
         if ($user->role == 'admin') {
-            // --- ADMIN ---
             $data['totalUsers'] = $userQuery->count();
             $data['totalDivisions'] = $divisionQuery->count();
             $data['attendancesToday'] = $attendanceQuery->whereDate('check_in_time', today())->count();
             $data['pendingVerifications'] = $attendanceQuery->where('status', 'pending_verification')->count();
         } elseif ($user->role == 'audit') {
-            // --- AUDIT ---
             $data['myTeamMembers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])->count();
             $data['pendingVerifications'] = $attendanceQuery->where('status', 'pending_verification')->count();
             $data['attendancesToday'] = $attendanceQuery->whereDate('check_in_time', today())->count();
         } elseif ($user->role == 'security') {
-            // --- SECURITY ---
             $data['myScansToday'] = Attendance::where('scanned_by_user_id', $user->id)
                 ->whereDate('check_in_time', today())
                 ->count();
-
             $data['totalUsers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])->count();
-            // HANYA UNTUK USER BIASA & LEADER
         } elseif ($user->role == 'user_biasa' || $user->role == 'leader') {
-
-            // AMBIL SEMUA absensi hari ini
+            // Data Absensi Pribadi
             $todayAttendances = Attendance::where('user_id', $user->id)
                 ->whereDate('check_in_time', today())
                 ->orderBy('check_in_time', 'desc')
                 ->get();
 
-            // LOGIC PRIORITY:
-            // 1. Cari yang SUDAH PULANG (check_out_time NOT NULL)
-            $attendanceWithCheckout = $todayAttendances->first(function ($attendance) {
-                return !is_null($attendance->check_out_time);
-            });
-
+            $attendanceWithCheckout = $todayAttendances->first(fn ($att) => !is_null($att->check_out_time));
+            
             if ($attendanceWithCheckout) {
-                // JIKA ADA YANG SUDAH PULANG
                 $data['myAttendanceToday'] = $attendanceWithCheckout;
             } else {
-                // 2. Cari yang punya photo_out_path (data rusak tapi sudah pulang)
-                $attendanceWithPhotoOut = $todayAttendances->first(function ($attendance) {
-                    return !is_null($attendance->photo_out_path);
-                });
-
-                if ($attendanceWithPhotoOut) {
-                    // JIKA ADA YANG SUDAH PULANG (tapi check_out_time NULL)
-                    $data['myAttendanceToday'] = $attendanceWithPhotoOut;
-                } else {
-                    // 3. Ambil yang terakhir (masih masuk)
-                    $data['myAttendanceToday'] = $todayAttendances->first();
-                }
+                $attendanceWithPhotoOut = $todayAttendances->first(fn ($att) => !is_null($att->photo_out_path));
+                $data['myAttendanceToday'] = $attendanceWithPhotoOut ?? $todayAttendances->first();
             }
 
             $data['myPendingCount'] = Attendance::where('user_id', $user->id)
@@ -105,6 +77,125 @@ class DashboardController extends Controller
                 ->first();
         }
 
+        // 3. DATA UNTUK GRAFIK (CHART) - 7 HARI TERAKHIR
+        $chartData = $this->getChartData($user);
+        $data['chartLabels'] = $chartData['labels'];
+        $data['chartValues'] = $chartData['values'];
+        $data['chartType'] = $chartData['type']; // 'team' atau 'personal'
+
         return view('dashboard', $data);
+    }
+
+    /**
+     * Generate PDF Report
+     */
+    public function exportPdf()
+    {
+        $user = Auth::user();
+        $branch_id = $user->branch_id;
+        // Default: Bulan Ini
+        $startDate = now()->startOfMonth();
+        $endDate = now();
+
+        // Query Data untuk PDF
+        $query = Attendance::with(['user', 'user.division'])
+            ->whereBetween('check_in_time', [$startDate, $endDate])
+            ->orderBy('check_in_time', 'desc');
+
+        // Filter Data PDF Sesuai Role
+        if ($user->role == 'user_biasa') {
+            $query->where('user_id', $user->id);
+            $title = "Laporan Absensi Pribadi - " . $user->name;
+        } elseif ($user->role == 'leader') {
+            // Leader lihat divisi dia
+            $query->whereHas('user', function($q) use ($user) {
+                $q->where('division_id', $user->division_id);
+            });
+            $title = "Laporan Absensi Tim - " . ($user->division->name ?? 'Divisi');
+        } elseif ($user->role == 'admin' || $user->role == 'audit') {
+            // Admin/Audit lihat satu cabang
+            if ($branch_id) {
+                $query->where('branch_id', $branch_id);
+            }
+            $title = "Laporan Absensi Seluruh Karyawan";
+        } elseif ($user->role == 'security') {
+             // Security lihat log scan dia sendiri
+             $query->where('scanned_by_user_id', $user->id);
+             $title = "Laporan Riwayat Scan Security - " . $user->name;
+        }
+
+        $attendances = $query->get();
+
+        $pdf = Pdf::loadView('reports.attendance_pdf', compact('attendances', 'title', 'startDate', 'endDate'));
+        
+        // Download file
+        return $pdf->download('laporan_absensi_' . now()->format('Ymd_His') . '.pdf');
+    }
+
+    /**
+     * Helper untuk data grafik
+     */
+    private function getChartData($user)
+    {
+        $labels = [];
+        $values = [
+            'present' => [],
+            'late' => []
+        ];
+        
+        // Ambil 7 hari terakhir
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $labels[] = $date->format('d M');
+            $dateStr = $date->format('Y-m-d');
+
+            // Query Dasar berdasarkan Tanggal
+            $query = Attendance::whereDate('check_in_time', $dateStr);
+
+            // Filter Berdasarkan Role untuk Grafik
+            if ($user->role == 'user_biasa') {
+                // Grafik Kinerja Pribadi (Biner: 1 hadir, 0 tidak)
+                $query->where('user_id', $user->id);
+                $type = 'personal';
+            } elseif ($user->role == 'leader') {
+                // Grafik Divisi
+                $query->whereHas('user', function($q) use ($user) {
+                    $q->where('division_id', $user->division_id);
+                });
+                $type = 'team';
+            } elseif ($user->role == 'admin' || $user->role == 'audit') {
+                // Grafik Global/Cabang
+                if ($user->branch_id) {
+                    $query->where('branch_id', $user->branch_id);
+                }
+                $type = 'team';
+            } else {
+                // Security (Grafik Aktivitas Scan)
+                $query->where('scanned_by_user_id', $user->id);
+                $type = 'scan_activity';
+            }
+
+            // Hitung Data
+            if ($type == 'scan_activity') {
+                // Untuk security, hitung total scan
+                $count = $query->count();
+                $values['present'][] = $count; // Pakai slot 'present' untuk total scan
+                $values['late'][] = 0;
+            } else {
+                // 1. Hadir Tepat Waktu
+                $presentCount = (clone $query)->where('is_late_checkin', false)->count();
+                // 2. Terlambat
+                $lateCount = (clone $query)->where('is_late_checkin', true)->count();
+
+                $values['present'][] = $presentCount;
+                $values['late'][] = $lateCount;
+            }
+        }
+
+        return [
+            'labels' => $labels,
+            'values' => $values,
+            'type' => $type
+        ];
     }
 }
