@@ -8,37 +8,100 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background-color: #000; height: 100vh; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #000; height: 100vh; overflow: hidden; font-family: 'Segoe UI', sans-serif; margin: 0; }
         
-        /* --- STEP 1: QR SCANNER UI --- */
-        .scanner-container { height: 100%; display: flex; flex-direction: column; }
-        .scanner-header { 
-            background: #000; color: white; padding: 15px; 
-            text-align: center; z-index: 10; border-bottom: 1px solid #333; 
+        /* --- UI GOPAY STYLE SCANNER --- */
+        .scanner-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: black;
         }
-        .scanner-body { flex: 1; position: relative; background: #000; overflow: hidden; }
-        
-        /* Paksa Video Full Screen */
-        #reader { width: 100% !important; height: 100% !important; border: none; }
-        #reader video { object-fit: cover; width: 100% !important; height: 100% !important; }
-        
-        /* Guide Kotak Hijau di Tengah */
-        .scan-guide {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 250px; height: 250px; 
-            border: 2px solid rgba(255, 255, 255, 0.6); border-radius: 20px; 
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); /* Gelapkan area luar */
-            pointer-events: none; z-index: 10;
-        }
-        .scan-line { 
-            width: 100%; height: 3px; background: #00ff88; 
-            position: absolute; top: 0; 
-            box-shadow: 0 0 4px #00ff88;
-            animation: scanMov 2s infinite linear; 
-        }
-        @keyframes scanMov { 0% {top: 0} 50% {top: 100%} 100% {top: 0} }
 
-        /* --- STEP 2: VERIFICATION MODAL (Full Screen) --- */
+        #reader {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Video Element Hack agar Fullscreen */
+        #reader video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            border-radius: 0 !important;
+        }
+
+        /* Header Transparan diatas Video */
+        .scanner-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            color: white;
+            z-index: 20;
+            text-align: center;
+        }
+
+        /* Area Fokus (Corner Brackets ala GoPay) */
+        .scan-area {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 260px;
+            height: 260px;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        /* Membuat 4 Siku */
+        .corner {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-color: #00aa13; /* Gojek Green */
+            border-style: solid;
+            border-width: 0;
+            box-shadow: 0 0 10px rgba(0, 170, 19, 0.5);
+        }
+
+        .corner-tl { top: 0; left: 0; border-top-width: 5px; border-left-width: 5px; border-top-left-radius: 20px; }
+        .corner-tr { top: 0; right: 0; border-top-width: 5px; border-right-width: 5px; border-top-right-radius: 20px; }
+        .corner-bl { bottom: 0; left: 0; border-bottom-width: 5px; border-left-width: 5px; border-bottom-left-radius: 20px; }
+        .corner-br { bottom: 0; right: 0; border-bottom-width: 5px; border-right-width: 5px; border-bottom-right-radius: 20px; }
+
+        /* Animasi Garis Turun Naik Halus */
+        .scan-laser {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: rgba(0, 255, 0, 0.5);
+            box-shadow: 0 0 4px rgba(0, 255, 0, 0.8);
+            top: 0;
+            animation: scan 3s infinite ease-in-out;
+            opacity: 0.6;
+        }
+
+        @keyframes scan {
+            0%, 100% { top: 10%; opacity: 0; }
+            50% { top: 90%; opacity: 1; }
+        }
+
+        /* Tombol Izin Kamera Manual (Jika Auto Gagal) */
+        .permission-btn-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 30;
+            text-align: center;
+            display: none; /* Default Hidden */
+        }
+
+        /* --- UI VERIFIKASI (SAMA SEPERTI SEBELUMNYA) --- */
         .verification-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #121212; z-index: 50; display: none;
@@ -51,18 +114,16 @@
         }
         .profile-img-db { 
             width: 80px; height: 80px; border-radius: 50%; 
-            border: 3px solid #00ff88; object-fit: cover; 
+            border: 3px solid #00aa13; object-fit: cover; 
         }
         
-        /* Kamera Selfie Security */
         .camera-preview-box {
             width: 100%; height: 350px; background: black; 
             border-radius: 15px; overflow: hidden; position: relative; 
             border: 2px solid #444; margin-bottom: 20px;
         }
-        #camera-stream { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); /* Mirror effect */ }
+        #camera-stream { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         
-        /* Tombol Aksi */
         .action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn-absen { 
             padding: 15px; font-weight: bold; border-radius: 12px; 
@@ -71,36 +132,51 @@
         }
         .btn-absen:active { transform: scale(0.98); }
         
-        .btn-masuk { background: linear-gradient(45deg, #00b09b, #96c93d); box-shadow: 0 4px 15px rgba(0, 176, 155, 0.3); }
-        .btn-pulang { background: linear-gradient(45deg, #ff5f6d, #ffc371); box-shadow: 0 4px 15px rgba(255, 95, 109, 0.3); }
-        .btn-malam { grid-column: span 2; background: linear-gradient(45deg, #4b6cb7, #182848); box-shadow: 0 4px 15px rgba(75, 108, 183, 0.3); }
+        .btn-masuk { background: linear-gradient(45deg, #00b09b, #96c93d); }
+        .btn-pulang { background: linear-gradient(45deg, #ff5f6d, #ffc371); }
+        .btn-malam { grid-column: span 2; background: linear-gradient(45deg, #4b6cb7, #182848); }
 
-        /* --- STEP 3: RESULT SUCCESS --- */
         .result-overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.95); z-index: 100; display: none; 
             align-items: center; justify-content: center; text-align: center; color: white;
         }
-
-        /* Hide HTML5QRcode nonsense */
-        #reader__dashboard_section_csr, #reader__dashboard_section_swaplink { display: none !important; }
     </style>
 </head>
 <body>
 
-    <div class="scanner-container" id="qrSection">
+    {{-- SECTION 1: SCANNER UI (GOPAY STYLE) --}}
+    <div class="scanner-wrapper" id="qrSection">
+        
         <div class="scanner-header">
-            <h4 class="m-0 fw-bold"><i class="fas fa-shield-alt text-warning me-2"></i>SECURITY SCAN</h4>
-            <small class="text-muted">Scan QR Code Karyawan</small>
+            <h5 class="m-0 fw-bold"><i class="fas fa-qrcode me-2"></i>Scan Absensi</h5>
+            <small class="text-white-50">Arahkan kamera ke QR Code</small>
         </div>
-        <div class="scanner-body">
-            <div id="reader"></div>
-            <div class="scan-guide">
-                <div class="scan-line"></div>
-            </div>
+
+        {{-- Container Video --}}
+        <div id="reader"></div>
+
+        {{-- Overlay Bracket Hijau --}}
+        <div class="scan-area">
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+            <div class="scan-laser"></div>
+        </div>
+
+        {{-- Tombol Manual jika Permission Error --}}
+        <div class="permission-btn-container" id="permissionBtn">
+            <i class="fas fa-camera-slash display-4 text-white mb-3"></i>
+            <h5 class="text-white mb-3">Akses Kamera Diblokir</h5>
+            <button class="btn btn-success rounded-pill px-4" onclick="startQRScanner()">
+                Izinkan Kamera
+            </button>
+            <p class="text-white-50 mt-3 small">Pastikan Anda menggunakan HTTPS atau Localhost</p>
         </div>
     </div>
 
+    {{-- SECTION 2: VERIFICATION UI --}}
     <div class="verification-overlay" id="verifSection">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="text-white m-0">Konfirmasi Absensi</h5>
@@ -126,20 +202,18 @@
 
         <div class="action-buttons">
             <button class="btn-absen btn-masuk" onclick="submitAttendance('masuk')">
-                <i class="fas fa-sign-in-alt fa-lg mb-1 d-block"></i> 
-                MASUK
+                <i class="fas fa-sign-in-alt fa-lg mb-1 d-block"></i> MASUK
             </button>
             <button class="btn-absen btn-pulang" onclick="submitAttendance('pulang')">
-                <i class="fas fa-sign-out-alt fa-lg mb-1 d-block"></i> 
-                PULANG
+                <i class="fas fa-sign-out-alt fa-lg mb-1 d-block"></i> PULANG
             </button>
             <button class="btn-absen btn-malam" onclick="submitAttendance('malam')">
-                <i class="fas fa-moon fa-lg mb-1 d-block"></i> 
-                LEMBUR / MALAM
+                <i class="fas fa-moon fa-lg mb-1 d-block"></i> LEMBUR
             </button>
         </div>
     </div>
 
+    {{-- SECTION 3: RESULT OVERLAY --}}
     <div class="result-overlay" id="resultOverlay">
         <div class="p-4 w-100" style="max-width: 400px;">
             <div id="resultIcon" class="mb-3" style="font-size: 5rem;"></div>
@@ -158,31 +232,54 @@
     
     <script>
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        let html5QrcodeScanner = null;
+        let html5QrCode = null;
         let currentUserId = null;
-        let streamRef = null; // Referensi stream kamera foto
+        let streamRef = null;
 
-        // --- 1. FUNGSI START QR SCANNER ---
+        // --- 1. START QR SCANNER (GOPAY STYLE) ---
         function startQRScanner() {
+            document.getElementById('permissionBtn').style.display = 'none';
+            
+            // Menggunakan Class Html5Qrcode (Bukan Scanner) agar UI bisa custom total
+            html5QrCode = new Html5Qrcode("reader");
+
             const config = { 
                 fps: 10, 
-                qrbox: { width: 250, height: 250 }, // Area scan
-                videoConstraints: { facingMode: "environment" } // Kamera Belakang
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
             };
-            
-            // Render scanner ke div #reader
-            html5QrcodeScanner = new Html5QrcodeScanner("reader", config, false);
-            html5QrcodeScanner.render(onScanSuccess, (error) => {
-                // Error scanning (bisa diabaikan biar ga spam console)
+
+            // Cek HTTPS dulu
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                alert('Peringatan: Kamera mungkin tidak berjalan di HTTP. Harap gunakan HTTPS atau Localhost.');
+            }
+
+            // Request Permission Explicitly
+            html5QrCode.start(
+                { facingMode: "environment" }, // Prefer Back Camera
+                config,
+                (decodedText) => {
+                    // SUCCESS SCAN
+                    stopQRScanner(); // Stop scanner agar hemat baterai
+                    checkUser(decodedText);
+                },
+                (errorMessage) => {
+                    // Scanning... (Ignore errors)
+                }
+            ).catch((err) => {
+                console.error("Camera Error:", err);
+                // Tampilkan tombol manual jika error permission
+                document.getElementById('permissionBtn').style.display = 'block';
+                alert("Gagal akses kamera. Pastikan izin diberikan dan website menggunakan HTTPS.");
             });
         }
 
-        // Callback saat Scan Berhasil
-        function onScanSuccess(decodedText) {
-            if(html5QrcodeScanner) {
-                html5QrcodeScanner.clear(); // Matikan Scanner QR
+        function stopQRScanner() {
+            if(html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                }).catch(err => console.log(err));
             }
-            checkUser(decodedText); // Validasi ke Server
         }
 
         // --- 2. CEK USER (AJAX) ---
@@ -195,38 +292,37 @@
             .then(res => res.json())
             .then(data => {
                 if(data.status === 'success') {
-                    showVerificationPage(data.data); // Tampilkan Halaman Foto
+                    showVerificationPage(data.data);
                 } else {
-                    showResult('error', data.message);
+                    // Jika gagal, nyalakan scan lagi setelah alert
+                    alert(data.message);
+                    startQRScanner();
                 }
             })
-            .catch(err => showResult('error', 'Gagal terhubung ke server. Cek koneksi internet.'));
+            .catch(err => {
+                alert('Gagal terhubung ke server.');
+                startQRScanner();
+            });
         }
 
-        // --- 3. TAMPILKAN HALAMAN VERIFIKASI & NYALAKAN KAMERA FOTO ---
+        // --- 3. SHOW VERIFICATION PAGE ---
         function showVerificationPage(user) {
             currentUserId = user.id;
             
-            // Isi Data ke Card
             document.getElementById('dbName').innerText = user.name;
             document.getElementById('dbRole').innerText = user.role + ' - ' + user.division;
             document.getElementById('dbBranch').innerText = user.branch;
             document.getElementById('dbPhoto').src = user.photo_url;
 
-            // Ganti Tampilan dari QR ke Verifikasi
             document.getElementById('qrSection').style.display = 'none';
             document.getElementById('verifSection').style.display = 'flex';
 
-            // Nyalakan Kamera Depan/Belakang untuk Selfie Bukti
             startCameraStream();
         }
 
         function startCameraStream() {
             const video = document.getElementById('camera-stream');
-            
-            // Coba akses kamera (utamakan kamera belakang kalau di tablet/hp security, atau depan jika preferensi)
-            // facingMode: "environment" = Belakang, "user" = Depan
-            const constraints = { video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } } };
+            const constraints = { video: { facingMode: "environment", width: { ideal: 640 } } };
 
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 navigator.mediaDevices.getUserMedia(constraints)
@@ -236,73 +332,51 @@
                     video.play();
                 })
                 .catch(function (error) {
-                    console.error("Kamera Error:", error);
-                    alert("Gagal mengakses kamera untuk foto bukti. Pastikan izin diberikan.");
+                    alert("Gagal akses kamera bukti. Cek izin browser.");
                 });
             }
         }
 
-        // --- 4. SUBMIT ABSEN (CAPTURE FOTO & KIRIM) ---
+        // --- 4. SUBMIT ATTENDANCE ---
         function submitAttendance(type) {
-            // 1. Capture Foto dari Video
             const video = document.getElementById('camera-stream');
             const canvas = document.getElementById('camera-canvas');
             const context = canvas.getContext('2d');
             
-            // Set ukuran canvas sesuai video asli
-            if (video.videoWidth === 0 || video.videoHeight === 0) {
-                alert("Tunggu kamera siap...");
-                return;
-            }
+            if (video.videoWidth === 0) { alert("Kamera belum siap."); return; }
 
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            
-            // Gambar video ke canvas
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            // Convert ke Base64 String
             const imageBase64 = canvas.toDataURL('image/png');
 
-            // 2. Efek Loading di Tombol
             const btn = document.querySelector(`.btn-${type}`);
             const originalContent = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> MEMPROSES...';
-            btn.disabled = true;
-
-            // Matikan tombol lain biar ga double click
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
             document.querySelectorAll('.btn-absen').forEach(b => b.disabled = true);
 
-            // 3. Kirim ke Server
             fetch("{{ route('security.store-attendance') }}", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": csrfToken },
-                body: JSON.stringify({ 
-                    user_id: currentUserId,
-                    type: type, // 'masuk', 'pulang', atau 'malam'
-                    image: imageBase64
-                })
+                body: JSON.stringify({ user_id: currentUserId, type: type, image: imageBase64 })
             })
             .then(res => res.json())
             .then(data => {
                 if(data.status === 'success') {
                     showResult('success', data.message, data.data.photo);
                 } else {
-                    // Error logic (misal double absen)
-                    alert(data.message); 
-                    // Reset tombol
+                    alert(data.message);
                     btn.innerHTML = originalContent;
                     document.querySelectorAll('.btn-absen').forEach(b => b.disabled = false);
                 }
             })
             .catch(err => {
-                alert("Terjadi kesalahan sistem: " + err);
+                alert("Error sistem.");
                 btn.innerHTML = originalContent;
                 document.querySelectorAll('.btn-absen').forEach(b => b.disabled = false);
             });
         }
 
-        // --- HELPER: HASIL & RESET ---
         function showResult(status, message, photoUrl = null) {
             const overlay = document.getElementById('resultOverlay');
             const icon = document.getElementById('resultIcon');
@@ -310,10 +384,7 @@
             const msg = document.getElementById('resultMessage');
             const img = document.getElementById('capturedPhoto');
 
-            // Matikan kamera foto jika masih nyala
-            if(streamRef) {
-                streamRef.getTracks().forEach(track => track.stop());
-            }
+            if(streamRef) { streamRef.getTracks().forEach(track => track.stop()); }
 
             overlay.style.display = 'flex';
             msg.innerText = message;
@@ -322,11 +393,7 @@
                 icon.innerHTML = '<i class="fas fa-check-circle text-success"></i>';
                 title.innerText = "BERHASIL";
                 title.className = "fw-bold mb-2 text-success";
-                
-                if(photoUrl) {
-                    img.src = photoUrl;
-                    img.style.display = 'block';
-                }
+                if(photoUrl) { img.src = photoUrl; img.style.display = 'block'; }
             } else {
                 icon.innerHTML = '<i class="fas fa-times-circle text-danger"></i>';
                 title.innerText = "GAGAL";
@@ -336,33 +403,20 @@
         }
 
         function resetScan() {
-            // Matikan stream kamera foto
-            if(streamRef) {
-                streamRef.getTracks().forEach(track => track.stop());
-            }
-
-            // Reset UI ke awal
+            if(streamRef) { streamRef.getTracks().forEach(track => track.stop()); }
+            
             document.getElementById('verifSection').style.display = 'none';
             document.getElementById('resultOverlay').style.display = 'none';
-            document.getElementById('qrSection').style.display = 'flex';
+            document.getElementById('qrSection').style.display = 'block'; // Balik ke display block untuk wrapper
             
-            // Reset Tombol
-            document.querySelectorAll('.btn-absen').forEach(b => {
-                b.disabled = false;
-                // Reset text manual agak ribet, reload aja lebih bersih, 
-                // tapi biar cepet kita biarkan, nanti textnya balik pas showVerificationPage dipanggil lagi
-            });
-            
-            // Kembalikan text tombol manual jika perlu (opsional)
+            document.querySelectorAll('.btn-absen').forEach(b => b.disabled = false);
             document.querySelector('.btn-masuk').innerHTML = '<i class="fas fa-sign-in-alt fa-lg mb-1 d-block"></i> MASUK';
             document.querySelector('.btn-pulang').innerHTML = '<i class="fas fa-sign-out-alt fa-lg mb-1 d-block"></i> PULANG';
-            document.querySelector('.btn-malam').innerHTML = '<i class="fas fa-moon fa-lg mb-1 d-block"></i> LEMBUR / MALAM';
+            document.querySelector('.btn-malam').innerHTML = '<i class="fas fa-moon fa-lg mb-1 d-block"></i> LEMBUR';
 
-            // Start QR Scanner lagi
             startQRScanner();
         }
 
-        // Start saat halaman dimuat
         document.addEventListener('DOMContentLoaded', startQRScanner);
     </script>
 </body>
