@@ -164,8 +164,6 @@ Route::middleware(['auth'])->group(function () {
 
     // === RUTE SELF ATTENDANCE & LEAVE ===
     Route::middleware(['role:user_biasa,leader'])->group(function () {
-        Route::get('/leave-requests/create', [LeaveRequestController::class, 'create'])->name('leave-requests.create');
-        Route::post('/leave-requests', [LeaveRequestController::class, 'store'])->name('leave-requests.store');
         // Self Attendance
         Route::prefix('absen-mandiri')->name('self.attend.')->group(function () {
             Route::get('/', [SelfAttendanceController::class, 'create'])->name('create');
@@ -250,4 +248,4 @@ if (app()->environment('local')) {
 
         return response()->json($routes);
     });
-}});
+}
