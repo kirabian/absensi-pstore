@@ -11,22 +11,22 @@ class LateNotification extends Model
 
     protected $fillable = [
         'user_id',
+        'leave_request_id',
         'message',
         'is_active',
     ];
 
-    /**
-     * Casting attributes
-     */
     protected $casts = [
         'is_active' => 'boolean',
     ];
 
-    /**
-     * Relasi ke User
-     */
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class);
+    }
+
+    public function leaveRequest()
+    {
+        return $this->belongsTo(LeaveRequest::class);
     }
 }

@@ -9,11 +9,6 @@ class LeaveRequest extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'user_id',
         'type',
@@ -23,23 +18,26 @@ class LeaveRequest extends Model
         'file_proof',
         'status',
         'rejection_reason',
+        'is_active', // tambahkan ini
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'is_active' => 'boolean', // tambahkan ini
     ];
 
-    /**
-     * Get the user that owns the leave request.
-     */
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    // Scope untuk izin telat aktif
+    public function scopeActiveLatePermissions($query)
+    {
+        return $query->where('type', 'telat')
+                    ->where('is_active', true)
+                    ->where('status', 'approved')
+                    ->whereDate('start_date', today());
     }
 }

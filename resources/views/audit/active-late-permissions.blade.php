@@ -31,9 +31,11 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th class="ps-4">User & Divisi</th>
-                                        <th>Waktu Lapor</th>
+                                        <th>Tanggal Izin</th>
                                         <th>Alasan</th>
+                                        <th>Bukti Foto</th>
                                         <th>Status</th>
+                                        <th>Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -42,37 +44,82 @@
                                             <td class="ps-4">
                                                 <div class="d-flex align-items-center">
                                                     <div class="avatar-sm me-3">
-                                                        <div
-                                                            class="avatar-title bg-warning bg-opacity-10 text-warning rounded-circle">
+                                                        <div class="avatar-title bg-warning bg-opacity-10 text-warning rounded-circle">
                                                             {{ substr($perm->user->name ?? 'U', 0, 1) }}
                                                         </div>
                                                     </div>
                                                     <div>
                                                         <h6 class="mb-1 fw-semibold">{{ $perm->user->name ?? 'User Dihapus' }}</h6>
-                                                        <span
-                                                            class="badge badge-outline-secondary">{{ $perm->user->division->name ?? 'N/A' }}</span>
+                                                        <span class="badge badge-outline-secondary">{{ $perm->user->division->name ?? 'N/A' }}</span>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div class="text-nowrap">
-                                                    <i class="mdi mdi-clock-outline text-muted me-1"></i>
-                                                    {{ $perm->created_at->format('d M Y') }}
+                                                    <i class="mdi mdi-calendar text-muted me-1"></i>
+                                                    {{ \Carbon\Carbon::parse($perm->start_date)->format('d M Y') }}
                                                 </div>
-                                                <small class="text-muted">{{ $perm->created_at->format('H:i') }}</small>
+                                                <small class="text-muted">Diajukan: {{ $perm->created_at->format('H:i') }}</small>
                                             </td>
                                             <td>
                                                 <div class="message-container">
                                                     <p class="mb-0 text-break" style="max-width: 300px;">
-                                                        {{ $perm->message }}
+                                                        {{ $perm->reason }}
                                                     </p>
                                                 </div>
+                                            </td>
+                                            <td>
+                                                @if($perm->file_proof)
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#proofModal{{ $perm->id }}">
+                                                        <i class="mdi mdi-image me-1"></i>Lihat Bukti
+                                                    </button>
+                                                    
+                                                    <!-- Modal untuk melihat foto -->
+                                                    <div class="modal fade" id="proofModal{{ $perm->id }}" tabindex="-1">
+                                                        <div class="modal-dialog modal-lg">
+                                                            <div class="modal-content">
+                                                                <div class="modal-header">
+                                                                    <h5 class="modal-title">Bukti Izin Telat - {{ $perm->user->name }}</h5>
+                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                                </div>
+                                                                <div class="modal-body text-center">
+                                                                    <img src="{{ asset('storage/' . $perm->file_proof) }}" 
+                                                                         class="img-fluid rounded" 
+                                                                         alt="Bukti Izin Telat"
+                                                                         style="max-height: 70vh;">
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @else
+                                                    <span class="badge badge-outline-danger">Tidak ada bukti</span>
+                                                @endif
                                             </td>
                                             <td>
                                                 <span class="badge badge-warning badge-pill">
                                                     <i class="mdi mdi-clock-alert me-1"></i>
                                                     Sedang Telat
                                                 </span>
+                                            </td>
+                                            <td>
+                                                @if(auth()->user()->role == 'admin' || auth()->user()->id == $perm->user_id)
+                                                    <form action="{{ route('leave.cancel-late', $perm->id) }}" method="POST" 
+                                                          class="d-inline" 
+                                                          onsubmit="return confirm('Yakin ingin membatalkan izin telat ini?')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                            <i class="mdi mdi-cancel me-1"></i>Batalkan
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
                                             </td>
                                         </tr>
                                     @endforeach
@@ -115,6 +162,12 @@
             background: transparent;
         }
 
+        .badge-outline-danger {
+            border: 1px solid #dc3545;
+            color: #dc3545;
+            background: transparent;
+        }
+
         .table-hover tbody tr:hover {
             background-color: rgba(255, 193, 7, 0.04);
             transition: background-color 0.2s ease;
@@ -136,15 +189,6 @@
             vertical-align: middle;
         }
 
-        /* Smooth animations */
-        .card {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-2px);
-        }
-
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .table-responsive {
@@ -162,21 +206,6 @@
 
             .message-container {
                 max-width: 200px;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .d-flex.justify-content-between.align-items-center {
-                flex-direction: column;
-                align-items: flex-start !important;
-            }
-
-            .badge-pill {
-                margin-top: 0.5rem;
-            }
-
-            .message-container {
-                max-width: 150px;
             }
         }
     </style>

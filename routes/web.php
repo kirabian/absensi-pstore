@@ -49,7 +49,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('broadcast')->name('broadcast.')->group(function () {
         
         // -------------------------------------------------------------------
-        // 1. TARUH ROUTE UMUM (NOTIFIKASI) DI PALING ATAS (SEBELUM ADMIN)
+        // 1. TARUH RUTE UMUM (NOTIFIKASI) DI PALING ATAS (SEBELUM ADMIN)
         // -------------------------------------------------------------------
         // Rute ini harus bisa diakses semua user yang login (Auth)
         Route::get('/notifications', [BroadcastController::class, 'getNotifications'])->name('notifications');
@@ -179,12 +179,16 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // Leave Requests
-        Route::prefix('leave')->name('leave.')->group(function () {
+        Route::prefix('audit')->name('audit.')->group(function () {
             Route::get('/create', [LeaveRequestController::class, 'create'])->name('create');
             Route::post('/store', [LeaveRequestController::class, 'store'])->name('store');
             Route::get('/history', [LeaveRequestController::class, 'history'])->name('history');
             Route::get('/{leaveRequest}', [LeaveRequestController::class, 'show'])->name('show');
             Route::delete('/{leaveRequest}', [LeaveRequestController::class, 'destroy'])->name('destroy');
+            
+            // === RUTE BARU UNTUK IZIN TELAT ===
+            Route::get('/active-late-permissions', [LeaveRequestController::class, 'activeLatePermissions'])->name('active-late-permissions');
+            Route::delete('/cancel-late/{id}', [LeaveRequestController::class, 'cancelLatePermission'])->name('cancel-late');
         });
     });
 
