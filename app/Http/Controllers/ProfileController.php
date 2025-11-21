@@ -101,7 +101,7 @@ class ProfileController extends Controller
     public function updateKtp(Request $request)
     {
         $request->validate([
-            'ktp_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048', // 2MB
+            'ktp_photo' => 'required|image|mimes:jpeg,png,jpg|max:51200', // 2MB
         ]);
 
         /** @var \App\Models\User $user */

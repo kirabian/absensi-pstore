@@ -30,12 +30,12 @@ class LeaveRequestController extends Controller
             'type' => 'required|in:sakit,telat,cuti,libur_mingguan',
             'start_date' => 'required|date|after_or_equal:today', // Tanggal tidak boleh di masa lalu
             'reason' => 'required|string|min:10',
-            'file_proof' => 'nullable|image|max:2048', // 2MB Max
+            'file_proof' => 'nullable|image|max:51200', // 2MB Max
         ];
 
         // Validasi kondisional
         if ($request->type == 'sakit' || $request->type == 'telat') {
-            $rules['file_proof'] = 'required|image|max:2048';
+            $rules['file_proof'] = 'required|image|max:51200';
         }
 
         if ($request->type == 'cuti' || $request->type == 'sakit') {

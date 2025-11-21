@@ -39,8 +39,11 @@ class DashboardController extends Controller
         }
 
         // ======================================================
-        // 2. ISI DATA BERDASARKAN ROLE
+        // 2. ISI DATA BERDASARKAN ROLE - SEMUA ROLE DAPAT ID CARD & STATUS ABSENSI
         // ======================================================
+
+        // DATA UNTUK SEMUA ROLE: ID Card & Status Absensi
+        $data = $this->getCommonDataForAllRoles($user, $data);
 
         if ($user->role == 'admin') {
             // --- ADMIN ---
@@ -74,37 +77,6 @@ class DashboardController extends Controller
             
         } elseif ($user->role == 'user_biasa' || $user->role == 'leader') {
             // --- USER BIASA & LEADER ---
-
-            // AMBIL SEMUA absensi hari ini
-            $todayAttendances = Attendance::where('user_id', $user->id)
-                ->whereDate('check_in_time', today())
-                ->orderBy('check_in_time', 'desc')
-                ->get();
-
-            // LOGIC PRIORITY:
-            // 1. Cari yang SUDAH PULANG (check_out_time NOT NULL)
-            $attendanceWithCheckout = $todayAttendances->first(function ($attendance) {
-                return !is_null($attendance->check_out_time);
-            });
-
-            if ($attendanceWithCheckout) {
-                // JIKA ADA YANG SUDAH PULANG
-                $data['myAttendanceToday'] = $attendanceWithCheckout;
-            } else {
-                // 2. Cari yang punya photo_out_path (data rusak tapi sudah pulang)
-                $attendanceWithPhotoOut = $todayAttendances->first(function ($attendance) {
-                    return !is_null($attendance->photo_out_path);
-                });
-
-                if ($attendanceWithPhotoOut) {
-                    // JIKA ADA YANG SUDAH PULANG (tapi check_out_time NULL)
-                    $data['myAttendanceToday'] = $attendanceWithPhotoOut;
-                } else {
-                    // 3. Ambil yang terakhir (masih masuk)
-                    $data['myAttendanceToday'] = $todayAttendances->first();
-                }
-            }
-
             $data['myPendingCount'] = Attendance::where('user_id', $user->id)
                 ->where('status', 'pending_verification')
                 ->count();
@@ -123,6 +95,44 @@ class DashboardController extends Controller
         }
 
         return view('dashboard', $data);
+    }
+
+    /**
+     * Get common data for ALL roles (ID Card & Attendance Status)
+     */
+    private function getCommonDataForAllRoles($user, $data)
+    {
+        // AMBIL SEMUA absensi hari ini untuk user yang login
+        $todayAttendances = Attendance::where('user_id', $user->id)
+            ->whereDate('check_in_time', today())
+            ->orderBy('check_in_time', 'desc')
+            ->get();
+
+        // LOGIC PRIORITY untuk semua role:
+        // 1. Cari yang SUDAH PULANG (check_out_time NOT NULL)
+        $attendanceWithCheckout = $todayAttendances->first(function ($attendance) {
+            return !is_null($attendance->check_out_time);
+        });
+
+        if ($attendanceWithCheckout) {
+            // JIKA ADA YANG SUDAH PULANG
+            $data['myAttendanceToday'] = $attendanceWithCheckout;
+        } else {
+            // 2. Cari yang punya photo_out_path (data rusak tapi sudah pulang)
+            $attendanceWithPhotoOut = $todayAttendances->first(function ($attendance) {
+                return !is_null($attendance->photo_out_path);
+            });
+
+            if ($attendanceWithPhotoOut) {
+                // JIKA ADA YANG SUDAH PULANG (tapi check_out_time NULL)
+                $data['myAttendanceToday'] = $attendanceWithPhotoOut;
+            } else {
+                // 3. Ambil yang terakhir (masih masuk)
+                $data['myAttendanceToday'] = $todayAttendances->first();
+            }
+        }
+
+        return $data;
     }
 
     /**
