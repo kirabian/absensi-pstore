@@ -388,7 +388,7 @@
                                             <i class="mdi mdi-fingerprint me-2"></i>Absen Mandiri
                                         </a>
                                         {{-- LINK DIGANTI KE ROUTE BARU --}}
-                                        <a href="{{ route('leave-requests.create') }}" class="btn btn-outline-dark">
+                                        <a href="{{ route('leave.create') }}" class="btn btn-outline-dark">
                                             <i class="mdi mdi-file-document-edit-outline me-2"></i>Izin/Sakit/Telat
                                         </a>
                                     </div>
