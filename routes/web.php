@@ -168,34 +168,33 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/tim-saya/attendance/{user}', [TeamController::class, 'attendance'])->name('my.team.attendance');
     });
 
-    // === RUTE SELF ATTENDANCE & LEAVE ===
-    Route::middleware(['role:user_biasa,leader'])->group(function () {
-        // Self Attendance
-        Route::prefix('absen-mandiri')->name('self.attend.')->group(function () {
-            Route::get('/', [SelfAttendanceController::class, 'create'])->name('create');
-            Route::post('/', [SelfAttendanceController::class, 'store'])->name('store');
-            Route::get('/history', [SelfAttendanceController::class, 'history'])->name('history');
-            Route::post('/hapus-telat', [SelfAttendanceController::class, 'deleteLateStatus'])->name('late.status.delete');
-        });
+   // === RUTE SELF ATTENDANCE (User Biasa & Leader Saja) ===
+Route::middleware(['role:user_biasa,leader'])->prefix('absen-mandiri')->name('self.attend.')->group(function () {
+    Route::get('/', [SelfAttendanceController::class, 'create'])->name('create');
+    Route::post('/', [SelfAttendanceController::class, 'store'])->name('store');
+    Route::get('/history', [SelfAttendanceController::class, 'history'])->name('history');
+    Route::post('/hapus-telat', [SelfAttendanceController::class, 'deleteLateStatus'])->name('late.status.delete');
+});
 
-        // Di dalam group middleware auth
-        Route::prefix('leave-requests')->name('leave-requests.')->group(function () {
-            // 1. List & History (Semua user login bisa lihat list sesuai hak akses di controller)
-            Route::get('/', [LeaveRequestController::class, 'index'])->name('index');
+// === RUTE LEAVE REQUESTS (DIPINDAHKAN KELUAR AGAR BISA DIAKSES SEMUA ROLE) ===
+Route::prefix('leave-requests')->name('leave-requests.')->group(function () {
+    
+    // 1. List & History (Semua user login bisa lihat list sesuai hak akses di controller)
+    Route::get('/', [LeaveRequestController::class, 'index'])->name('index');
 
-            // 2. Create & Store (Hanya User Biasa & Leader yang boleh mengajukan)
-            Route::middleware(['role:user_biasa,leader'])->group(function () {
-                Route::get('/create', [LeaveRequestController::class, 'create'])->name('create');
-                Route::post('/store', [LeaveRequestController::class, 'store'])->name('store');
-                Route::patch('/{leaveRequest}/cancel', [LeaveRequestController::class, 'cancel'])->name('cancel');
-            });
-            // Action Admin/Audit: Approve/Reject
-            Route::middleware(['role:admin,audit'])->group(function () {
-                Route::patch('/{leaveRequest}/approve', [LeaveRequestController::class, 'approve'])->name('approve');
-                Route::patch('/{leaveRequest}/reject', [LeaveRequestController::class, 'reject'])->name('reject');
-            });
-        });
+    // 2. Create & Store (Hanya User Biasa & Leader yang boleh mengajukan)
+    Route::middleware(['role:user_biasa,leader'])->group(function() {
+        Route::get('/create', [LeaveRequestController::class, 'create'])->name('create');
+        Route::post('/store', [LeaveRequestController::class, 'store'])->name('store');
+        Route::patch('/{leaveRequest}/cancel', [LeaveRequestController::class, 'cancel'])->name('cancel');
     });
+
+    // 3. Approval (Hanya Admin & Audit)
+    Route::middleware(['role:admin,audit'])->group(function () {
+        Route::patch('/{leaveRequest}/approve', [LeaveRequestController::class, 'approve'])->name('approve');
+        Route::patch('/{leaveRequest}/reject', [LeaveRequestController::class, 'reject'])->name('reject');
+    });
+});
 
     // === RUTE LAPORAN & ANALYTICS ===
     Route::middleware(['role:admin,audit,leader'])->prefix('reports')->name('reports.')->group(function () {
