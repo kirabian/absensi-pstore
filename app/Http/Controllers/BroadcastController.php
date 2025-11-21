@@ -97,7 +97,7 @@ class BroadcastController extends Controller
                 'unread_count' => $broadcasts->count()
             ]);
         } catch (\Exception $e) {
-            \Log::error('Broadcast Notification Error: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Broadcast Notification Error: ' . $e->getMessage());
             return response()->json([
                 'broadcasts' => [],
                 'unread_count' => 0
