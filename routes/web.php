@@ -38,7 +38,7 @@ Route::middleware(['auth'])->group(function () {
     // --- Rute Utama ---
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
-    
+
     // --- Rute Export PDF untuk semua role ---
     Route::get('/dashboard/export-pdf', [DashboardController::class, 'exportAttendancePDF'])->name('dashboard.export-pdf');
 
@@ -47,7 +47,7 @@ Route::middleware(['auth'])->group(function () {
 
     // === RUTE BROADCAST ===
     Route::prefix('broadcast')->name('broadcast.')->group(function () {
-        
+
         // -------------------------------------------------------------------
         // 1. TARUH RUTE UMUM (NOTIFIKASI) DI PALING ATAS (SEBELUM ADMIN)
         // -------------------------------------------------------------------
@@ -62,7 +62,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/', [BroadcastController::class, 'index'])->name('index');
             Route::get('/create', [BroadcastController::class, 'create'])->name('create');
             Route::post('/', [BroadcastController::class, 'store'])->name('store');
-            
+
             // Route Edit & Delete
             Route::get('/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('edit');
             Route::put('/{broadcast}', [BroadcastController::class, 'update'])->name('update');
@@ -185,7 +185,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/history', [LeaveRequestController::class, 'history'])->name('history');
             Route::get('/{leaveRequest}', [LeaveRequestController::class, 'show'])->name('show');
             Route::delete('/{leaveRequest}', [LeaveRequestController::class, 'destroy'])->name('destroy');
-            
+
             // === RUTE BARU UNTUK IZIN TELAT ===
             Route::get('/active-late-permissions', [LeaveRequestController::class, 'activeLatePermissions'])->name('active-late-permissions');
             Route::delete('/cancel-late/{id}', [LeaveRequestController::class, 'cancelLatePermission'])->name('cancel-late');
@@ -223,46 +223,47 @@ Route::middleware(['auth'])->group(function () {
     // === RUTE FALLBACK ===
     Route::fallback(function () {
         return response()->view('errors.404', [], 404);
-    });
 
-/*
+        /*
 |--------------------------------------------------------------------------
 | Rute Health Check (Untuk Monitoring)
 |--------------------------------------------------------------------------
 */
-Route::get('/health', function () {
-    return response()->json([
-        'status' => 'OK',
-        'timestamp' => now(),
-        'environment' => app()->environment()
-    ]);
-});
+        Route::get('/health', function () {
+            return response()->json([
+                'status' => 'OK',
+                'timestamp' => now(),
+                'environment' => app()->environment()
+            ]);
+        });
 
-/*
+        /*
 |--------------------------------------------------------------------------
 | Rute Debug (Hanya untuk Development)
 |--------------------------------------------------------------------------
 */
-if (app()->environment('local')) {
-    Route::get('/debug-session', function () {
-        return response()->json([
-            'session' => session()->all(),
-            'user' => auth()->user(),
-            'csrf_token' => csrf_token()
-        ]);
-    });
+        if (app()->environment('local')) {
+            Route::get('/debug-session', function () {
+                return response()->json([
+                    'session' => session()->all(),
+                    'user' => auth()->user(),
+                    'csrf_token' => csrf_token()
+                ]);
+            });
 
-    Route::get('/debug-routes', function () {
-        $routes = collect(Route::getRoutes())->map(function ($route) {
-            return [
-                'methods' => $route->methods(),
-                'uri' => $route->uri(),
-                'name' => $route->getName(),
-                'action' => $route->getActionName(),
-                'middleware' => $route->middleware(),
-            ];
-        });
+            Route::get('/debug-routes', function () {
+                $routes = collect(Route::getRoutes())->map(function ($route) {
+                    return [
+                        'methods' => $route->methods(),
+                        'uri' => $route->uri(),
+                        'name' => $route->getName(),
+                        'action' => $route->getActionName(),
+                        'middleware' => $route->middleware(),
+                    ];
+                });
 
-        return response()->json($routes);
+                return response()->json($routes);
+            });
+        }
     });
-}});
+});
