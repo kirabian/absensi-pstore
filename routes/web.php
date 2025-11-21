@@ -38,7 +38,7 @@ Route::middleware(['auth'])->group(function () {
     // --- Rute Utama ---
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
-
+    
     // --- Rute Export PDF untuk semua role ---
     Route::get('/dashboard/export-pdf', [DashboardController::class, 'exportAttendancePDF'])->name('dashboard.export-pdf');
 
@@ -47,9 +47,9 @@ Route::middleware(['auth'])->group(function () {
 
     // === RUTE BROADCAST ===
     Route::prefix('broadcast')->name('broadcast.')->group(function () {
-
+        
         // -------------------------------------------------------------------
-        // 1. TARUH RUTE UMUM (NOTIFIKASI) DI PALING ATAS (SEBELUM ADMIN)
+        // 1. TARUH ROUTE UMUM (NOTIFIKASI) DI PALING ATAS (SEBELUM ADMIN)
         // -------------------------------------------------------------------
         // Rute ini harus bisa diakses semua user yang login (Auth)
         Route::get('/notifications', [BroadcastController::class, 'getNotifications'])->name('notifications');
@@ -62,7 +62,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/', [BroadcastController::class, 'index'])->name('index');
             Route::get('/create', [BroadcastController::class, 'create'])->name('create');
             Route::post('/', [BroadcastController::class, 'store'])->name('store');
-
+            
             // Route Edit & Delete
             Route::get('/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('edit');
             Route::put('/{broadcast}', [BroadcastController::class, 'update'])->name('update');
@@ -168,7 +168,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/tim-saya/attendance/{user}', [TeamController::class, 'attendance'])->name('my.team.attendance');
     });
 
-    // === RUTE SELF ATTENDANCE & LEAVE ===
+     // === RUTE SELF ATTENDANCE & LEAVE ===
     Route::middleware(['role:user_biasa,leader'])->group(function () {
         // Self Attendance
         Route::prefix('absen-mandiri')->name('self.attend.')->group(function () {
@@ -185,10 +185,30 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/history', [LeaveRequestController::class, 'history'])->name('history');
             Route::get('/{leaveRequest}', [LeaveRequestController::class, 'show'])->name('show');
             Route::delete('/{leaveRequest}', [LeaveRequestController::class, 'destroy'])->name('destroy');
-
+            
             // === RUTE BARU UNTUK IZIN TELAT ===
             Route::get('/active-late-permissions', [LeaveRequestController::class, 'activeLatePermissions'])->name('active-late-permissions');
             Route::delete('/cancel-late/{id}', [LeaveRequestController::class, 'cancelLatePermission'])->name('cancel-late');
+        });
+    });
+
+    // === RUTE SELF ATTENDANCE & LEAVE ===
+    Route::middleware(['role:user_biasa,leader'])->group(function () {
+        // Self Attendance
+        Route::prefix('absen-mandiri')->name('self.attend.')->group(function () {
+            Route::get('/', [SelfAttendanceController::class, 'create'])->name('create');
+            Route::post('/', [SelfAttendanceController::class, 'store'])->name('store');
+            Route::get('/history', [SelfAttendanceController::class, 'history'])->name('history');
+            // Route::post('/hapus-telat', [SelfAttendanceController::class, 'deleteLateStatus'])->name('late.status.delete');
+        });
+
+        // Leave Requests
+        Route::prefix('leave')->name('leave.')->group(function () {
+            Route::get('/create', [LeaveRequestController::class, 'create'])->name('create');
+            Route::post('/store', [LeaveRequestController::class, 'store'])->name('store');
+            Route::get('/history', [LeaveRequestController::class, 'history'])->name('history');
+            Route::get('/{leaveRequest}', [LeaveRequestController::class, 'show'])->name('show');
+            Route::delete('/{leaveRequest}', [LeaveRequestController::class, 'destroy'])->name('destroy');
         });
     });
 
@@ -223,47 +243,47 @@ Route::middleware(['auth'])->group(function () {
     // === RUTE FALLBACK ===
     Route::fallback(function () {
         return response()->view('errors.404', [], 404);
+    });
+});
 
-        /*
+/*
 |--------------------------------------------------------------------------
 | Rute Health Check (Untuk Monitoring)
 |--------------------------------------------------------------------------
 */
-        Route::get('/health', function () {
-            return response()->json([
-                'status' => 'OK',
-                'timestamp' => now(),
-                'environment' => app()->environment()
-            ]);
-        });
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'OK',
+        'timestamp' => now(),
+        'environment' => app()->environment()
+    ]);
+});
 
-        /*
+/*
 |--------------------------------------------------------------------------
 | Rute Debug (Hanya untuk Development)
 |--------------------------------------------------------------------------
 */
-        if (app()->environment('local')) {
-            Route::get('/debug-session', function () {
-                return response()->json([
-                    'session' => session()->all(),
-                    'user' => auth()->user(),
-                    'csrf_token' => csrf_token()
-                ]);
-            });
-
-            Route::get('/debug-routes', function () {
-                $routes = collect(Route::getRoutes())->map(function ($route) {
-                    return [
-                        'methods' => $route->methods(),
-                        'uri' => $route->uri(),
-                        'name' => $route->getName(),
-                        'action' => $route->getActionName(),
-                        'middleware' => $route->middleware(),
-                    ];
-                });
-
-                return response()->json($routes);
-            });
-        }
+if (app()->environment('local')) {
+    Route::get('/debug-session', function () {
+        return response()->json([
+            'session' => session()->all(),
+            'user' => auth()->user(),
+            'csrf_token' => csrf_token()
+        ]);
     });
-});
+
+    Route::get('/debug-routes', function () {
+        $routes = collect(Route::getRoutes())->map(function ($route) {
+            return [
+                'methods' => $route->methods(),
+                'uri' => $route->uri(),
+                'name' => $route->getName(),
+                'action' => $route->getActionName(),
+                'middleware' => $route->middleware(),
+            ];
+        });
+
+        return response()->json($routes);
+    });
+}
