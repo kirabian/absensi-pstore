@@ -179,17 +179,16 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // Di dalam group middleware auth
-        Route::prefix('leave')->name('leave.')->group(function () {
-            // Form & Store (User)
-            Route::get('/create', [LeaveRequestController::class, 'create'])->name('create');
-            Route::post('/store', [LeaveRequestController::class, 'store'])->name('store');
-
-            // List History & Monitoring (User, Admin, Audit)
+        Route::prefix('leave-requests')->name('leave-requests.')->group(function () {
+            // 1. List & History (Semua user login bisa lihat list sesuai hak akses di controller)
             Route::get('/', [LeaveRequestController::class, 'index'])->name('index');
 
-            // Action User: Batalkan Izin
-            Route::patch('/{leaveRequest}/cancel', [LeaveRequestController::class, 'cancel'])->name('cancel');
-
+            // 2. Create & Store (Hanya User Biasa & Leader yang boleh mengajukan)
+            Route::middleware(['role:user_biasa,leader'])->group(function () {
+                Route::get('/create', [LeaveRequestController::class, 'create'])->name('create');
+                Route::post('/store', [LeaveRequestController::class, 'store'])->name('store');
+                Route::patch('/{leaveRequest}/cancel', [LeaveRequestController::class, 'cancel'])->name('cancel');
+            });
             // Action Admin/Audit: Approve/Reject
             Route::middleware(['role:admin,audit'])->group(function () {
                 Route::patch('/{leaveRequest}/approve', [LeaveRequestController::class, 'approve'])->name('approve');
