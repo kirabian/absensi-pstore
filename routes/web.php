@@ -43,36 +43,23 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/search', [GlobalSearchController::class, 'search'])->name('search');
 
     // === RUTE BROADCAST ===
-Route::prefix('broadcast')->name('broadcast.')->group(function () {
-    
-    // -------------------------------------------------------------------
-    // 1. TARUH ROUTE UMUM (NOTIFIKASI) DI PALING ATAS (SEBELUM ADMIN)
-    // -------------------------------------------------------------------
-    // Rute ini harus bisa diakses semua user yang login (Auth)
-    Route::get('/notifications', [BroadcastController::class, 'getNotifications'])->name('notifications');
-    Route::post('/{broadcast}/mark-read', [BroadcastController::class, 'markAsRead'])->name('mark-read');
+    Route::prefix('broadcast')->name('broadcast.')->group(function () {
+        // Rute untuk ADMIN saja (untuk mengelola broadcast)
+        Route::middleware(['role:admin'])->group(function () {
+            Route::get('/', [BroadcastController::class, 'index'])->name('index');
+            Route::get('/create', [BroadcastController::class, 'create'])->name('create');
+            Route::post('/', [BroadcastController::class, 'store'])->name('store');
+            Route::get('/{broadcast}', [BroadcastController::class, 'show'])->name('show'); // PASTIKAN INI ADA
+            Route::get('/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('edit');
+            Route::put('/{broadcast}', [BroadcastController::class, 'update'])->name('update');
+            Route::delete('/{broadcast}', [BroadcastController::class, 'destroy'])->name('destroy');
+        });
 
-    // -------------------------------------------------------------------
-    // 2. BARU KEMUDIAN ROUTE ADMIN
-    // -------------------------------------------------------------------
-    Route::middleware(['role:admin'])->group(function () {
-        Route::get('/', [BroadcastController::class, 'index'])->name('index');
-        Route::get('/create', [BroadcastController::class, 'create'])->name('create');
-        Route::post('/', [BroadcastController::class, 'store'])->name('store');
-        
-        // Route Edit & Delete
-        Route::get('/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('edit');
-        Route::put('/{broadcast}', [BroadcastController::class, 'update'])->name('update');
-        Route::delete('/{broadcast}', [BroadcastController::class, 'destroy'])->name('destroy');
+        // Rute untuk SEMUA USER yang login (untuk notifikasi)
+        Route::get('/notifications', [BroadcastController::class, 'getNotifications'])->name('notifications');
+        Route::post('/{broadcast}/mark-read', [BroadcastController::class, 'markAsRead'])->name('mark-read');
     });
 
-    // -------------------------------------------------------------------
-    // 3. ROUTE SHOW (DETAIL) - PERLU AKSES PUBLIK?
-    // -------------------------------------------------------------------
-    // Jika route 'show' ditaruh di dalam grup admin, user biasa tidak bisa
-    // melihat detail pesan saat diklik. Sebaiknya ditaruh di luar grup admin.
-    Route::get('/{broadcast}', [BroadcastController::class, 'show'])->name('show');
-});
 
     // === RUTE WORK SCHEDULES ===
     Route::prefix('work-schedules')->name('work-schedules.')->group(function () {
