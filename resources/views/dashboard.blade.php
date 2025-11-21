@@ -207,7 +207,7 @@
         {{-- ======================================================================= --}}
         {{-- TAMPILAN UNTUK USER BIASA & LEADER --}}
         {{-- ======================================================================= --}}
-    @elseif (auth()->user()->role == 'user_biasa' || auth()->user()->role == 'leader')
+    @elseif (auth()->user()->role == 'user_biasa' || auth()->user()->role == 'leader' || auth()->user()->role == 'admin' || auth()->user()->role == 'security')
         <div class="row">
             {{-- KARTU ID BARU --}}
             <div class="col-md-5 grid-margin stretch-card">
@@ -627,7 +627,7 @@
                                         </div>
                                     </div>
                                     
-                                @elseif(auth()->user()->role == 'user_biasa' || auth()->user()->role == 'leader')
+                                @elseif(auth()->user()->role == 'user_biasa' || auth()->user()->role == 'leader' || auth()->user()->role == 'admin' || auth()->user()->role == 'security')
                                     <div class="col-6 mb-3">
                                         <div class="stat-card bg-success text-white p-3 rounded">
                                             <div class="d-flex justify-content-between align-items-center">
