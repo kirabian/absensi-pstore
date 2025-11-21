@@ -59,32 +59,50 @@ class BroadcastController extends Controller
             ->with('success', 'Broadcast berhasil dikirim!');
     }
 
+    // TAMBAHKAN METHOD SHOW YANG MISSING
+    public function show(Broadcast $broadcast)
+    {
+        // Hanya admin yang bisa melihat detail broadcast
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized action.');
+        }
+
+        return view('broadcast.show', compact('broadcast'));
+    }
+
     // Method untuk mendapatkan notifikasi broadcast
-    // Di method getNotifications()
     public function getNotifications()
     {
-        $broadcasts = Broadcast::published()
-            ->recent(7)
-            ->orderBy('published_at', 'desc')
-            ->limit(10)
-            ->get()
-            ->map(function ($broadcast) {
-                return [
-                    'id' => $broadcast->id,
-                    'title' => $broadcast->title,
-                    'message' => $broadcast->message,
-                    'priority' => $broadcast->priority,
-                    'priority_icon' => $broadcast->getPriorityIcon(),
-                    'priority_color' => $broadcast->getPriorityColor(),
-                    'published_at' => $broadcast->published_at->toISOString(),
-                    'time_ago' => $broadcast->published_at->diffForHumans()
-                ];
-            });
+        try {
+            $broadcasts = Broadcast::published()
+                ->recent(7)
+                ->orderBy('published_at', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(function ($broadcast) {
+                    return [
+                        'id' => $broadcast->id,
+                        'title' => $broadcast->title,
+                        'message' => $broadcast->message,
+                        'priority' => $broadcast->priority,
+                        'priority_icon' => $broadcast->getPriorityIcon(),
+                        'priority_color' => $broadcast->getPriorityColor(),
+                        'published_at' => $broadcast->published_at->toISOString(),
+                        'time_ago' => $broadcast->published_at->diffForHumans()
+                    ];
+                });
 
-        return response()->json([
-            'broadcasts' => $broadcasts,
-            'unread_count' => $broadcasts->count()
-        ]);
+            return response()->json([
+                'broadcasts' => $broadcasts,
+                'unread_count' => $broadcasts->count()
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Broadcast Notification Error: ' . $e->getMessage());
+            return response()->json([
+                'broadcasts' => [],
+                'unread_count' => 0
+            ]);
+        }
     }
 
     // Method untuk mark as read (jika diperlukan)

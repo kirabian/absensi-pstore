@@ -227,29 +227,20 @@
             `;
             } else {
                 const broadcastItems = broadcasts.map(broadcast => `
-                <a class="dropdown-item preview-item py-3 broadcast-item" 
-                   href="javascript:void(0)" 
-                   data-broadcast-id="${broadcast.id}">
+                <div class="dropdown-item preview-item py-3 broadcast-item" 
+                     data-broadcast-id="${broadcast.id}">
                     <div class="preview-thumbnail">
                         <i class="${broadcast.priority_icon} m-auto ${broadcast.priority_color}"></i>
                     </div>
                     <div class="preview-item-content">
                         <h6 class="preview-subject fw-normal text-dark mb-1">${escapeHtml(broadcast.title)}</h6>
                         <p class="fw-light small-text mb-0 text-muted">${escapeHtml(broadcast.message.substring(0, 50))}${broadcast.message.length > 50 ? '...' : ''}</p>
-                        <small class="text-muted">${formatTimeAgo(broadcast.published_at)}</small>
+                        <small class="text-muted">${broadcast.time_ago}</small>
                     </div>
-                </a>
+                </div>
             `).join('');
 
                 broadcastList.innerHTML = broadcastItems;
-
-                // Add click handlers for broadcast items
-                document.querySelectorAll('.broadcast-item').forEach(item => {
-                    item.addEventListener('click', function() {
-                        const broadcastId = this.getAttribute('data-broadcast-id');
-                        showBroadcastModal(broadcastId);
-                    });
-                });
             }
         }
 
@@ -262,69 +253,22 @@
         `;
         }
 
-        function showBroadcastModal(broadcastId) {
-            // Implement modal untuk menampilkan detail broadcast
-            // Anda bisa menggunakan Bootstrap modal atau sweetalert2
-            alert('Show broadcast detail for ID: ' + broadcastId);
-
-            // Optional: Mark as read
-            markBroadcastAsRead(broadcastId);
-        }
-
-        function markBroadcastAsRead(broadcastId) {
-            fetch(`/broadcast/${broadcastId}/mark-read`, {
-                    method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Update UI
-                        loadBroadcastNotifications();
-                    }
-                })
-                .catch(error => console.error('Error marking as read:', error));
-        }
-
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
-        function formatTimeAgo(dateString) {
-            const date = new Date(dateString);
-            const now = new Date();
-            const diffMs = now - date;
-            const diffMins = Math.floor(diffMs / 60000);
-            const diffHours = Math.floor(diffMs / 3600000);
-            const diffDays = Math.floor(diffMs / 86400000);
-
-            if (diffMins < 1) return 'Baru saja';
-            if (diffMins < 60) return `${diffMins} menit lalu`;
-            if (diffHours < 24) return `${diffHours} jam lalu`;
-            if (diffDays < 7) return `${diffDays} hari lalu`;
-
-            return date.toLocaleDateString('id-ID');
-        }
-
         // Event listener untuk view all broadcasts
-        viewAllBroadcasts.addEventListener('click', function() {
-            @if (auth()->user()->role == 'admin')
-                window.location.href = '{{ route('broadcast.index') }}';
-            @else
-                // Untuk non-admin, tampilkan modal dengan semua broadcast
-                showAllBroadcastsModal();
-            @endif
-        });
-
-        function showAllBroadcastsModal() {
-            // Implement modal untuk menampilkan semua broadcast
-            alert('Show all broadcasts modal');
+        if (viewAllBroadcasts) {
+            viewAllBroadcasts.addEventListener('click', function() {
+                @if (auth()->user()->role == 'admin')
+                    window.location.href = '{{ route('broadcast.index') }}';
+                @else
+                    // Untuk non-admin, bisa tampilkan modal atau halaman khusus
+                    alert('Fitur lihat semua broadcast untuk non-admin');
+                @endif
+            });
         }
 
         // Load notifications on page load

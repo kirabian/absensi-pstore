@@ -49,6 +49,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/', [BroadcastController::class, 'index'])->name('index');
             Route::get('/create', [BroadcastController::class, 'create'])->name('create');
             Route::post('/', [BroadcastController::class, 'store'])->name('store');
+            Route::get('/{broadcast}', [BroadcastController::class, 'show'])->name('show'); // PASTIKAN INI ADA
             Route::get('/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('edit');
             Route::put('/{broadcast}', [BroadcastController::class, 'update'])->name('update');
             Route::delete('/{broadcast}', [BroadcastController::class, 'destroy'])->name('destroy');
