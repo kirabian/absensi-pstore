@@ -70,7 +70,7 @@ class ProfileController extends Controller
     public function updatePhoto(Request $request)
 {
     $request->validate([
-        'profile_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048', // 2MB
+        'profile_photo' => 'required|image|mimes:jpeg,png,jpg|max:51200', // 2MB
     ]);
 
     /** @var \App\Models\User $user */
