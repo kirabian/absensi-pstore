@@ -95,7 +95,6 @@
                             <a href="{{ route('users.index') }}" class="btn btn-outline-dark btn-lg">
                                 <i class="mdi mdi-account-multiple me-2"></i>Kelola User
                             </a>
-                            {{-- BARU: Tambahkan tombol Kelola Broadcast --}}
                             <a href="{{ route('broadcast.index') }}" class="btn btn-dark btn-lg">
                                 <i class="mdi mdi-bullhorn me-2"></i>Kelola Broadcast
                             </a>
@@ -105,9 +104,9 @@
             </div>
         </div>
 
-        {{-- ======================================================================= --}}
-        {{-- TAMPILAN UNTUK AUDIT --}}
-        {{-- ======================================================================= --}}
+    {{-- ======================================================================= --}}
+    {{-- TAMPILAN UNTUK AUDIT --}}
+    {{-- ======================================================================= --}}
     @elseif (auth()->user()->role == 'audit')
         <div class="row">
             <div class="col-md-4 grid-margin stretch-card">
@@ -163,9 +162,9 @@
             </div>
         </div>
 
-        {{-- ======================================================================= --}}
-        {{-- TAMPILAN UNTUK SECURITY --}}
-        {{-- ======================================================================= --}}
+    {{-- ======================================================================= --}}
+    {{-- TAMPILAN UNTUK SECURITY --}}
+    {{-- ======================================================================= --}}
     @elseif (auth()->user()->role == 'security')
         <div class="row">
             <div class="col-md-6 grid-margin stretch-card">
@@ -175,8 +174,7 @@
                             <i class="mdi mdi-qrcode-scan display-1 text-dark"></i>
                         </div>
                         <h4 class="card-title mb-3">Pindai QR User</h4>
-                        <p class="text-muted mb-4">Arahkan kamera ke QR Code user untuk melakukan absensi (Masuk/Pulang).
-                        </p>
+                        <p class="text-muted mb-4">Arahkan kamera ke QR Code user untuk melakukan absensi (Masuk/Pulang).</p>
                         <a href="{{ route('security.scan') }}" class="btn btn-dark btn-lg">
                             <i class="mdi mdi-camera-enhance me-2"></i>Mulai Memindai
                         </a>
@@ -205,9 +203,9 @@
             </div>
         </div>
 
-        {{-- ======================================================================= --}}
-        {{-- TAMPILAN UNTUK USER BIASA & LEADER --}}
-        {{-- ======================================================================= --}}
+    {{-- ======================================================================= --}}
+    {{-- TAMPILAN UNTUK USER BIASA & LEADER --}}
+    {{-- ======================================================================= --}}
     @elseif (auth()->user()->role == 'user_biasa' || auth()->user()->role == 'leader')
         <div class="row">
             {{-- KARTU ID BARU --}}
@@ -230,8 +228,7 @@
                         </div>
                         <div class="card-id-footer">
                             <p class="card-id-valid">VALID THRU 12/28</p>
-                            <p class="card-id-card-number">**** **** **** {{ substr(Auth::user()->phone ?? '1234', -4) }}
-                            </p>
+                            <p class="card-id-card-number">**** **** **** {{ substr(Auth::user()->phone ?? '1234', -4) }}</p>
                         </div>
                     </div>
                 </div>
@@ -260,9 +257,8 @@
                             </div>
                         @endif
 
-                        {{-- LOGIKA TAMPILAN DENGAN HANDLE DATA RUSAK --}}
                         @if ($myAttendanceToday)
-                            {{-- KONDISI 1: SUDAH PULANG (check_out_time ADA ATAU photo_out_path ADA) --}}
+                            {{-- KONDISI 1: SUDAH PULANG --}}
                             @if ($myAttendanceToday->check_out_time || $myAttendanceToday->photo_out_path)
                                 <div class="status-card status-success mb-3">
                                     <div class="d-flex align-items-center">
@@ -271,8 +267,7 @@
                                         </div>
                                         <div class="flex-grow-1">
                                             <h5 class="mb-1 fw-bold">Anda Sudah Pulang</h5>
-                                            <p class="text-muted mb-0 small">Terima kasih atas kerja keras Anda hari ini!
-                                            </p>
+                                            <p class="text-muted mb-0 small">Terima kasih atas kerja keras Anda hari ini!</p>
                                         </div>
                                     </div>
                                     <hr>
@@ -294,11 +289,9 @@
                                         </div>
                                     </div>
 
-                                    {{-- Tampilkan Foto Pulang Jika Ada --}}
                                     @if ($myAttendanceToday->photo_out_path)
                                         <div class="mt-3 text-center border-top pt-3">
-                                            <p class="small text-muted mb-2"><i class="mdi mdi-camera me-1"></i>Bukti Foto
-                                                Pulang</p>
+                                            <p class="small text-muted mb-2"><i class="mdi mdi-camera me-1"></i>Bukti Foto Pulang</p>
                                             <img src="{{ asset('storage/' . $myAttendanceToday->photo_out_path) }}"
                                                 class="img-fluid rounded shadow-sm border"
                                                 style="height: 100px; object-fit: cover;" alt="Foto Pulang">
@@ -306,20 +299,14 @@
                                     @endif
                                 </div>
 
-                                {{-- KONDISI 2: BARU MASUK (BELUM PULANG) --}}
+                            {{-- KONDISI 2: BARU MASUK --}}
                             @else
                                 @php
-                                    // Tentukan Warna dan Icon berdasarkan Status & Tipe Absen
-                                    if (
-                                        $myAttendanceToday->attendance_type == 'scan' ||
-                                        $myAttendanceToday->status == 'present'
-                                    ) {
-                                        // Jika Scan Security ATAU Sudah Diapprove Audit -> HIJAU
+                                    if ($myAttendanceToday->attendance_type == 'scan' || $myAttendanceToday->status == 'present') {
                                         $cardClass = 'status-success';
                                         $iconClass = 'mdi-check-circle';
                                         $statusText = 'Sedang Bekerja (Terverifikasi)';
                                     } else {
-                                        // Jika Absen Mandiri DAN Masih Pending -> KUNING/ORANGE
                                         $cardClass = 'status-warning';
                                         $iconClass = 'mdi-clock-alert';
                                         $statusText = 'Menunggu Verifikasi Audit';
@@ -337,8 +324,6 @@
                                                 Masuk Pukul:
                                                 <strong>{{ $myAttendanceToday->check_in_time->format('H:i') }}</strong>
                                             </p>
-
-                                            {{-- Badge Tipe Absen --}}
                                             <div class="mt-1">
                                                 @if ($myAttendanceToday->attendance_type == 'scan')
                                                     <span class="badge bg-success text-white" style="font-size: 10px;">
@@ -353,22 +338,19 @@
                                         </div>
                                     </div>
 
-                                    {{-- Tombol Absen Pulang (Muncul jika Self Attendance & Belum Pulang) --}}
+                                    {{-- Tombol Absen Pulang Mandiri --}}
                                     @if ($myAttendanceToday->attendance_type == 'self' && !$myAttendanceToday->check_out_time)
                                         <div class="mt-3 pt-3 border-top text-center">
                                             <p class="text-muted small mb-2">Ingin pulang? Lakukan absen mandiri lagi.</p>
-                                            <a href="{{ route('self.attend.create') }}"
-                                                class="btn btn-danger btn-sm w-100">
+                                            <a href="{{ route('self.attend.create') }}" class="btn btn-danger btn-sm w-100">
                                                 <i class="mdi mdi-logout me-1"></i>Absen Pulang Mandiri
                                             </a>
                                         </div>
                                     @endif
 
-                                    {{-- Tampilkan Foto Masuk --}}
                                     @if ($myAttendanceToday->photo_path)
                                         <div class="mt-3 text-center border-top pt-3">
-                                            <p class="small text-muted mb-2"><i class="mdi mdi-camera me-1"></i>Bukti Foto
-                                                Masuk</p>
+                                            <p class="small text-muted mb-2"><i class="mdi mdi-camera me-1"></i>Bukti Foto Masuk</p>
                                             <img src="{{ asset('storage/' . $myAttendanceToday->photo_path) }}"
                                                 class="img-fluid rounded shadow-sm border"
                                                 style="height: 100px; object-fit: cover;" alt="Foto Masuk">
@@ -376,23 +358,20 @@
                                     @endif
                                 </div>
 
-                                {{-- Pesan Info --}}
                                 @if ($myAttendanceToday->attendance_type == 'scan')
                                     <div class="alert alert-info border-0 bg-light text-dark mt-2">
-                                        <i class="mdi mdi-information me-2"></i> Jangan lupa scan QR
-                                        <strong>Pulang</strong> di Security.
+                                        <i class="mdi mdi-information me-2"></i> Jangan lupa scan QR <strong>Pulang</strong> di Security.
                                     </div>
                                 @endif
                             @endif
 
-                            {{-- KONDISI 3: BELUM ABSEN SAMA SEKALI --}}
+                        {{-- KONDISI 3: BELUM ABSEN --}}
                         @else
                             <div class="status-card status-info">
                                 <div class="text-center py-4">
                                     <i class="mdi mdi-clock-alert display-4 mb-3 text-primary"></i>
                                     <h5 class="mb-2 fw-bold">Anda Belum Absen Hari Ini</h5>
-                                    <p class="text-muted mb-4">Silakan scan QR di pos security atau gunakan absen mandiri
-                                        jika WFH/Dinas.</p>
+                                    <p class="text-muted mb-4">Silakan scan QR di pos security atau gunakan absen mandiri jika WFH/Dinas.</p>
                                     <div class="d-flex justify-content-center gap-2">
                                         <a href="{{ route('self.attend.create') }}" class="btn btn-dark">
                                             <i class="mdi mdi-fingerprint me-2"></i>Absen Mandiri
@@ -404,27 +383,12 @@
                                 </div>
                             </div>
                         @endif
-                        {{-- DEBUG: Tampilkan data attendance --}}
-                        {{-- <div
-                            style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 20px; font-size: 12px;">
-                            <strong>DEBUG Attendance Data:</strong><br>
-                            @if ($myAttendanceToday)
-                                ID: {{ $myAttendanceToday->id }}<br>
-                                Check In: {{ $myAttendanceToday->check_in_time }}<br>
-                                Check Out: {{ $myAttendanceToday->check_out_time ?? 'NULL' }}<br>
-                                Photo Path: {{ $myAttendanceToday->photo_path }}<br>
-                                Photo Out Path: {{ $myAttendanceToday->photo_out_path ?? 'NULL' }}<br>
-                                Status: {{ $myAttendanceToday->check_out_time ? 'SUDAH PULANG' : 'MASIH BEKERJA' }}
-                            @else
-                                NO ATTENDANCE DATA
-                            @endif
-                        </div> --}}
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- KARTU STATISTIK --}}
+        {{-- KARTU STATISTIK DAN AKSI CEPAT (USER BIASA/LEADER) --}}
         <div class="row">
             <div class="col-md-6 grid-margin stretch-card">
                 <div class="card card-bank gradient-indigo">
@@ -447,7 +411,6 @@
                 </div>
             </div>
 
-            {{-- KARTU AKSI CEPAT --}}
             <div class="col-md-6 grid-margin stretch-card">
                 <div class="card card-action">
                     <div class="card-body py-4">
@@ -482,385 +445,216 @@
         </div>
     @endif
 
+    {{-- ======================================================================= --}}
+    {{--  SECTION STATISTIK & REPORT (UNTUK SEMUA ROLE) --}}
+    {{-- ======================================================================= --}}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+                        <div>
+                            <h4 class="card-title mb-1">
+                                <i class="mdi mdi-chart-bar me-2"></i>Statistik Absensi
+                            </h4>
+                            <p class="text-muted mb-0">Data kehadiran & performa (7 Hari Terakhir)</p>
+                        </div>
+                        
+                        <div class="mt-2 mt-md-0">
+                            <a href="{{ route('dashboard.export-pdf') }}" class="btn btn-danger text-white">
+                                <i class="mdi mdi-file-pdf me-1"></i> Export Laporan PDF
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        {{-- CHART 1: BAR CHART (AKTIVITAS HARIAN) --}}
+                        <div class="col-lg-8 grid-margin grid-margin-lg-0 stretch-card">
+                            <div class="card border-0 shadow-none">
+                                <div class="card-body p-0">
+                                    <h6 class="text-muted mb-3">Aktivitas Harian</h6>
+                                    <canvas id="barChart" style="height: 300px;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- CHART 2: PIE CHART (PERSENTASE BULAN INI) --}}
+                        <div class="col-lg-4 stretch-card">
+                            <div class="card border-0 shadow-none">
+                                <div class="card-body p-0">
+                                    <h6 class="text-muted mb-3">Akumulasi Bulan Ini</h6>
+                                    <div style="position: relative; height: 250px;">
+                                        <canvas id="pieChart"></canvas>
+                                    </div>
+                                    <div class="mt-3 text-center">
+                                        <small class="text-muted">Perbandingan total status kehadiran bulan ini</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 @push('styles')
     <style>
         /* Card Bank Style */
-        .card-bank {
-            position: relative;
-            min-height: 200px;
-            border-radius: 16px;
-            overflow: hidden;
-            border: none;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-            transition: all 0.3s ease;
-        }
-
-        .card-bank:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
-        }
-
-        .card-bank .card-body {
-            position: relative;
-            z-index: 2;
-            padding: 24px;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .card-bank-chip {
-            width: 40px;
-            height: 30px;
-            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-            border-radius: 6px;
-            position: relative;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .card-bank-chip::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 50%;
-            top: 0;
-            left: 0;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 100%);
-            border-radius: 6px 6px 0 0;
-        }
-
-        .card-bank-icon {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 48px;
-            opacity: 0.2;
-        }
-
-        .card-bank-content {
-            position: relative;
-            z-index: 3;
-        }
-
-        .card-bank-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0.9;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-
-        .card-bank-value {
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: 36px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            line-height: 1;
-        }
-
-        .card-bank-desc {
-            font-size: 13px;
-            opacity: 0.85;
-            margin-bottom: 0;
-        }
-
-        .card-bank-pattern {
-            position: absolute;
-            bottom: -50px;
-            right: -50px;
-            width: 200px;
-            height: 200px;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-            border-radius: 50%;
-            z-index: 1;
-        }
-
-        /* Gradient Themes */
-        .gradient-purple {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .gradient-blue {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
-
-        .gradient-green {
-            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-        }
-
-        .gradient-orange {
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-        }
-
-        .gradient-red {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .gradient-dark {
-            background: linear-gradient(135deg, #2c3e50 0%, #000000 100%);
-        }
-
-        .gradient-indigo {
-            background: linear-gradient(135deg, #5f72bd 0%, #9b23ea 100%);
-        }
-
-        /* ID Card Style */
-        .card-id {
-            position: relative;
-            border-radius: 16px;
-            overflow: hidden;
-            border: none;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-            color: white;
-            min-height: 220px;
-            display: flex;
-            flex-direction: column;
-            font-family: 'Roboto', sans-serif;
-        }
-
-        .card-id .card-body {
-            position: relative;
-            z-index: 2;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            flex-grow: 1;
-            gap: 15px;
-        }
-
-        .card-id-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .card-id-logo {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            font-size: 10px;
-            font-weight: 700;
-            line-height: 1;
-        }
-
-        .card-id-logo i {
-            font-size: 38px;
-            margin-bottom: 4px;
-            color: #ffed4e;
-        }
-
-        .card-id-details {
-            flex-grow: 1;
-        }
-
-        .card-id-label {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            opacity: 0.7;
-            margin-bottom: 4px;
-            font-weight: 500;
-        }
-
-        .card-id-name {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            line-height: 1.2;
-            word-break: break-word;
-            font-family: 'Consolas', 'Courier New', monospace;
-        }
-
-        .card-id-division {
-            font-size: 16px;
-            font-weight: 500;
-            opacity: 0.9;
-            word-break: break-word;
-            font-family: 'Consolas', 'Courier New', monospace;
-        }
-
-        .card-id-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-top: 20px;
-        }
-
-        .card-id-valid,
-        .card-id-card-number {
-            font-size: 12px;
-            font-weight: 500;
-            opacity: 0.8;
-            font-family: 'Consolas', 'Courier New', monospace;
-            letter-spacing: 0.5px;
-        }
-
-        /* Other Cards */
-        .card-action {
-            border-radius: 16px;
-            border: none;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-            transition: all 0.3s ease;
-            height: 100%;
-        }
-
-        .card-action:hover {
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-            transform: translateY(-4px);
-        }
-
-        .card-status {
-            border-radius: 16px;
-            border: none;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-            height: 100%;
-        }
-
-        .status-card {
-            padding: 24px;
-            border-radius: 12px;
-            border: 2px solid;
-            background: #f8fafc;
-        }
-
-        .status-success {
-            border-color: #10b981;
-            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-        }
-
-        .status-warning {
-            border-color: #f59e0b;
-            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-        }
-
-        .status-info {
-            border-color: #3b82f6;
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-        }
-
-        .status-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 20px;
-            font-size: 28px;
-            flex-shrink: 0;
-        }
-
-        .status-success .status-icon {
-            background: #10b981;
-            color: white;
-        }
-
-        .status-warning .status-icon {
-            background: #f59e0b;
-            color: white;
-        }
-
-        .status-info .status-icon {
-            background: #3b82f6;
-            color: white;
-        }
-
-        .btn-dark {
-            background: #000;
-            border: 2px solid #000;
-            border-radius: 10px;
-            font-weight: 600;
-            padding: 12px 28px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-dark:hover {
-            background: #1f2937;
-            border-color: #1f2937;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn-outline-dark {
-            border: 2px solid #000;
-            color: #000;
-            border-radius: 10px;
-            font-weight: 600;
-            padding: 12px 28px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-outline-dark:hover {
-            background: #000;
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        .btn-light {
-            background: rgba(255, 255, 255, 0.95);
-            border: none;
-            color: #1f2937;
-            font-weight: 600;
-            border-radius: 8px;
-        }
-
-        .btn-light:hover {
-            background: white;
-            color: #000;
-        }
-
-        .alert {
-            border-radius: 10px;
-            border: none;
-            padding: 16px 20px;
-        }
-
-        .badge {
-            border-radius: 8px;
-            font-weight: 600;
-            padding: 6px 12px;
-        }
+        .card-bank { position: relative; min-height: 200px; border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); transition: all 0.3s ease; }
+        .card-bank:hover { transform: translateY(-8px); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); }
+        .card-bank .card-body { position: relative; z-index: 2; padding: 24px; color: white; display: flex; flex-direction: column; justify-content: space-between; }
+        .card-bank-chip { width: 40px; height: 30px; background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); border-radius: 6px; position: relative; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); }
+        .card-bank-chip::before { content: ''; position: absolute; width: 100%; height: 50%; top: 0; left: 0; background: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 100%); border-radius: 6px 6px 0 0; }
+        .card-bank-icon { position: absolute; top: 20px; right: 20px; font-size: 48px; opacity: 0.2; }
+        .card-bank-content { position: relative; z-index: 3; }
+        .card-bank-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; font-weight: 600; }
+        .card-bank-value { font-family: 'Consolas', 'Courier New', monospace; font-size: 36px; font-weight: 700; margin-bottom: 8px; line-height: 1; }
+        .card-bank-desc { font-size: 13px; opacity: 0.85; margin-bottom: 0; }
+        .card-bank-pattern { position: absolute; bottom: -50px; right: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%); border-radius: 50%; z-index: 1; }
+        .gradient-purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .gradient-blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .gradient-green { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .gradient-orange { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .gradient-red { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .gradient-dark { background: linear-gradient(135deg, #2c3e50 0%, #000000 100%); }
+        .gradient-indigo { background: linear-gradient(135deg, #5f72bd 0%, #9b23ea 100%); }
+        
+        .card-id { position: relative; border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); color: white; min-height: 220px; display: flex; flex-direction: column; font-family: 'Roboto', sans-serif; }
+        .card-id .card-body { position: relative; z-index: 2; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1; gap: 15px; }
+        .card-id-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .card-id-logo { display: flex; flex-direction: column; align-items: flex-end; font-size: 10px; font-weight: 700; line-height: 1; }
+        .card-id-logo i { font-size: 38px; margin-bottom: 4px; color: #ffed4e; }
+        .card-id-details { flex-grow: 1; }
+        .card-id-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; opacity: 0.7; margin-bottom: 4px; font-weight: 500; }
+        .card-id-name { font-size: 24px; font-weight: 700; margin-bottom: 12px; line-height: 1.2; word-break: break-word; font-family: 'Consolas', 'Courier New', monospace; }
+        .card-id-division { font-size: 16px; font-weight: 500; opacity: 0.9; word-break: break-word; font-family: 'Consolas', 'Courier New', monospace; }
+        .card-id-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; }
+        .card-id-valid, .card-id-card-number { font-size: 12px; font-weight: 500; opacity: 0.8; font-family: 'Consolas', 'Courier New', monospace; letter-spacing: 0.5px; }
+        
+        .card-action, .card-status { border-radius: 16px; border: none; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); transition: all 0.3s ease; height: 100%; }
+        .card-action:hover { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); transform: translateY(-4px); }
+        .status-card { padding: 24px; border-radius: 12px; border: 2px solid; background: #f8fafc; }
+        .status-success { border-color: #10b981; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); }
+        .status-warning { border-color: #f59e0b; background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); }
+        .status-info { border-color: #3b82f6; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); }
+        .status-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 20px; font-size: 28px; flex-shrink: 0; }
+        .status-success .status-icon { background: #10b981; color: white; }
+        .status-warning .status-icon { background: #f59e0b; color: white; }
+        .status-info .status-icon { background: #3b82f6; color: white; }
+        
+        .btn-dark { background: #000; border: 2px solid #000; border-radius: 10px; font-weight: 600; padding: 12px 28px; transition: all 0.3s ease; }
+        .btn-dark:hover { background: #1f2937; border-color: #1f2937; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
+        .btn-outline-dark { border: 2px solid #000; color: #000; border-radius: 10px; font-weight: 600; padding: 12px 28px; transition: all 0.3s ease; }
+        .btn-outline-dark:hover { background: #000; color: white; transform: translateY(-2px); }
+        .btn-light { background: rgba(255, 255, 255, 0.95); border: none; color: #1f2937; font-weight: 600; border-radius: 8px; }
+        .btn-light:hover { background: white; color: #000; }
+        .alert { border-radius: 10px; border: none; padding: 16px 20px; }
+        .badge { border-radius: 8px; font-weight: 600; padding: 6px 12px; }
 
         @media (max-width: 768px) {
-            .card-bank-value {
-                font-size: 28px;
-            }
-
-            .card-bank {
-                min-height: 180px;
-            }
-
-            .card-id {
-                min-height: 200px;
-            }
-
-            .card-id .card-body {
-                padding: 20px;
-                gap: 10px;
-            }
-
-            .card-id-name {
-                font-size: 20px;
-            }
-
-            .card-id-division {
-                font-size: 14px;
-            }
-
-            .card-id-logo i {
-                font-size: 32px;
-            }
-
-            .card-id-valid,
-            .card-id-card-number {
-                font-size: 10px;
-            }
+            .card-bank-value { font-size: 28px; }
+            .card-bank { min-height: 180px; }
+            .card-id { min-height: 200px; }
+            .card-id .card-body { padding: 20px; gap: 10px; }
+            .card-id-name { font-size: 20px; }
+            .card-id-division { font-size: 14px; }
+            .card-id-logo i { font-size: 32px; }
+            .card-id-valid, .card-id-card-number { font-size: 10px; }
         }
     </style>
+@endpush
+
+{{-- SCRIPT CHART.JS --}}
+@push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const barCtx = document.getElementById('barChart').getContext('2d');
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
+            
+            // Data dari Controller
+            const labels = @json($chartLabels);
+            const presentData = @json($chartValues['present']);
+            const lateData = @json($chartValues['late']);
+            const chartType = "{{ $chartType }}"; 
+            
+            const pieLabels = @json($pieLabels);
+            const pieData = @json($pieData);
+
+            // Konfigurasi Dataset Bar Chart
+            let datasets = [];
+            if (chartType === 'scan_activity') {
+                datasets = [{
+                    label: 'Total Scan Harian',
+                    data: presentData,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }];
+            } else {
+                datasets = [
+                    {
+                        label: chartType === 'personal' ? 'Hadir Tepat Waktu' : 'Karyawan Tepat Waktu',
+                        data: presentData,
+                        backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    },
+                    {
+                        label: chartType === 'personal' ? 'Terlambat' : 'Karyawan Terlambat',
+                        data: lateData,
+                        backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }
+                ];
+            }
+
+            // 1. Render Bar Chart
+            new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                    },
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+
+            // 2. Render Pie Chart
+            new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: pieLabels,
+                    datasets: [{
+                        data: pieData,
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.8)', // Hijau
+                            'rgba(255, 99, 132, 0.8)'  // Merah
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        });
+    </script>
 @endpush
