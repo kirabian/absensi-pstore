@@ -179,12 +179,17 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // Di dalam group middleware auth
-        Route::prefix('leave')->name('leave.')->group(function () {
+
+        // Menggunakan 'leave-requests' agar sesuai standar RESTful & nama tabel
+        Route::prefix('leave-requests')->name('leave-requests.')->group(function () {
+
             // Form & Store (User)
             Route::get('/create', [LeaveRequestController::class, 'create'])->name('create');
             Route::post('/store', [LeaveRequestController::class, 'store'])->name('store');
 
             // List History & Monitoring (User, Admin, Audit)
+            // URL: /leave-requests
+            // Route Name: leave-requests.index
             Route::get('/', [LeaveRequestController::class, 'index'])->name('index');
 
             // Action User: Batalkan Izin
