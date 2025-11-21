@@ -259,9 +259,11 @@
                             </div>
                         @endif
 
-                        {{-- LOGIKA TAMPILAN DENGAN HANDLE DATA RUSAK --}}
+                        {{-- LOGIKA TAMPILAN --}}
+                        
+                        {{-- 1. JIKA SUDAH ABSEN (PRIORITAS UTAMA) --}}
                         @if ($myAttendanceToday)
-                            {{-- KONDISI 1: SUDAH PULANG (check_out_time ADA ATAU photo_out_path ADA) --}}
+                            {{-- Logika Absen (Sama seperti sebelumnya, tidak diubah) --}}
                             @if ($myAttendanceToday->check_out_time || $myAttendanceToday->photo_out_path)
                                 <div class="status-card status-success mb-3">
                                     <div class="d-flex align-items-center">
@@ -270,8 +272,7 @@
                                         </div>
                                         <div class="flex-grow-1">
                                             <h5 class="mb-1 fw-bold">Anda Sudah Pulang</h5>
-                                            <p class="text-muted mb-0 small">Terima kasih atas kerja keras Anda hari ini!
-                                            </p>
+                                            <p class="text-muted mb-0 small">Terima kasih atas kerja keras Anda hari ini!</p>
                                         </div>
                                     </div>
                                     <hr>
@@ -284,120 +285,111 @@
                                         <div class="col-6">
                                             <small class="text-muted d-block">JAM PULANG</small>
                                             <h4 class="fw-bold text-primary mb-0">
-                                                @if ($myAttendanceToday->check_out_time)
-                                                    {{ $myAttendanceToday->check_out_time->format('H:i') }}
-                                                @else
-                                                    {{ $myAttendanceToday->check_in_time->addHour()->format('H:i') }}
-                                                @endif
+                                                {{ $myAttendanceToday->check_out_time ? $myAttendanceToday->check_out_time->format('H:i') : '-' }}
                                             </h4>
                                         </div>
                                     </div>
-
-                                    {{-- Tampilkan Foto Pulang Jika Ada --}}
-                                    @if ($myAttendanceToday->photo_out_path)
-                                        <div class="mt-3 text-center border-top pt-3">
-                                            <p class="small text-muted mb-2"><i class="mdi mdi-camera me-1"></i>Bukti Foto
-                                                Pulang</p>
-                                            <img src="{{ asset('storage/' . $myAttendanceToday->photo_out_path) }}"
-                                                class="img-fluid rounded shadow-sm border"
-                                                style="height: 100px; object-fit: cover;" alt="Foto Pulang">
-                                        </div>
-                                    @endif
                                 </div>
-
-                                {{-- KONDISI 2: BARU MASUK (BELUM PULANG) --}}
                             @else
-                                @php
-                                    // Tentukan Warna dan Icon berdasarkan Status & Tipe Absen
-                                    if (
-                                        $myAttendanceToday->attendance_type == 'scan' ||
-                                        $myAttendanceToday->status == 'present'
-                                    ) {
-                                        // Jika Scan Security ATAU Sudah Diapprove Audit -> HIJAU
-                                        $cardClass = 'status-success';
-                                        $iconClass = 'mdi-check-circle';
-                                        $statusText = 'Sedang Bekerja (Terverifikasi)';
-                                    } else {
-                                        // Jika Absen Mandiri DAN Masih Pending -> KUNING/ORANGE
-                                        $cardClass = 'status-warning';
-                                        $iconClass = 'mdi-clock-alert';
-                                        $statusText = 'Menunggu Verifikasi Audit';
-                                    }
-                                @endphp
-
-                                <div class="status-card {{ $cardClass }} mb-3">
+                                {{-- Masih Bekerja --}}
+                                <div class="status-card status-success mb-3">
                                     <div class="d-flex align-items-center">
                                         <div class="status-icon">
-                                            <i class="mdi {{ $iconClass }}"></i>
+                                            <i class="mdi mdi-clock-check"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <h5 class="mb-1 fw-bold">{{ $statusText }}</h5>
-                                            <p class="mb-0">
-                                                Masuk Pukul:
-                                                <strong>{{ $myAttendanceToday->check_in_time->format('H:i') }}</strong>
-                                            </p>
-
-                                            {{-- Badge Tipe Absen --}}
-                                            <div class="mt-1">
-                                                @if ($myAttendanceToday->attendance_type == 'scan')
-                                                    <span class="badge bg-success text-white" style="font-size: 10px;">
-                                                        <i class="mdi mdi-security me-1"></i>Security Scan
-                                                    </span>
-                                                @elseif($myAttendanceToday->attendance_type == 'self')
-                                                    <span class="badge bg-warning text-dark" style="font-size: 10px;">
-                                                        <i class="mdi mdi-face-recognition me-1"></i>Selfie Mandiri
-                                                    </span>
-                                                @endif
-                                            </div>
+                                            <h5 class="mb-1 fw-bold">Sedang Bekerja</h5>
+                                            <p class="mb-0">Masuk Pukul: <strong>{{ $myAttendanceToday->check_in_time->format('H:i') }}</strong></p>
                                         </div>
                                     </div>
-
-                                    {{-- Tombol Absen Pulang (Muncul jika Self Attendance & Belum Pulang) --}}
-                                    @if ($myAttendanceToday->attendance_type == 'self' && !$myAttendanceToday->check_out_time)
+                                    
+                                    {{-- Tombol Pulang jika Absen Mandiri --}}
+                                    @if ($myAttendanceToday->attendance_type == 'self')
                                         <div class="mt-3 pt-3 border-top text-center">
-                                            <p class="text-muted small mb-2">Ingin pulang? Lakukan absen mandiri lagi.</p>
-                                            <a href="{{ route('self.attend.create') }}"
-                                                class="btn btn-danger btn-sm w-100">
+                                            <a href="{{ route('self.attend.create') }}" class="btn btn-danger btn-sm w-100">
                                                 <i class="mdi mdi-logout me-1"></i>Absen Pulang Mandiri
                                             </a>
                                         </div>
                                     @endif
-
-                                    {{-- Tampilkan Foto Masuk --}}
-                                    @if ($myAttendanceToday->photo_path)
-                                        <div class="mt-3 text-center border-top pt-3">
-                                            <p class="small text-muted mb-2"><i class="mdi mdi-camera me-1"></i>Bukti Foto
-                                                Masuk</p>
-                                            <img src="{{ asset('storage/' . $myAttendanceToday->photo_path) }}"
-                                                class="img-fluid rounded shadow-sm border"
-                                                style="height: 100px; object-fit: cover;" alt="Foto Masuk">
-                                        </div>
-                                    @endif
                                 </div>
-
-                                {{-- Pesan Info --}}
-                                @if ($myAttendanceToday->attendance_type == 'scan')
-                                    <div class="alert alert-info border-0 bg-light text-dark mt-2">
-                                        <i class="mdi mdi-information me-2"></i> Jangan lupa scan QR
-                                        <strong>Pulang</strong> di Security.
-                                    </div>
-                                @endif
                             @endif
 
-                            {{-- KONDISI 3: BELUM ABSEN SAMA SEKALI --}}
+                        {{-- 2. JIKA TIDAK ABSEN, TAPI ADA IZIN (SAKIT/TELAT/CUTI) --}}
+                        @elseif(isset($myLeaveToday) && $myLeaveToday)
+                            
+                            @php
+                                $leaveColor = $myLeaveToday->status == 'approved' ? 'status-success' : 'status-warning';
+                                $leaveIcon  = $myLeaveToday->type == 'sakit' ? 'mdi-hospital-box' : ($myLeaveToday->type == 'telat' ? 'mdi-clock-alert' : 'mdi-bag-suitcase');
+                                $leaveTitle = ucfirst($myLeaveToday->type); 
+                                
+                                // Format Waktu/Tanggal
+                                if($myLeaveToday->type == 'telat') {
+                                    $timeInfo = "Akan hadir pukul: " . \Carbon\Carbon::parse($myLeaveToday->start_time)->format('H:i');
+                                } else {
+                                    $timeInfo = "Sampai: " . \Carbon\Carbon::parse($myLeaveToday->end_date)->format('d M Y');
+                                }
+                            @endphp
+
+                            <div class="status-card {{ $leaveColor }} mb-3">
+                                <div class="d-flex align-items-start">
+                                    <div class="status-icon">
+                                        <i class="mdi {{ $leaveIcon }}"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between">
+                                            <h5 class="mb-1 fw-bold">Izin {{ $leaveTitle }}</h5>
+                                            <span class="badge {{ $myLeaveToday->status == 'approved' ? 'bg-success' : 'bg-warning' }}">
+                                                {{ strtoupper($myLeaveToday->status) }}
+                                            </span>
+                                        </div>
+                                        
+                                        <p class="text-muted mb-2 small">{{ $timeInfo }}</p>
+                                        
+                                        <div class="bg-white p-2 rounded border mb-2">
+                                            <small class="text-muted d-block" style="font-size: 10px;">ALASAN:</small>
+                                            <span class="fst-italic">"{{ $myLeaveToday->reason }}"</span>
+                                        </div>
+
+                                        {{-- Tampilkan Bukti Foto Jika Ada --}}
+                                        @if($myLeaveToday->file_proof)
+                                            <div class="mt-2">
+                                                <small class="text-muted d-block mb-1" style="font-size: 10px;">BUKTI LAMPIRAN:</small>
+                                                <a href="{{ asset('storage/' . $myLeaveToday->file_proof) }}" target="_blank">
+                                                    <img src="{{ asset('storage/' . $myLeaveToday->file_proof) }}" 
+                                                         class="img-thumbnail" 
+                                                         style="height: 60px; width: 60px; object-fit: cover;" 
+                                                         alt="Bukti">
+                                                </a>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                {{-- Jika Telat & Status Approved -> Tampilkan Tombol Absen --}}
+                                @if($myLeaveToday->type == 'telat' && $myLeaveToday->status == 'approved')
+                                    <div class="mt-3 pt-3 border-top text-center">
+                                        <p class="small text-muted mb-2">Sudah sampai kantor?</p>
+                                        <a href="{{ route('self.attend.create') }}" class="btn btn-dark btn-sm w-100">
+                                            <i class="mdi mdi-fingerprint me-2"></i>Lakukan Absensi Masuk
+                                        </a>
+                                    </div>
+                                @endif
+                            </div>
+
+                        {{-- 3. JIKA BELUM ABSEN SAMA SEKALI (TAMPILAN DEFAULT) --}}
                         @else
                             <div class="status-card status-info">
                                 <div class="text-center py-4">
                                     <i class="mdi mdi-clock-alert display-4 mb-3 text-primary"></i>
                                     <h5 class="mb-2 fw-bold">Anda Belum Absen Hari Ini</h5>
-                                    <p class="text-muted mb-4">Silakan scan QR di pos security atau gunakan absen mandiri
-                                        jika WFH/Dinas.</p>
+                                    <p class="text-muted mb-4">Silakan scan QR atau gunakan absen mandiri jika WFH/Dinas.</p>
                                     <div class="d-flex justify-content-center gap-2">
                                         <a href="{{ route('self.attend.create') }}" class="btn btn-dark">
                                             <i class="mdi mdi-fingerprint me-2"></i>Absen Mandiri
                                         </a>
-                                        <a href="{{ route('leave.create') }}" class="btn btn-outline-dark">
-                                            <i class="mdi mdi-file-document-edit-outline me-2"></i>Izin/Sakit
+                                        {{-- LINK DIGANTI KE ROUTE BARU --}}
+                                        <a href="{{ route('leave-requests.create') }}" class="btn btn-outline-dark">
+                                            <i class="mdi mdi-file-document-edit-outline me-2"></i>Izin/Sakit/Telat
                                         </a>
                                     </div>
                                 </div>
@@ -437,7 +429,7 @@
                     <div class="card-body py-4">
                         <h5 class="card-title mb-4"><i class="mdi mdi-lightning-bolt me-2"></i>Aksi Cepat</h5>
                         <div class="d-grid gap-3">
-                            <a href="{{ route('leave.create') }}" class="btn btn-light text-start p-3 border">
+                            <a href="{{ route('leave-requests.create') }}" class="btn btn-light text-start p-3 border">
                                 <div class="d-flex align-items-center">
                                     <div class="bg-danger text-white rounded p-2 me-3">
                                         <i class="mdi mdi-hospital-box"></i>

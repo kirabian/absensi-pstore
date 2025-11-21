@@ -145,12 +145,6 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/laporan', [AuditController::class, 'showReports'])->name('reports');
         });
 
-        // Late Permissions
-        Route::get('/izin-telat', [AuditController::class, 'showLatePermissions'])->name('audit.late.list');
-        Route::post('/izin-telat/{lateNotification}/approve', [AuditController::class, 'approveLatePermission'])->name('late.approve');
-        Route::post('/izin-telat/{lateNotification}/reject', [AuditController::class, 'rejectLatePermission'])->name('late.reject');
-    });
-
     // === RUTE SECURITY ===
     Route::middleware(['role:security'])->prefix('security')->name('security.')->group(function () {
         Route::get('/scan', [ScanController::class, 'index'])->name('scan');
@@ -170,22 +164,16 @@ Route::middleware(['auth'])->group(function () {
 
     // === RUTE SELF ATTENDANCE & LEAVE ===
     Route::middleware(['role:user_biasa,leader'])->group(function () {
+        Route::get('/leave-requests/create', [LeaveRequestController::class, 'create'])->name('leave-requests.create');
+        Route::post('/leave-requests', [LeaveRequestController::class, 'store'])->name('leave-requests.store');
         // Self Attendance
         Route::prefix('absen-mandiri')->name('self.attend.')->group(function () {
             Route::get('/', [SelfAttendanceController::class, 'create'])->name('create');
             Route::post('/', [SelfAttendanceController::class, 'store'])->name('store');
             Route::get('/history', [SelfAttendanceController::class, 'history'])->name('history');
-            Route::post('/hapus-telat', [SelfAttendanceController::class, 'deleteLateStatus'])->name('late.status.delete');
         });
 
-        // Leave Requests
-        Route::prefix('leave')->name('leave.')->group(function () {
-            Route::get('/create', [LeaveRequestController::class, 'create'])->name('create');
-            Route::post('/store', [LeaveRequestController::class, 'store'])->name('store');
-            Route::get('/history', [LeaveRequestController::class, 'history'])->name('history');
-            Route::get('/{leaveRequest}', [LeaveRequestController::class, 'show'])->name('show');
-            Route::delete('/{leaveRequest}', [LeaveRequestController::class, 'destroy'])->name('destroy');
-        });
+        
     });
 
     // === RUTE LAPORAN & ANALYTICS ===
@@ -262,4 +250,4 @@ if (app()->environment('local')) {
 
         return response()->json($routes);
     });
-}
+}});

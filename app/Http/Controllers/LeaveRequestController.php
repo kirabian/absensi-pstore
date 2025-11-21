@@ -2,114 +2,72 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LeaveRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use App\Models\LeaveRequest; // <-- DITAMBAHKAN
-use App\Models\LateNotification; // <-- DIPERBARUI dari LateStatus
-use Carbon\Carbon; // <-- DITAMBAHKAN (untuk validasi minggu)
 
 class LeaveRequestController extends Controller
 {
-    /**
-     * Menampilkan form untuk membuat pengajuan baru.
-     */
+    // Menampilkan Form
     public function create()
     {
-        // Langsung tampilkan view yang baru kita buat
-        return view('leave.create');
+        return view('leave_requests.create');
     }
 
-    /**
-     * Menyimpan pengajuan baru ke database.
-     */
+    // Menyimpan Data
     public function store(Request $request)
     {
-        // 1. Validasi Input
-        $rules = [
-            'type' => 'required|in:sakit,telat,cuti,libur_mingguan',
-            'start_date' => 'required|date|after_or_equal:today', // Tanggal tidak boleh di masa lalu
-            'reason' => 'required|string|min:10',
-            'file_proof' => 'nullable|image|max:51200', // 2MB Max
+        // 1. Validasi Dinamis
+        $request->validate([
+            'type' => 'required|in:sakit,izin,telat',
+            'reason' => 'required|string|max:255',
+            'file_proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048', // Bukti opsional/wajib tergantung aturan kantor
+            
+            // Validasi untuk SAKIT / IZIN (Butuh Tanggal Mulai & Selesai)
+            'start_date' => 'required|date',
+            'end_date'   => 'required_if:type,sakit,izin|nullable|date|after_or_equal:start_date',
+
+            // Validasi untuk TELAT (Butuh Jam)
+            'start_time' => 'required_if:type,telat|nullable|date_format:H:i',
+        ], [
+            'end_date.required_if' => 'Tanggal selesai wajib diisi untuk izin sakit/cuti.',
+            'start_time.required_if' => 'Jam kedatangan wajib diisi untuk izin telat.',
+        ]);
+
+        // 2. Siapkan Data Umum
+        $data = [
+            'user_id' => Auth::id(),
+            'type' => $request->type,
+            'reason' => $request->reason,
+            'start_date' => $request->start_date, // Telat pun butuh tanggal (hari ini)
+            'status' => 'pending', // Default status
+            'is_active' => true,
         ];
 
-        // Validasi kondisional
-        if ($request->type == 'sakit' || $request->type == 'telat') {
-            $rules['file_proof'] = 'required|image|max:51200';
-        }
-
-        if ($request->type == 'cuti' || $request->type == 'sakit') {
-            // Untuk cuti/sakit, tanggal selesai wajib diisi
-            $rules['end_date'] = 'required|date|after_or_equal:start_date';
+        // 3. Logika Pengisian Data Spesifik
+        if ($request->type === 'telat') {
+            // Kalau Telat: Set jam, kosongkan tanggal selesai
+            $data['start_time'] = $request->start_time;
+            $data['end_date']   = null; 
         } else {
-            // Untuk telat/libur, tanggal selesai tidak diisi di form
-            $rules['end_date'] = 'nullable|date';
+            // Kalau Sakit/Izin: Set tanggal selesai, kosongkan jam
+            $data['end_date']   = $request->end_date;
+            $data['start_time'] = null;
         }
 
-        $validated = $request->validate($rules, [
-            'start_date.after_or_equal' => 'Tanggal mulai tidak boleh di masa lalu.',
-            'file_proof.required' => 'Bukti foto wajib diisi untuk izin Sakit atau Telat.',
-            'end_date.required' => 'Tanggal selesai wajib diisi untuk Cuti atau Sakit.',
-            'end_date.after_or_equal' => 'Tanggal selesai harus setelah atau sama dengan tanggal mulai.'
-        ]);
-
-        $userId = Auth::id();
-
-        // 2. Logika untuk Libur Mingguan (Validasi 1x per minggu)
-        if ($validated['type'] == 'libur_mingguan') {
-            $startDate = Carbon::parse($validated['start_date']);
-            $weekStartDate = $startDate->startOfWeek(Carbon::SUNDAY)->format('Y-m-d'); // Mulai minggu hari Minggu
-            $weekEndDate = $startDate->endOfWeek(Carbon::SATURDAY)->format('Y-m-d'); // Akhir minggu hari Sabtu
-
-            $existingRequest = LeaveRequest::where('user_id', $userId)
-                ->where('type', 'libur_mingguan')
-                ->where('status', '!=', 'rejected') // Cek yang pending atau approved
-                ->whereBetween('start_date', [$weekStartDate, $weekEndDate])
-                ->first();
-
-            if ($existingRequest) {
-                return back()->with('error', 'Anda sudah mengajukan libur mingguan untuk minggu ini.')->withInput();
-            }
-
-            // Set end_date = start_date untuk libur mingguan
-            $validated['end_date'] = $validated['start_date'];
-        
-        } else if ($validated['type'] == 'telat') {
-            // Set end_date = start_date untuk Izin Telat
-            $validated['end_date'] = $validated['start_date'];
-
-            // Jika izin telat, buat juga "LateNotification" agar terdeteksi di dashboard
-            // Hapus dulu (atau nonaktifkan) jika ada yang lama
-            // Kita update saja yang lama menjadi tidak aktif, atau hapus
-            LateNotification::where('user_id', $userId)->where('is_active', true)->delete();
-            
-            // Buat yang baru
-            LateNotification::create([
-                'user_id' => $userId,
-                'message' => $validated['reason'],
-                'is_active' => true, // Menggunakan field dari model Anda
-            ]);
-        }
-
-        // 3. Handle Upload File (jika ada)
-        $filePath = null;
+        // 4. Upload File Bukti (Jika ada)
         if ($request->hasFile('file_proof')) {
-            // Hapus 'public/' dari path agar bisa diakses via storage:link
-            $filePath = $request->file('file_proof')->store('proofs', 'public');
+            $file = $request->file('file_proof');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            // Simpan di folder 'public/proofs'
+            $path = $file->storeAs('proofs', $filename, 'public');
+            $data['file_proof'] = $path;
         }
 
-        // 4. Simpan ke Database
-        LeaveRequest::create([
-            'user_id' => $userId,
-            'type' => $validated['type'],
-            'start_date' => $validated['start_date'],
-            'end_date' => $validated['end_date'] ?? $validated['start_date'], // Default end_date jika null
-            'reason' => $validated['reason'],
-            'file_proof' => $filePath,
-            'status' => 'pending', // Status awal
-        ]);
+        // 5. Simpan ke Database
+        LeaveRequest::create($data);
 
-        // 5. Redirect dengan pesan sukses
-        return redirect()->route('dashboard')->with('success', 'Pengajuan berhasil dikirim dan menunggu persetujuan.');
+        return redirect()->route('leave_requests.index')->with('success', 'Pengajuan berhasil dikirim.');
     }
 }
