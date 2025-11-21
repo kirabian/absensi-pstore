@@ -8,22 +8,25 @@ return new class extends Migration
 {
     public function up()
     {
-        // Cek jika tabel sudah ada, drop dulu biar bersih (HATI-HATI DATA HILANG)
         Schema::dropIfExists('leave_requests');
 
         Schema::create('leave_requests', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->enum('type', ['sakit', 'izin', 'telat']);
-            $table->date('start_date');               // Tanggal Mulai
-            $table->date('end_date')->nullable();     // Sampai Tanggal (Sakit)
-            $table->time('start_time')->nullable();   // Jam Datang (Telat)
+            $table->date('start_date');
+            $table->date('end_date')->nullable();
+            $table->time('start_time')->nullable();
             $table->text('reason');
             $table->string('file_proof')->nullable();
             $table->enum('status', ['pending', 'approved', 'rejected', 'cancelled'])->default('pending');
             $table->text('rejection_reason')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+            
+            // Add indexes for better performance
+            $table->index(['user_id', 'status']);
+            $table->index(['start_date', 'end_date']);
         });
     }
 
