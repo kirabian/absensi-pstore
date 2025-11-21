@@ -64,10 +64,12 @@
                     <span class="menu-title">Verifikasi Absensi</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ route('') }}">
+           <li class="nav-item">
+                {{-- Mengarah ke LeaveRequestController@index --}}
+                <a class="nav-link" href="{{ route('leave.index') }}">
                     <i class="menu-icon mdi mdi-clock-alert-outline"></i>
-                    <span class="menu-title">Izin Telat Masuk</span>
+                    {{-- Saya sarankan ubah judulnya karena isinya Izin Sakit juga --}}
+                    <span class="menu-title">Daftar Izin / Telat</span>
                 </a>
             </li>
         @endif
