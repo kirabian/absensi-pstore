@@ -38,7 +38,7 @@ Route::middleware(['auth'])->group(function () {
     // --- Rute Utama ---
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
-    
+
     // --- Rute Export PDF untuk semua role ---
     Route::get('/dashboard/export-pdf', [DashboardController::class, 'exportAttendancePDF'])->name('dashboard.export-pdf');
 
@@ -47,7 +47,7 @@ Route::middleware(['auth'])->group(function () {
 
     // === RUTE BROADCAST ===
     Route::prefix('broadcast')->name('broadcast.')->group(function () {
-        
+
         // -------------------------------------------------------------------
         // 1. TARUH ROUTE UMUM (NOTIFIKASI) DI PALING ATAS (SEBELUM ADMIN)
         // -------------------------------------------------------------------
@@ -62,7 +62,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/', [BroadcastController::class, 'index'])->name('index');
             Route::get('/create', [BroadcastController::class, 'create'])->name('create');
             Route::post('/', [BroadcastController::class, 'store'])->name('store');
-            
+
             // Route Edit & Delete
             Route::get('/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('edit');
             Route::put('/{broadcast}', [BroadcastController::class, 'update'])->name('update');
@@ -178,13 +178,23 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/hapus-telat', [SelfAttendanceController::class, 'deleteLateStatus'])->name('late.status.delete');
         });
 
-        // Leave Requests
+        // Di dalam group middleware auth
         Route::prefix('leave')->name('leave.')->group(function () {
+            // Form & Store (User)
             Route::get('/create', [LeaveRequestController::class, 'create'])->name('create');
             Route::post('/store', [LeaveRequestController::class, 'store'])->name('store');
-            Route::get('/history', [LeaveRequestController::class, 'history'])->name('history');
-            Route::get('/{leaveRequest}', [LeaveRequestController::class, 'show'])->name('show');
-            Route::delete('/{leaveRequest}', [LeaveRequestController::class, 'destroy'])->name('destroy');
+
+            // List History & Monitoring (User, Admin, Audit)
+            Route::get('/', [LeaveRequestController::class, 'index'])->name('index');
+
+            // Action User: Batalkan Izin
+            Route::patch('/{leaveRequest}/cancel', [LeaveRequestController::class, 'cancel'])->name('cancel');
+
+            // Action Admin/Audit: Approve/Reject
+            Route::middleware(['role:admin,audit'])->group(function () {
+                Route::patch('/{leaveRequest}/approve', [LeaveRequestController::class, 'approve'])->name('approve');
+                Route::patch('/{leaveRequest}/reject', [LeaveRequestController::class, 'reject'])->name('reject');
+            });
         });
     });
 

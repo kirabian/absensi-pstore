@@ -65,7 +65,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="{{ route('leave_requests.create') }}">
+                <a class="nav-link" href="{{ route('') }}">
                     <i class="menu-icon mdi mdi-clock-alert-outline"></i>
                     <span class="menu-title">Izin Telat Masuk</span>
                 </a>

@@ -1,109 +1,78 @@
-@extends('layouts.app')
+@extends('layout.master')
 
 @section('content')
-<div class="container mt-4">
-    <div class="card">
-        <div class="card-header">
-            <h4>Form Pengajuan Izin / Telat</h4>
-        </div>
-        <div class="card-body">
+<div class="card">
+    <div class="card-body">
+        <h4 class="card-title">Form Pengajuan Izin</h4>
+        
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <ul>@foreach ($errors->all() as $err) <li>{{ $err }}</li> @endforeach</ul>
+            </div>
+        @endif
+
+        <form action="{{ route('leave.store') }}" method="POST" enctype="multipart/form-data">
+            @csrf
             
-            {{-- Tampilkan Error Validasi --}}
-            @if ($errors->any())
-                <div class="alert alert-danger">
-                    <ul>
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
+            <div class="mb-3">
+                <label>Jenis Izin</label>
+                <select name="type" id="type" class="form-control" required onchange="toggleInputs()">
+                    <option value="sakit">Sakit / Izin (Cuti)</option>
+                    <option value="telat">Datang Terlambat</option>
+                </select>
+            </div>
+
+            {{-- Input Tanggal --}}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label id="label_start_date">Tanggal Mulai</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ date('Y-m-d') }}" required>
                 </div>
-            @endif
-
-            <form action="{{ route('leave-requests.store') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-
-                {{-- 1. Pilih Tipe Izin --}}
-                <div class="mb-3">
-                    <label for="type" class="form-label">Jenis Pengajuan</label>
-                    <select name="type" id="type" class="form-control" required>
-                        <option value="" disabled selected>-- Pilih Jenis --</option>
-                        <option value="sakit" {{ old('type') == 'sakit' ? 'selected' : '' }}>Sakit</option>
-                        <option value="izin" {{ old('type') == 'izin' ? 'selected' : '' }}>Izin (Cuti)</option>
-                        <option value="telat" {{ old('type') == 'telat' ? 'selected' : '' }}>Datang Telat</option>
-                    </select>
+                {{-- Input Tanggal Selesai (Untuk Sakit) --}}
+                <div class="col-md-6 mb-3" id="end_date_box">
+                    <label>Sampai Tanggal</label>
+                    <input type="date" name="end_date" class="form-control">
                 </div>
-
-                {{-- 2. Input Tanggal Mulai (Selalu Muncul) --}}
-                <div class="mb-3">
-                    <label for="start_date" class="form-label" id="label_start_date">Tanggal Mulai</label>
-                    <input type="date" name="start_date" id="start_date" class="form-control" value="{{ old('start_date', date('Y-m-d')) }}" required>
-                    <small class="text-muted">Jika telat, isi dengan tanggal hari ini.</small>
+                {{-- Input Jam (Untuk Telat) --}}
+                <div class="col-md-6 mb-3 d-none" id="time_box">
+                    <label>Perkiraan Jam Sampai</label>
+                    <input type="time" name="start_time" class="form-control">
                 </div>
+            </div>
 
-                {{-- 3. Input Tanggal Selesai (Khusus Sakit/Izin) --}}
-                <div class="mb-3" id="end_date_container">
-                    <label for="end_date" class="form-label">Sampai Tanggal</label>
-                    <input type="date" name="end_date" id="end_date" class="form-control" value="{{ old('end_date') }}">
-                </div>
+            <div class="mb-3">
+                <label>Alasan</label>
+                <textarea name="reason" class="form-control" rows="3" required></textarea>
+            </div>
 
-                {{-- 4. Input Jam (Khusus Telat) --}}
-                <div class="mb-3 d-none" id="time_container">
-                    <label for="start_time" class="form-label">Perkiraan Jam Sampai Kantor</label>
-                    <input type="time" name="start_time" id="start_time" class="form-control" value="{{ old('start_time') }}">
-                </div>
+            <div class="mb-3">
+                <label>Bukti Foto (Surat Dokter / Kondisi Jalan)</label>
+                <input type="file" name="file_proof" class="form-control" accept="image/*,.pdf" required>
+                <small class="text-muted">Wajib menyertakan bukti foto.</small>
+            </div>
 
-                {{-- 5. Alasan --}}
-                <div class="mb-3">
-                    <label for="reason" class="form-label">Alasan</label>
-                    <textarea name="reason" id="reason" rows="3" class="form-control" required>{{ old('reason') }}</textarea>
-                </div>
-
-                {{-- 6. Upload Bukti --}}
-                <div class="mb-3">
-                    <label for="file_proof" class="form-label">Bukti Foto / Surat Dokter (Opsional)</label>
-                    <input type="file" name="file_proof" id="file_proof" class="form-control">
-                </div>
-
-                <button type="submit" class="btn btn-primary">Kirim Pengajuan</button>
-                <a href="{{ url()->previous() }}" class="btn btn-secondary">Batal</a>
-            </form>
-        </div>
+            <button type="submit" class="btn btn-primary">Kirim Pengajuan</button>
+            <a href="{{ route('dashboard') }}" class="btn btn-secondary">Kembali</a>
+        </form>
     </div>
 </div>
 
-{{-- JavaScript untuk Logika Tampilan --}}
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const typeSelect = document.getElementById('type');
-        const endDateContainer = document.getElementById('end_date_container');
-        const timeContainer = document.getElementById('time_container');
-        const labelStartDate = document.getElementById('label_start_date');
+function toggleInputs() {
+    let type = document.getElementById('type').value;
+    let endDateBox = document.getElementById('end_date_box');
+    let timeBox = document.getElementById('time_box');
+    let labelDate = document.getElementById('label_start_date');
 
-        function toggleFields() {
-            const selectedType = typeSelect.value;
-
-            if (selectedType === 'telat') {
-                // Mode Telat: Sembunyikan End Date, Tampilkan Jam
-                endDateContainer.classList.add('d-none'); // Hide
-                timeContainer.classList.remove('d-none'); // Show
-                
-                // Ubah label tanggal biar lebih masuk akal
-                labelStartDate.innerText = "Tanggal Telat";
-            } else {
-                // Mode Sakit/Izin: Tampilkan End Date, Sembunyikan Jam
-                endDateContainer.classList.remove('d-none'); // Show
-                timeContainer.classList.add('d-none'); // Hide
-
-                // Balikin label tanggal
-                labelStartDate.innerText = "Tanggal Mulai";
-            }
-        }
-
-        // Jalankan saat user mengganti pilihan
-        typeSelect.addEventListener('change', toggleFields);
-
-        // Jalankan saat halaman dimuat (untuk handle old input jika validasi gagal)
-        toggleFields();
-    });
+    if (type === 'telat') {
+        endDateBox.classList.add('d-none');
+        timeBox.classList.remove('d-none');
+        labelDate.innerText = "Tanggal Hari Ini";
+    } else {
+        endDateBox.classList.remove('d-none');
+        timeBox.classList.add('d-none');
+        labelDate.innerText = "Tanggal Mulai";
+    }
+}
 </script>
 @endsection
