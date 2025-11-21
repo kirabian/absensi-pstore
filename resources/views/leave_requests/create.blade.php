@@ -1,78 +1,100 @@
 @extends('layout.master')
 
+@section('title')
+    Ajukan Izin
+@endsection
+
 @section('content')
-<div class="card">
-    <div class="card-body">
-        <h4 class="card-title">Form Pengajuan Izin</h4>
-        
-        @if ($errors->any())
-            <div class="alert alert-danger">
-                <ul>@foreach ($errors->all() as $err) <li>{{ $err }}</li> @endforeach</ul>
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="card-title mb-0 text-white"><i class="mdi mdi-file-document-edit me-2"></i>Form Pengajuan</h4>
             </div>
-        @endif
+            <div class="card-body">
+                
+                @if ($errors->any())
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach ($errors->all() as $error) <li>{{ $error }}</li> @endforeach
+                        </ul>
+                    </div>
+                @endif
 
-        <form action="{{ route('leave.store') }}" method="POST" enctype="multipart/form-data">
-            @csrf
-            
-            <div class="mb-3">
-                <label>Jenis Izin</label>
-                <select name="type" id="type" class="form-control" required onchange="toggleInputs()">
-                    <option value="sakit">Sakit / Izin (Cuti)</option>
-                    <option value="telat">Datang Terlambat</option>
-                </select>
+                <form action="{{ route('leave-requests.store') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    
+                    {{-- 1. Pilih Tipe --}}
+                    <div class="mb-4">
+                        <label class="fw-bold mb-2">Jenis Pengajuan</label>
+                        <select name="type" id="type" class="form-control form-select" required onchange="toggleInputs()">
+                            <option value="" disabled selected>-- Pilih Jenis --</option>
+                            <option value="sakit" {{ old('type') == 'sakit' ? 'selected' : '' }}>Sakit / Izin (Cuti)</option>
+                            <option value="telat" {{ old('type') == 'telat' ? 'selected' : '' }}>Datang Terlambat</option>
+                        </select>
+                    </div>
+
+                    {{-- 2. Area Input Waktu (Dinamis) --}}
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <label id="label_start_date" class="fw-bold mb-2">Tanggal Mulai</label>
+                            <input type="date" name="start_date" class="form-control" 
+                                   value="{{ old('start_date', date('Y-m-d')) }}" required>
+                        </div>
+
+                        {{-- Input Tanggal Selesai (Khusus Sakit/Izin) --}}
+                        <div class="col-md-6 mb-4" id="end_date_box">
+                            <label class="fw-bold mb-2">Sampai Tanggal</label>
+                            <input type="date" name="end_date" class="form-control" value="{{ old('end_date') }}">
+                            <small class="text-muted">Kosongkan jika hanya 1 hari.</small>
+                        </div>
+
+                        {{-- Input Jam (Khusus Telat) --}}
+                        <div class="col-md-6 mb-4 d-none" id="time_box">
+                            <label class="fw-bold mb-2">Perkiraan Jam Sampai</label>
+                            <input type="time" name="start_time" class="form-control" value="{{ old('start_time') }}">
+                        </div>
+                    </div>
+
+                    {{-- 3. Alasan --}}
+                    <div class="mb-4">
+                        <label class="fw-bold mb-2">Alasan</label>
+                        <textarea name="reason" class="form-control" rows="3" required>{{ old('reason') }}</textarea>
+                    </div>
+
+                    {{-- 4. Bukti Foto --}}
+                    <div class="mb-4">
+                        <label class="fw-bold mb-2">Bukti Foto (Wajib)</label>
+                        <input type="file" name="file_proof" class="form-control" accept="image/*,.pdf" required>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ route('leave-requests.index') }}" class="btn btn-light me-md-2">Batal</a>
+                        <button type="submit" class="btn btn-primary">Kirim Pengajuan</button>
+                    </div>
+                </form>
             </div>
-
-            {{-- Input Tanggal --}}
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label id="label_start_date">Tanggal Mulai</label>
-                    <input type="date" name="start_date" class="form-control" value="{{ date('Y-m-d') }}" required>
-                </div>
-                {{-- Input Tanggal Selesai (Untuk Sakit) --}}
-                <div class="col-md-6 mb-3" id="end_date_box">
-                    <label>Sampai Tanggal</label>
-                    <input type="date" name="end_date" class="form-control">
-                </div>
-                {{-- Input Jam (Untuk Telat) --}}
-                <div class="col-md-6 mb-3 d-none" id="time_box">
-                    <label>Perkiraan Jam Sampai</label>
-                    <input type="time" name="start_time" class="form-control">
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <label>Alasan</label>
-                <textarea name="reason" class="form-control" rows="3" required></textarea>
-            </div>
-
-            <div class="mb-3">
-                <label>Bukti Foto (Surat Dokter / Kondisi Jalan)</label>
-                <input type="file" name="file_proof" class="form-control" accept="image/*,.pdf" required>
-                <small class="text-muted">Wajib menyertakan bukti foto.</small>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Kirim Pengajuan</button>
-            <a href="{{ route('dashboard') }}" class="btn btn-secondary">Kembali</a>
-        </form>
+        </div>
     </div>
 </div>
 
 <script>
-function toggleInputs() {
-    let type = document.getElementById('type').value;
-    let endDateBox = document.getElementById('end_date_box');
-    let timeBox = document.getElementById('time_box');
-    let labelDate = document.getElementById('label_start_date');
+    function toggleInputs() {
+        let type = document.getElementById('type').value;
+        let endDateBox = document.getElementById('end_date_box');
+        let timeBox = document.getElementById('time_box');
+        let labelDate = document.getElementById('label_start_date');
 
-    if (type === 'telat') {
-        endDateBox.classList.add('d-none');
-        timeBox.classList.remove('d-none');
-        labelDate.innerText = "Tanggal Hari Ini";
-    } else {
-        endDateBox.classList.remove('d-none');
-        timeBox.classList.add('d-none');
-        labelDate.innerText = "Tanggal Mulai";
+        if (type === 'telat') {
+            endDateBox.classList.add('d-none');
+            timeBox.classList.remove('d-none');
+            labelDate.innerText = "Tanggal Hari Ini";
+        } else {
+            endDateBox.classList.remove('d-none');
+            timeBox.classList.add('d-none');
+            labelDate.innerText = "Tanggal Mulai";
+        }
     }
-}
+    document.addEventListener('DOMContentLoaded', function() { toggleInputs(); });
 </script>
 @endsection

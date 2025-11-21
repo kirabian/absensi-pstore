@@ -236,7 +236,7 @@
                 </div>
             </div>
 
-            {{-- KARTU STATUS ABSENSI --}}
+            {{-- KARTU STATUS ABSENSI (UPDATE: LOGIKA LEAVE REQUEST) --}}
             <div class="col-md-7 grid-margin stretch-card">
                 <div class="card card-status">
                     <div class="card-body">
@@ -263,7 +263,6 @@
                         
                         {{-- 1. JIKA SUDAH ABSEN (PRIORITAS UTAMA) --}}
                         @if ($myAttendanceToday)
-                            {{-- Logika Absen (Sama seperti sebelumnya, tidak diubah) --}}
                             @if ($myAttendanceToday->check_out_time || $myAttendanceToday->photo_out_path)
                                 <div class="status-card status-success mb-3">
                                     <div class="d-flex align-items-center">
@@ -387,7 +386,7 @@
                                         <a href="{{ route('self.attend.create') }}" class="btn btn-dark">
                                             <i class="mdi mdi-fingerprint me-2"></i>Absen Mandiri
                                         </a>
-                                        {{-- LINK DIGANTI KE ROUTE BARU --}}
+                                        {{-- LINK BARU KE LEAVE REQUESTS --}}
                                         <a href="{{ route('leave-requests.create') }}" class="btn btn-outline-dark">
                                             <i class="mdi mdi-file-document-edit-outline me-2"></i>Izin/Sakit/Telat
                                         </a>
@@ -423,12 +422,13 @@
                 </div>
             </div>
 
-            {{-- KARTU AKSI CEPAT --}}
+            {{-- KARTU AKSI CEPAT (UPDATE LINK) --}}
             <div class="col-md-6 grid-margin stretch-card">
                 <div class="card card-action">
                     <div class="card-body py-4">
                         <h5 class="card-title mb-4"><i class="mdi mdi-lightning-bolt me-2"></i>Aksi Cepat</h5>
                         <div class="d-grid gap-3">
+                            {{-- LINK BARU KE LEAVE REQUESTS --}}
                             <a href="{{ route('leave-requests.create') }}" class="btn btn-light text-start p-3 border">
                                 <div class="d-flex align-items-center">
                                     <div class="bg-danger text-white rounded p-2 me-3">
