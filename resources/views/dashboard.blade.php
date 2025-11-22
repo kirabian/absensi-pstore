@@ -207,7 +207,11 @@
         {{-- ======================================================================= --}}
         {{-- TAMPILAN UNTUK USER BIASA & LEADER --}}
         {{-- ======================================================================= --}}
-    @elseif (auth()->user()->role == 'user_biasa' || auth()->user()->role == 'leader' || auth()->user()->role == 'admin' || auth()->user()->role == 'security' || auth()->user()->role == 'audit')
+    @elseif (auth()->user()->role == 'user_biasa' ||
+            auth()->user()->role == 'leader' ||
+            auth()->user()->role == 'admin' ||
+            auth()->user()->role == 'security' ||
+            auth()->user()->role == 'audit')
         <div class="row">
             {{-- KARTU ID BARU --}}
             <div class="col-md-5 grid-margin stretch-card">
@@ -260,7 +264,7 @@
                         @endif
 
                         {{-- LOGIKA TAMPILAN --}}
-                        
+
                         {{-- 1. JIKA SUDAH ABSEN (PRIORITAS UTAMA) --}}
                         @if ($myAttendanceToday)
                             {{-- Logika Absen (Sama seperti sebelumnya, tidak diubah) --}}
@@ -272,7 +276,8 @@
                                         </div>
                                         <div class="flex-grow-1">
                                             <h5 class="mb-1 fw-bold">Anda Sudah Pulang</h5>
-                                            <p class="text-muted mb-0 small">Terima kasih atas kerja keras Anda hari ini!</p>
+                                            <p class="text-muted mb-0 small">Terima kasih atas kerja keras Anda hari ini!
+                                            </p>
                                         </div>
                                     </div>
                                     <hr>
@@ -299,14 +304,16 @@
                                         </div>
                                         <div class="flex-grow-1">
                                             <h5 class="mb-1 fw-bold">Sedang Bekerja</h5>
-                                            <p class="mb-0">Masuk Pukul: <strong>{{ $myAttendanceToday->check_in_time->format('H:i') }}</strong></p>
+                                            <p class="mb-0">Masuk Pukul:
+                                                <strong>{{ $myAttendanceToday->check_in_time->format('H:i') }}</strong></p>
                                         </div>
                                     </div>
-                                    
+
                                     {{-- Tombol Pulang jika Absen Mandiri --}}
                                     @if ($myAttendanceToday->attendance_type == 'self')
                                         <div class="mt-3 pt-3 border-top text-center">
-                                            <a href="{{ route('self.attend.create') }}" class="btn btn-danger btn-sm w-100">
+                                            <a href="{{ route('self.attend.create') }}"
+                                                class="btn btn-danger btn-sm w-100">
                                                 <i class="mdi mdi-logout me-1"></i>Absen Pulang Mandiri
                                             </a>
                                         </div>
@@ -314,19 +321,26 @@
                                 </div>
                             @endif
 
-                        {{-- 2. JIKA TIDAK ABSEN, TAPI ADA IZIN (SAKIT/TELAT/CUTI) --}}
+                            {{-- 2. JIKA TIDAK ABSEN, TAPI ADA IZIN (SAKIT/TELAT/CUTI) --}}
                         @elseif(isset($myLeaveToday) && $myLeaveToday)
-                            
                             @php
                                 $leaveColor = $myLeaveToday->status == 'approved' ? 'status-success' : 'status-warning';
-                                $leaveIcon  = $myLeaveToday->type == 'sakit' ? 'mdi-hospital-box' : ($myLeaveToday->type == 'telat' ? 'mdi-clock-alert' : 'mdi-bag-suitcase');
-                                $leaveTitle = ucfirst($myLeaveToday->type); 
-                                
+                                $leaveIcon =
+                                    $myLeaveToday->type == 'sakit'
+                                        ? 'mdi-hospital-box'
+                                        : ($myLeaveToday->type == 'telat'
+                                            ? 'mdi-clock-alert'
+                                            : 'mdi-bag-suitcase');
+                                $leaveTitle = ucfirst($myLeaveToday->type);
+
                                 // Format Waktu/Tanggal
-                                if($myLeaveToday->type == 'telat') {
-                                    $timeInfo = "Akan hadir pukul: " . \Carbon\Carbon::parse($myLeaveToday->start_time)->format('H:i');
+                                if ($myLeaveToday->type == 'telat') {
+                                    $timeInfo =
+                                        'Akan hadir pukul: ' .
+                                        \Carbon\Carbon::parse($myLeaveToday->start_time)->format('H:i');
                                 } else {
-                                    $timeInfo = "Sampai: " . \Carbon\Carbon::parse($myLeaveToday->end_date)->format('d M Y');
+                                    $timeInfo =
+                                        'Sampai: ' . \Carbon\Carbon::parse($myLeaveToday->end_date)->format('d M Y');
                                 }
                             @endphp
 
@@ -338,27 +352,30 @@
                                     <div class="flex-grow-1">
                                         <div class="d-flex justify-content-between">
                                             <h5 class="mb-1 fw-bold">Izin {{ $leaveTitle }}</h5>
-                                            <span class="badge {{ $myLeaveToday->status == 'approved' ? 'bg-success' : 'bg-warning' }}">
+                                            <span
+                                                class="badge {{ $myLeaveToday->status == 'approved' ? 'bg-success' : 'bg-warning' }}">
                                                 {{ strtoupper($myLeaveToday->status) }}
                                             </span>
                                         </div>
-                                        
+
                                         <p class="text-muted mb-2 small">{{ $timeInfo }}</p>
-                                        
+
                                         <div class="bg-white p-2 rounded border mb-2">
                                             <small class="text-muted d-block" style="font-size: 10px;">ALASAN:</small>
                                             <span class="fst-italic">"{{ $myLeaveToday->reason }}"</span>
                                         </div>
 
                                         {{-- Tampilkan Bukti Foto Jika Ada --}}
-                                        @if($myLeaveToday->file_proof)
+                                        @if ($myLeaveToday->file_proof)
                                             <div class="mt-2">
-                                                <small class="text-muted d-block mb-1" style="font-size: 10px;">BUKTI LAMPIRAN:</small>
-                                                <a href="{{ asset('storage/' . $myLeaveToday->file_proof) }}" target="_blank">
-                                                    <img src="{{ asset('storage/' . $myLeaveToday->file_proof) }}" 
-                                                         class="img-thumbnail" 
-                                                         style="height: 60px; width: 60px; object-fit: cover;" 
-                                                         alt="Bukti">
+                                                <small class="text-muted d-block mb-1" style="font-size: 10px;">BUKTI
+                                                    LAMPIRAN:</small>
+                                                <a href="{{ asset('storage/' . $myLeaveToday->file_proof) }}"
+                                                    target="_blank">
+                                                    <img src="{{ asset('storage/' . $myLeaveToday->file_proof) }}"
+                                                        class="img-thumbnail"
+                                                        style="height: 60px; width: 60px; object-fit: cover;"
+                                                        alt="Bukti">
                                                 </a>
                                             </div>
                                         @endif
@@ -366,23 +383,41 @@
                                 </div>
 
                                 {{-- Jika Telat & Status Approved -> Tampilkan Tombol Absen --}}
-                                @if($myLeaveToday->type == 'telat' && $myLeaveToday->status == 'approved')
+                                @if ($myLeaveToday->type == 'telat' && $myLeaveToday->status == 'approved')
                                     <div class="mt-3 pt-3 border-top text-center">
                                         <p class="small text-muted mb-2">Sudah sampai kantor?</p>
-                                        <a href="{{ route('self.attend.create') }}" class="btn btn-dark btn-sm w-100">
-                                            <i class="mdi mdi-fingerprint me-2"></i>Lakukan Absensi Masuk
-                                        </a>
+                                        <form action="{{ route('leave-requests.cancel', $myLeaveToday->id) }}"
+                                            method="POST" class="d-inline">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="btn btn-dark btn-sm w-100">
+                                                <i class="mdi mdi-fingerprint me-2"></i>Batalkan Izin & Absen Sekarang
+                                            </button>
+                                        </form>
+                                    </div>
+                                @else
+                                    {{-- Untuk Izin Sakit/Cuti - Tombol Cancel Biasa --}}
+                                    <div class="mt-3 pt-3 border-top text-center">
+                                        <form action="{{ route('leave-requests.cancel', $myLeaveToday->id) }}"
+                                            method="POST" class="d-inline">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                <i class="mdi mdi-cancel me-1"></i>Batalkan Izin
+                                            </button>
+                                        </form>
                                     </div>
                                 @endif
                             </div>
 
-                        {{-- 3. JIKA BELUM ABSEN SAMA SEKALI (TAMPILAN DEFAULT) --}}
+                            {{-- 3. JIKA BELUM ABSEN SAMA SEKALI (TAMPILAN DEFAULT) --}}
                         @else
                             <div class="status-card status-info">
                                 <div class="text-center py-4">
                                     <i class="mdi mdi-clock-alert display-4 mb-3 text-primary"></i>
                                     <h5 class="mb-2 fw-bold">Anda Belum Absen Hari Ini</h5>
-                                    <p class="text-muted mb-4">Silakan scan QR atau gunakan absen mandiri jika WFH/Dinas.</p>
+                                    <p class="text-muted mb-4">Silakan scan QR atau gunakan absen mandiri jika WFH/Dinas.
+                                    </p>
                                     <div class="d-flex justify-content-center gap-2">
                                         <a href="{{ route('self.attend.create') }}" class="btn btn-dark">
                                             <i class="mdi mdi-fingerprint me-2"></i>Absen Mandiri
@@ -482,11 +517,11 @@
                                 <canvas id="attendancePieChart"></canvas>
                             </div>
                         </div>
-                        
+
                         {{-- Statistik Detail --}}
                         <div class="col-md-6">
                             <div class="row">
-                                @if(auth()->user()->role == 'admin')
+                                @if (auth()->user()->role == 'admin')
                                     <div class="col-6 mb-3">
                                         <div class="stat-card bg-primary text-white p-3 rounded">
                                             <div class="d-flex justify-content-between align-items-center">
@@ -495,7 +530,8 @@
                                                     <h3 class="mb-0">{{ $attendanceStats['present'] }}</h3>
                                                 </div>
                                                 <div class="text-end">
-                                                    <span class="badge bg-light text-primary">{{ $attendanceStats['present_percentage'] }}%</span>
+                                                    <span
+                                                        class="badge bg-light text-primary">{{ $attendanceStats['present_percentage'] }}%</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -508,7 +544,8 @@
                                                     <h3 class="mb-0">{{ $attendanceStats['late'] }}</h3>
                                                 </div>
                                                 <div class="text-end">
-                                                    <span class="badge bg-light text-warning">{{ $attendanceStats['late_percentage'] }}%</span>
+                                                    <span
+                                                        class="badge bg-light text-warning">{{ $attendanceStats['late_percentage'] }}%</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -521,7 +558,8 @@
                                                     <h3 class="mb-0">{{ $attendanceStats['pending'] }}</h3>
                                                 </div>
                                                 <div class="text-end">
-                                                    <span class="badge bg-light text-info">{{ $attendanceStats['pending_percentage'] }}%</span>
+                                                    <span
+                                                        class="badge bg-light text-info">{{ $attendanceStats['pending_percentage'] }}%</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -534,12 +572,12 @@
                                                     <h3 class="mb-0">{{ $attendanceStats['absent'] }}</h3>
                                                 </div>
                                                 <div class="text-end">
-                                                    <span class="badge bg-light text-danger">{{ $attendanceStats['absent_percentage'] }}%</span>
+                                                    <span
+                                                        class="badge bg-light text-danger">{{ $attendanceStats['absent_percentage'] }}%</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    
                                 @elseif(auth()->user()->role == 'audit')
                                     <div class="col-6 mb-3">
                                         <div class="stat-card bg-success text-white p-3 rounded">
@@ -549,7 +587,8 @@
                                                     <h3 class="mb-0">{{ $attendanceStats['verified'] }}</h3>
                                                 </div>
                                                 <div class="text-end">
-                                                    <span class="badge bg-light text-success">{{ $attendanceStats['verified_percentage'] }}%</span>
+                                                    <span
+                                                        class="badge bg-light text-success">{{ $attendanceStats['verified_percentage'] }}%</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -562,7 +601,8 @@
                                                     <h3 class="mb-0">{{ $attendanceStats['pending'] }}</h3>
                                                 </div>
                                                 <div class="text-end">
-                                                    <span class="badge bg-light text-warning">{{ $attendanceStats['pending_percentage'] }}%</span>
+                                                    <span
+                                                        class="badge bg-light text-warning">{{ $attendanceStats['pending_percentage'] }}%</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -575,12 +615,12 @@
                                                     <h3 class="mb-0">{{ $attendanceStats['late'] }}</h3>
                                                 </div>
                                                 <div class="text-end">
-                                                    <span class="badge bg-light text-danger">{{ $attendanceStats['late_percentage'] }}%</span>
+                                                    <span
+                                                        class="badge bg-light text-danger">{{ $attendanceStats['late_percentage'] }}%</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    
                                 @elseif(auth()->user()->role == 'security')
                                     <div class="col-6 mb-3">
                                         <div class="stat-card bg-primary text-white p-3 rounded">
@@ -600,7 +640,8 @@
                                                     <h3 class="mb-0">{{ $attendanceStats['check_in_scans'] }}</h3>
                                                 </div>
                                                 <div class="text-end">
-                                                    <span class="badge bg-light text-success">{{ $attendanceStats['check_in_percentage'] }}%</span>
+                                                    <span
+                                                        class="badge bg-light text-success">{{ $attendanceStats['check_in_percentage'] }}%</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -613,13 +654,17 @@
                                                     <h3 class="mb-0">{{ $attendanceStats['check_out_scans'] }}</h3>
                                                 </div>
                                                 <div class="text-end">
-                                                    <span class="badge bg-light text-info">{{ $attendanceStats['check_out_percentage'] }}%</span>
+                                                    <span
+                                                        class="badge bg-light text-info">{{ $attendanceStats['check_out_percentage'] }}%</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    
-                                @elseif(auth()->user()->role == 'user_biasa' || auth()->user()->role == 'leader' || auth()->user()->role == 'admin' || auth()->user()->role == 'security' || auth()->user()->role == 'audit')
+                                @elseif(auth()->user()->role == 'user_biasa' ||
+                                        auth()->user()->role == 'leader' ||
+                                        auth()->user()->role == 'admin' ||
+                                        auth()->user()->role == 'security' ||
+                                        auth()->user()->role == 'audit')
                                     <div class="col-6 mb-3">
                                         <div class="stat-card bg-success text-white p-3 rounded">
                                             <div class="d-flex justify-content-between align-items-center">
@@ -628,7 +673,8 @@
                                                     <h3 class="mb-0">{{ $attendanceStats['present'] }}</h3>
                                                 </div>
                                                 <div class="text-end">
-                                                    <span class="badge bg-light text-success">{{ $attendanceStats['present_percentage'] }}%</span>
+                                                    <span
+                                                        class="badge bg-light text-success">{{ $attendanceStats['present_percentage'] }}%</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -641,7 +687,8 @@
                                                     <h3 class="mb-0">{{ $attendanceStats['late'] }}</h3>
                                                 </div>
                                                 <div class="text-end">
-                                                    <span class="badge bg-light text-warning">{{ $attendanceStats['late_percentage'] }}%</span>
+                                                    <span
+                                                        class="badge bg-light text-warning">{{ $attendanceStats['late_percentage'] }}%</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -654,7 +701,8 @@
                                                     <h3 class="mb-0">{{ $attendanceStats['on_time'] }}</h3>
                                                 </div>
                                                 <div class="text-end">
-                                                    <span class="badge bg-light text-info">{{ $attendanceStats['on_time_percentage'] }}%</span>
+                                                    <span
+                                                        class="badge bg-light text-info">{{ $attendanceStats['on_time_percentage'] }}%</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -667,7 +715,8 @@
                                                     <h3 class="mb-0">{{ $attendanceStats['pending'] }}</h3>
                                                 </div>
                                                 <div class="text-end">
-                                                    <span class="badge bg-light text-secondary">{{ $attendanceStats['pending_percentage'] }}%</span>
+                                                    <span
+                                                        class="badge bg-light text-secondary">{{ $attendanceStats['pending_percentage'] }}%</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -974,12 +1023,12 @@
         .stat-card {
             transition: all 0.3s ease;
             border: none;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .stat-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .badge {
@@ -1077,149 +1126,150 @@
 @endpush
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('attendancePieChart').getContext('2d');
-    
-    @if(auth()->user()->role == 'admin')
-        new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: ['Hadir', 'Terlambat', 'Pending', 'Tidak Hadir'],
-                datasets: [{
-                    data: [
-                        {{ $attendanceStats['present'] }},
-                        {{ $attendanceStats['late'] }},
-                        {{ $attendanceStats['pending'] }},
-                        {{ $attendanceStats['absent'] }}
-                    ],
-                    backgroundColor: [
-                        '#28a745',
-                        '#ffc107',
-                        '#17a2b8',
-                        '#dc3545'
-                    ],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            padding: 20,
-                            usePointStyle: true
-                        }
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('attendancePieChart').getContext('2d');
+
+            @if (auth()->user()->role == 'admin')
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Hadir', 'Terlambat', 'Pending', 'Tidak Hadir'],
+                        datasets: [{
+                            data: [
+                                {{ $attendanceStats['present'] }},
+                                {{ $attendanceStats['late'] }},
+                                {{ $attendanceStats['pending'] }},
+                                {{ $attendanceStats['absent'] }}
+                            ],
+                            backgroundColor: [
+                                '#28a745',
+                                '#ffc107',
+                                '#17a2b8',
+                                '#dc3545'
+                            ],
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
                     },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.raw || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                                return `${label}: ${value} (${percentage}%)`;
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    usePointStyle: true
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total > 0 ? Math.round((value / total) *
+                                            100) : 0;
+                                        return `${label}: ${value} (${percentage}%)`;
+                                    }
+                                }
                             }
                         }
                     }
-                }
-            }
-        });
-    @elseif(auth()->user()->role == 'audit')
-        new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: ['Terverifikasi', 'Menunggu', 'Terlambat'],
-                datasets: [{
-                    data: [
-                        {{ $attendanceStats['verified'] }},
-                        {{ $attendanceStats['pending'] }},
-                        {{ $attendanceStats['late'] }}
-                    ],
-                    backgroundColor: [
-                        '#28a745',
-                        '#ffc107',
-                        '#dc3545'
-                    ],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
+                });
+            @elseif (auth()->user()->role == 'audit')
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Terverifikasi', 'Menunggu', 'Terlambat'],
+                        datasets: [{
+                            data: [
+                                {{ $attendanceStats['verified'] }},
+                                {{ $attendanceStats['pending'] }},
+                                {{ $attendanceStats['late'] }}
+                            ],
+                            backgroundColor: [
+                                '#28a745',
+                                '#ffc107',
+                                '#dc3545'
+                            ],
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
                     }
-                }
-            }
-        });
-    @elseif(auth()->user()->role == 'security')
-        new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: ['Scan Masuk', 'Scan Pulang'],
-                datasets: [{
-                    data: [
-                        {{ $attendanceStats['check_in_scans'] }},
-                        {{ $attendanceStats['check_out_scans'] }}
-                    ],
-                    backgroundColor: [
-                        '#28a745',
-                        '#17a2b8'
-                    ],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
+                });
+            @elseif (auth()->user()->role == 'security')
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Scan Masuk', 'Scan Pulang'],
+                        datasets: [{
+                            data: [
+                                {{ $attendanceStats['check_in_scans'] }},
+                                {{ $attendanceStats['check_out_scans'] }}
+                            ],
+                            backgroundColor: [
+                                '#28a745',
+                                '#17a2b8'
+                            ],
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
                     }
-                }
-            }
-        });
-    @else
-        new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: ['Hadir', 'Terlambat', 'Tepat Waktu', 'Pending'],
-                datasets: [{
-                    data: [
-                        {{ $attendanceStats['present'] }},
-                        {{ $attendanceStats['late'] }},
-                        {{ $attendanceStats['on_time'] }},
-                        {{ $attendanceStats['pending'] }}
-                    ],
-                    backgroundColor: [
-                        '#28a745',
-                        '#ffc107',
-                        '#17a2b8',
-                        '#6c757d'
-                    ],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
+                });
+            @else
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Hadir', 'Terlambat', 'Tepat Waktu', 'Pending'],
+                        datasets: [{
+                            data: [
+                                {{ $attendanceStats['present'] }},
+                                {{ $attendanceStats['late'] }},
+                                {{ $attendanceStats['on_time'] }},
+                                {{ $attendanceStats['pending'] }}
+                            ],
+                            backgroundColor: [
+                                '#28a745',
+                                '#ffc107',
+                                '#17a2b8',
+                                '#6c757d'
+                            ],
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
                     }
-                }
-            }
+                });
+            @endif
         });
-    @endif
-});
-</script>
+    </script>
 @endpush

@@ -40,7 +40,12 @@ class DashboardController extends Controller
         }
 
         // ======================================================
-        // 2. ISI DATA BERDASARKAN ROLE - SEMUA ROLE DAPAT ID CARD & STATUS ABSENSI
+        // 2. DATA IZIN HARI INI - DITAMBAHKAN
+        // ======================================================
+        $data['myLeaveToday'] = $this->getTodayLeaveRequest($user->id);
+
+        // ======================================================
+        // 3. ISI DATA BERDASARKAN ROLE - SEMUA ROLE DAPAT ID CARD & STATUS ABSENSI
         // ======================================================
 
         // DATA UNTUK SEMUA ROLE: ID Card & Status Absensi
@@ -85,17 +90,34 @@ class DashboardController extends Controller
             $data['myTeamCount'] = User::where('division_id', $user->division_id)
                 ->where('id', '!=', $user->id)
                 ->count();
-
-            $data['activeLateStatus'] = LateNotification::where('user_id', $user->id)
-                ->where('is_active', true)
-                ->whereDate('created_at', today())
-                ->first();
                 
             // Statistik untuk User Biasa & Leader
             $data['attendanceStats'] = $this->getUserAttendanceStats($user->id, $branch_id);
         }
 
         return view('dashboard', $data);
+    }
+
+    /**
+     * Get today's leave request for user
+     */
+    private function getTodayLeaveRequest($user_id)
+    {
+        return LeaveRequest::where('user_id', $user_id)
+            ->where('is_active', true)
+            ->where('status', 'approved') // Hanya yang sudah disetujui
+            ->where(function($query) {
+                $query->whereDate('start_date', '<=', today())
+                      ->whereDate('end_date', '>=', today());
+            })
+            ->orWhere(function($query) {
+                // Untuk izin telat, hanya berlaku untuk hari ini
+                $query->where('type', 'telat')
+                      ->whereDate('start_date', today())
+                      ->where('is_active', true)
+                      ->where('status', 'approved');
+            })
+            ->first();
     }
 
     /**

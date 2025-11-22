@@ -21,7 +21,7 @@ class LeaveRequestController extends Controller
         } elseif ($user->role == 'audit') {
             // Audit lihat tim satu cabang
             $query->whereHas('user', function ($q) use ($user) {
-                $q->where('branch_id', $user->branch_id); 
+                $q->where('branch_id', $user->branch_id);
             });
         } else {
             // User biasa lihat punya sendiri
@@ -95,8 +95,8 @@ class LeaveRequestController extends Controller
             'is_active' => false
         ]);
 
-        $msg = $leaveRequest->type == 'telat' ? 'Anda sudah sampai kantor. Izin telat diselesaikan.' : 'Pengajuan izin dibatalkan.';
-        return redirect()->back()->with('success', $msg);
+        $msg = $leaveRequest->type == 'telat' ? 'Izin telat dibatalkan. Silakan lakukan absensi.' : 'Pengajuan izin dibatalkan.';
+        return redirect()->route('dashboard')->with('success', $msg);
     }
 
     // ACTION: APPROVE (Admin/Audit)
