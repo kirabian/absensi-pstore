@@ -63,6 +63,20 @@
         font-weight: 500;
     }
     .select-action-links a:hover { text-decoration: underline; }
+    
+    /* Dropdown items */
+    .select2-results__option {
+        padding: 6px 12px !important;
+        font-size: 14px !important;
+    }
+    .select2-container--bootstrap-5 .select2-results__option--selected {
+        background-color: #e9ecef !important;
+        color: #333 !important;
+    }
+    .select2-container--bootstrap-5 .select2-results__option--highlighted {
+        background-color: #0d6efd !important;
+        color: #fff !important;
+    }
 </style>
 
 @if ($errors->any())
@@ -106,12 +120,11 @@
                         <select class="form-select" id="role" name="role" onchange="toggleInputs()" required {{ $disabledAttr }}>
                             <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>Super Admin</option>
                             <option value="audit" {{ old('role', $user->role) == 'audit' ? 'selected' : '' }}>Audit (Multi Cabang)</option>
-                            <option value="leader" {{ old('role', $user->role) == 'leader' ? 'selected' : '' }}>Leader (Multi Divisi)</option>
+                            <option value="leader" {{ old('role', $user->role) == 'leader' ? 'selected' : '' }}>Leader</option>
                             <option value="security" {{ old('role', $user->role) == 'security' ? 'selected' : '' }}>Security</option>
                             <option value="user_biasa" {{ old('role', $user->role) == 'user_biasa' ? 'selected' : '' }}>Karyawan</option>
                         </select>
                         
-                        {{-- Jika bukan admin, simpan role asli di hidden input agar tidak error saat submit --}}
                         @if(!$isSuperAdmin)
                             <input type="hidden" name="role" value="{{ $user->role }}">
                             <small class="text-danger mt-1 d-block">Hanya Super Admin yang bisa mengubah Role.</small>
@@ -139,9 +152,11 @@
                 <div class="card-body">
                     <h4 class="card-title">Penempatan & Kontak</h4>
 
-                    {{-- SINGLE BRANCH --}}
+                    {{-- --- LOGIKA CABANG (Audit vs Lainnya) --- --}}
+                    
+                    {{-- SINGLE BRANCH (Untuk Role selain Audit) --}}
                     <div class="form-group mb-3" id="single-branch-group">
-                        <label>Cabang Utama (Homebase)</label>
+                        <label>Cabang Utama</label>
                         <select class="form-select select2-single" name="branch_id" data-placeholder="Pilih Cabang" {{ $disabledAttr }}>
                             <option></option>
                             @foreach ($branches as $branch)
@@ -152,13 +167,13 @@
                         </select>
                     </div>
 
-                    {{-- MULTI BRANCH (AUDIT) --}}
+                    {{-- MULTI BRANCH (Khusus Role Audit) --}}
                     <div class="form-group mb-3 d-none" id="multi-branch-group">
                         <label class="text-primary fw-bold mb-2">Akses Wilayah Audit (Multi)</label>
                         <select class="form-select select2-multi" name="multi_branches[]" multiple="multiple" {{ $disabledAttr }}>
                             @foreach ($branches as $branch)
                                 <option value="{{ $branch->id }}" 
-                                    {{-- Cek apakah user memiliki cabang ini di database relasi --}}
+                                    {{-- Cek apakah branch ini ada di relasi user --}}
                                     {{ (collect(old('multi_branches', $user->branches->pluck('id')))->contains($branch->id)) ? 'selected' : '' }}>
                                     {{ $branch->name }}
                                 </option>
@@ -173,25 +188,16 @@
                         @endif
                     </div>
 
-                    {{-- SINGLE DIVISION --}}
-                    <div class="form-group mb-3" id="single-division-group">
-                        <label>Divisi Utama</label>
-                        <select class="form-select select2-single" name="division_id" data-placeholder="Pilih Divisi" {{ $disabledAttr }}>
-                            <option></option>
-                            @foreach ($divisions as $division)
-                                <option value="{{ $division->id }}" {{ old('division_id', $user->division_id) == $division->id ? 'selected' : '' }}>
-                                    {{ $division->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
 
-                    {{-- MULTI DIVISION (LEADER) --}}
-                    <div class="form-group mb-3 d-none" id="multi-division-group">
-                        <label class="text-success fw-bold mb-2">Pimpin Divisi (Multi)</label>
+                    {{-- --- LOGIKA DIVISI (SEMUA ROLE MULTI) --- --}}
+                    {{-- Single Division dihapus, langsung Multi --}}
+
+                    <div class="form-group mb-3" id="multi-division-group">
+                        <label class="text-success fw-bold mb-2">Divisi (Multi Select)</label>
                         <select class="form-select select2-multi" name="multi_divisions[]" multiple="multiple" {{ $disabledAttr }}>
                             @foreach ($divisions as $division)
                                 <option value="{{ $division->id }}"
+                                    {{-- Cek apakah divisi ini ada di relasi user --}}
                                     {{ (collect(old('multi_divisions', $user->divisions->pluck('id')))->contains($division->id)) ? 'selected' : '' }}>
                                     {{ $division->name }}
                                 </option>
@@ -206,12 +212,10 @@
                         @endif
                     </div>
 
-                    {{-- HANDLING HIDDEN INPUTS JIKA DISABLED --}}
+                    {{-- Handling jika disabled --}}
                     @if(!$isSuperAdmin)
                         <small class="text-danger d-block mb-3">Hubungi Super Admin untuk pindah Cabang/Divisi.</small>
                         @if($user->branch_id) <input type="hidden" name="branch_id" value="{{ $user->branch_id }}"> @endif
-                        @if($user->division_id) <input type="hidden" name="division_id" value="{{ $user->division_id }}"> @endif
-                        {{-- Note: Untuk multi relation jika disabled, controller tidak akan menerima update, jadi data lama aman --}}
                     @endif
 
                     <hr>
@@ -282,7 +286,7 @@
                 allowClear: true
             });
 
-            // 2. Init Multi Select (Style yang sudah diperbaiki)
+            // 2. Init Multi Select
             $('.select2-multi').select2({
                 theme: "bootstrap-5",
                 width: '100%',
@@ -301,22 +305,21 @@
                 $(selector).val(null).trigger('change');
             }
 
-            // 4. Logic Toggle Inputs (Penting untuk Edit)
+            // 4. Logic Toggle Inputs
             window.toggleInputs = function() {
                 const role = $('#role').val();
 
-                // Reset: Show Single, Hide Multi
-                $('#single-branch-group, #single-division-group').removeClass('d-none');
-                $('#multi-branch-group, #multi-division-group').addClass('d-none');
-
+                // --- LOGIKA CABANG (Audit vs Lainnya) ---
                 if (role === 'audit') {
                     $('#single-branch-group').addClass('d-none');
                     $('#multi-branch-group').removeClass('d-none');
-                } 
-                else if (role === 'leader') {
-                    $('#single-division-group').addClass('d-none');
-                    $('#multi-division-group').removeClass('d-none');
+                } else {
+                    $('#single-branch-group').removeClass('d-none');
+                    $('#multi-branch-group').addClass('d-none');
                 }
+
+                // --- LOGIKA DIVISI (Semua Role = Multi) ---
+                // Tidak ada toggle hide/show karena semua role sekarang pakai Multi Division
             };
 
             // Jalankan saat halaman diload agar field yang benar muncul sesuai database
