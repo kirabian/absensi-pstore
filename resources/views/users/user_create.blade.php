@@ -142,17 +142,38 @@
     /* Badge for Multi-select Labels */
     .badge-gradient {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 4px 12px;
+        padding: 6px 14px;
         border-radius: 20px;
         font-size: 0.85rem;
         font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
     }
     .badge-success-gradient {
         background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
-        padding: 4px 12px;
+        padding: 6px 14px;
         border-radius: 20px;
         font-size: 0.85rem;
         font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(86, 171, 47, 0.3);
+    }
+
+    /* Container for Toggle Fields */
+    .position-relative {
+        transition: min-height 0.3s ease;
+    }
+    .position-absolute {
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+        opacity: 1;
+        visibility: visible;
+    }
+    .position-absolute.d-none {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
     }
 
     /* Icon Styling */
@@ -268,54 +289,72 @@
                 <div class="card-body">
                     <h4 class="card-title">📍 Penempatan & Kontak</h4>
 
-                    {{-- INPUT CABANG (Single vs Multi) --}}
-                    <div class="form-group" id="single-branch-group">
-                        <label>Cabang Utama (Homebase)</label>
-                        <select class="form-control select2" name="branch_id" style="width:100%">
-                            <option value="">-- Pilih Cabang --</option>
-                            @foreach ($branches as $branch)
-                                <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
-                                    {{ $branch->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                    {{-- CONTAINER UNTUK CABANG --}}
+                    <div class="position-relative" style="min-height: 90px;">
+                        {{-- INPUT CABANG SINGLE --}}
+                        <div class="form-group position-absolute w-100" id="single-branch-group">
+                            <label>Cabang Utama (Homebase)</label>
+                            <select class="form-control select2" name="branch_id" style="width:100%">
+                                <option value="">-- Pilih Cabang --</option>
+                                @foreach ($branches as $branch)
+                                    <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
+                                        {{ $branch->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- INPUT CABANG MULTI --}}
+                        <div class="form-group position-absolute w-100 d-none" id="multi-branch-group">
+                            <label>
+                                <span class="badge badge-gradient text-white">
+                                    <i class="mdi mdi-map-marker-multiple me-1"></i>Akses Wilayah Audit
+                                </span>
+                            </label>
+                            <select class="form-control select2" name="multi_branches[]" multiple="multiple" style="width:100%">
+                                @foreach ($branches as $branch)
+                                    <option value="{{ $branch->id }}" 
+                                        {{ (collect(old('multi_branches'))->contains($branch->id)) ? 'selected' : '' }}>
+                                        {{ $branch->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <small class="text-muted d-block mt-1">Pilih satu atau lebih cabang untuk diaudit</small>
+                        </div>
                     </div>
 
-                    <div class="form-group d-none" id="multi-branch-group">
-                        <label><span class="badge badge-gradient text-white">Akses Wilayah Audit (Multi Select)</span></label>
-                        <select class="form-control select2" name="multi_branches[]" multiple="multiple" style="width:100%">
-                            @foreach ($branches as $branch)
-                                <option value="{{ $branch->id }}" 
-                                    {{ (collect(old('multi_branches'))->contains($branch->id)) ? 'selected' : '' }}>
-                                    {{ $branch->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                    {{-- CONTAINER UNTUK DIVISI --}}
+                    <div class="position-relative" style="min-height: 90px;">
+                        {{-- INPUT DIVISI SINGLE --}}
+                        <div class="form-group position-absolute w-100" id="single-division-group">
+                            <label>Divisi Utama</label>
+                            <select class="form-control select2" name="division_id" style="width:100%">
+                                <option value="">-- Pilih Divisi --</option>
+                                @foreach ($divisions as $division)
+                                    <option value="{{ $division->id }}" {{ old('division_id') == $division->id ? 'selected' : '' }}>
+                                        {{ $division->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                    {{-- INPUT DIVISI (Single vs Multi) --}}
-                    <div class="form-group" id="single-division-group">
-                        <label>Divisi Utama</label>
-                        <select class="form-control select2" name="division_id" style="width:100%">
-                            <option value="">-- Pilih Divisi --</option>
-                            @foreach ($divisions as $division)
-                                <option value="{{ $division->id }}" {{ old('division_id') == $division->id ? 'selected' : '' }}>
-                                    {{ $division->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="form-group d-none" id="multi-division-group">
-                        <label><span class="badge badge-success-gradient text-white">Pimpin Divisi (Multi Select)</span></label>
-                        <select class="form-control select2" name="multi_divisions[]" multiple="multiple" style="width:100%">
-                            @foreach ($divisions as $division)
-                                <option value="{{ $division->id }}"
-                                    {{ (collect(old('multi_divisions'))->contains($division->id)) ? 'selected' : '' }}>
-                                    {{ $division->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        {{-- INPUT DIVISI MULTI --}}
+                        <div class="form-group position-absolute w-100 d-none" id="multi-division-group">
+                            <label>
+                                <span class="badge badge-success-gradient text-white">
+                                    <i class="mdi mdi-account-multiple me-1"></i>Pimpin Divisi
+                                </span>
+                            </label>
+                            <select class="form-control select2" name="multi_divisions[]" multiple="multiple" style="width:100%">
+                                @foreach ($divisions as $division)
+                                    <option value="{{ $division->id }}"
+                                        {{ (collect(old('multi_divisions'))->contains($division->id)) ? 'selected' : '' }}>
+                                        {{ $division->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <small class="text-muted d-block mt-1">Pilih divisi yang dipimpin</small>
+                        </div>
                     </div>
 
                     <hr>
@@ -375,22 +414,37 @@
     function toggleInputs() {
         var role = document.getElementById('role').value;
         
-        // Reset Visibility
-        $('#single-branch-group').removeClass('d-none');
-        $('#multi-branch-group').addClass('d-none');
-        $('#single-division-group').removeClass('d-none');
-        $('#multi-division-group').addClass('d-none');
+        // Helper function untuk smooth toggle
+        function showElement(showId, hideId) {
+            $(hideId).addClass('d-none');
+            setTimeout(function() {
+                $(showId).removeClass('d-none');
+            }, 50);
+        }
 
         if (role === 'audit') {
             // Audit: Multi Branch, Hide Single Branch
-            $('#single-branch-group').addClass('d-none');
-            $('#multi-branch-group').removeClass('d-none');
+            showElement('#multi-branch-group', '#single-branch-group');
+            showElement('#single-division-group', '#multi-division-group');
         } 
         else if (role === 'leader') {
-            // Leader: Multi Division, Hide Single Division
-            $('#single-division-group').addClass('d-none');
-            $('#multi-division-group').removeClass('d-none');
+            // Leader: Multi Division, Hide Single Division  
+            showElement('#single-branch-group', '#multi-branch-group');
+            showElement('#multi-division-group', '#single-division-group');
         }
+        else {
+            // Default: Single mode untuk keduanya
+            showElement('#single-branch-group', '#multi-branch-group');
+            showElement('#single-division-group', '#multi-division-group');
+        }
+
+        // Reinit Select2 after toggle
+        setTimeout(function() {
+            $('.select2:visible').select2({
+                placeholder: "-- Pilih --",
+                allowClear: true
+            });
+        }, 100);
     }
 </script>
 @endpush
