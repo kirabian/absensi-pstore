@@ -18,12 +18,12 @@ class UserController extends Controller
         // Middleware untuk authorization
         $this->middleware(function ($request, $next) {
             $user = Auth::user();
-
+            
             // Cek apakah user memiliki role yang diizinkan
             if (!in_array($user->role, ['admin', 'audit'])) {
                 abort(403, 'Akses ditolak. Anda tidak memiliki hak akses.');
             }
-
+            
             return $next($request);
         });
     }
@@ -75,16 +75,11 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'login_id' => 'required|string|max:50|unique:users',
-            'password' => 'required|string|min:3|confirmed',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
             'role' => 'required|string|in:admin,audit,leader,security,user_biasa',
             'branch_id' => 'required_unless:role,admin|nullable|exists:branches,id',
             'division_id' => 'nullable|exists:divisions,id',
-            'email' => 'nullable|string|email|max:255|unique:users',
-            'whatsapp' => 'nullable|string|max:20',
-            'instagram' => 'nullable|string|max:50',
-            'tiktok' => 'nullable|string|max:50',
-            'hire_date' => 'nullable|date',
         ]);
 
         $data = $request->all();
@@ -102,16 +97,11 @@ class UserController extends Controller
 
         User::create([
             'name' => $data['name'],
-            'login_id' => $data['login_id'],
+            'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'role' => $data['role'],
             'branch_id' => $data['branch_id'],
             'division_id' => $data['division_id'],
-            'email' => $data['email'],
-            'whatsapp' => $data['whatsapp'],
-            'instagram' => $data['instagram'],
-            'tiktok' => $data['tiktok'],
-            'hire_date' => $data['hire_date'],
             'qr_code_value' => (string) Str::uuid(),
         ]);
 
@@ -160,16 +150,11 @@ class UserController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'login_id' => ['required', 'string', 'max:50', Rule::unique('users')->ignore($user->id)],
-            'password' => 'nullable|string|min:3|confirmed',
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'password' => 'nullable|string|min:8|confirmed',
             'role' => 'required|string|in:admin,audit,leader,security,user_biasa',
             'branch_id' => 'required_unless:role,admin|nullable|exists:branches,id',
             'division_id' => 'nullable|exists:divisions,id',
-            'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)], // Email nullable
-            'whatsapp' => 'nullable|string|max:20',
-            'instagram' => 'nullable|string|max:50',
-            'tiktok' => 'nullable|string|max:50',
-            'hire_date' => 'nullable|date',
         ]);
 
         $data = $request->all();
