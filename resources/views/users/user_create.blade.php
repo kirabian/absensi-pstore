@@ -25,6 +25,7 @@
         border: 1px solid #e8ecf1;
         border-radius: 8px;
         min-height: 46px;
+        padding: 4px;
     }
     .select2-container--default .select2-selection--multiple .select2-selection__choice { 
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -41,6 +42,30 @@
     }
     .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
         color: #ffd1dc;
+    }
+    
+    /* Select2 Dropdown Styling */
+    .select2-container--default .select2-results__option {
+        padding: 10px 15px;
+        font-size: 0.95rem;
+    }
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .select2-dropdown {
+        border: 1px solid #e8ecf1;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    .select2-search--dropdown .select2-search__field {
+        border: 1px solid #e8ecf1;
+        border-radius: 6px;
+        padding: 8px 12px;
+    }
+    .select2-search--dropdown .select2-search__field:focus {
+        border-color: #667eea;
+        outline: none;
     }
 
     /* Card Enhancements */
@@ -169,11 +194,21 @@
         transition: opacity 0.3s ease, visibility 0.3s ease;
         opacity: 1;
         visibility: visible;
+        z-index: 1;
     }
     .position-absolute.d-none {
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
+        z-index: 0;
+    }
+    
+    /* Ensure Select2 dropdown appears above everything */
+    .select2-container {
+        z-index: 9999 !important;
+    }
+    .select2-dropdown {
+        z-index: 9999 !important;
     }
 
     /* Icon Styling */
@@ -290,11 +325,11 @@
                     <h4 class="card-title">📍 Penempatan & Kontak</h4>
 
                     {{-- CONTAINER UNTUK CABANG --}}
-                    <div class="position-relative" style="min-height: 90px;">
+                    <div class="position-relative" style="min-height: 100px;">
                         {{-- INPUT CABANG SINGLE --}}
                         <div class="form-group position-absolute w-100" id="single-branch-group">
-                            <label>Cabang Utama (Homebase)</label>
-                            <select class="form-control select2" name="branch_id" style="width:100%">
+                            <label>🏢 Cabang Utama (Homebase)</label>
+                            <select class="form-control select2-single" name="branch_id" style="width:100%">
                                 <option value="">-- Pilih Cabang --</option>
                                 @foreach ($branches as $branch)
                                     <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
@@ -308,10 +343,10 @@
                         <div class="form-group position-absolute w-100 d-none" id="multi-branch-group">
                             <label>
                                 <span class="badge badge-gradient text-white">
-                                    <i class="mdi mdi-map-marker-multiple me-1"></i>Akses Wilayah Audit
+                                    🔍 Akses Wilayah Audit (Multi Select)
                                 </span>
                             </label>
-                            <select class="form-control select2" name="multi_branches[]" multiple="multiple" style="width:100%">
+                            <select class="form-control select2-multi" name="multi_branches[]" multiple="multiple" style="width:100%">
                                 @foreach ($branches as $branch)
                                     <option value="{{ $branch->id }}" 
                                         {{ (collect(old('multi_branches'))->contains($branch->id)) ? 'selected' : '' }}>
@@ -319,16 +354,16 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <small class="text-muted d-block mt-1">Pilih satu atau lebih cabang untuk diaudit</small>
+                            <small class="text-muted d-block mt-1">💡 Pilih satu atau lebih cabang untuk diaudit</small>
                         </div>
                     </div>
 
                     {{-- CONTAINER UNTUK DIVISI --}}
-                    <div class="position-relative" style="min-height: 90px;">
+                    <div class="position-relative" style="min-height: 100px;">
                         {{-- INPUT DIVISI SINGLE --}}
                         <div class="form-group position-absolute w-100" id="single-division-group">
-                            <label>Divisi Utama</label>
-                            <select class="form-control select2" name="division_id" style="width:100%">
+                            <label>📋 Divisi Utama</label>
+                            <select class="form-control select2-single" name="division_id" style="width:100%">
                                 <option value="">-- Pilih Divisi --</option>
                                 @foreach ($divisions as $division)
                                     <option value="{{ $division->id }}" {{ old('division_id') == $division->id ? 'selected' : '' }}>
@@ -342,10 +377,10 @@
                         <div class="form-group position-absolute w-100 d-none" id="multi-division-group">
                             <label>
                                 <span class="badge badge-success-gradient text-white">
-                                    <i class="mdi mdi-account-multiple me-1"></i>Pimpin Divisi
+                                    ⭐ Pimpin Divisi (Multi Select)
                                 </span>
                             </label>
-                            <select class="form-control select2" name="multi_divisions[]" multiple="multiple" style="width:100%">
+                            <select class="form-control select2-multi" name="multi_divisions[]" multiple="multiple" style="width:100%">
                                 @foreach ($divisions as $division)
                                     <option value="{{ $division->id }}"
                                         {{ (collect(old('multi_divisions'))->contains($division->id)) ? 'selected' : '' }}>
@@ -353,7 +388,7 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <small class="text-muted d-block mt-1">Pilih divisi yang dipimpin</small>
+                            <small class="text-muted d-block mt-1">💡 Pilih divisi yang dipimpin</small>
                         </div>
                     </div>
 
@@ -404,10 +439,23 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     $(document).ready(function() {
-        $('.select2').select2({
+        // Init Select2 untuk single select
+        $('.select2-single').select2({
             placeholder: "-- Pilih --",
-            allowClear: true
-        }); 
+            allowClear: true,
+            width: '100%',
+            dropdownParent: $('.card-body')
+        });
+        
+        // Init Select2 untuk multi select
+        $('.select2-multi').select2({
+            placeholder: "-- Pilih satu atau lebih --",
+            allowClear: true,
+            width: '100%',
+            closeOnSelect: false,
+            dropdownParent: $('.card-body')
+        });
+        
         toggleInputs();
     });
 
@@ -417,18 +465,19 @@
         // Helper function untuk smooth toggle
         function showElement(showId, hideId) {
             $(hideId).addClass('d-none');
+            $(hideId).find('select').val(null).trigger('change'); // Clear selection
             setTimeout(function() {
                 $(showId).removeClass('d-none');
             }, 50);
         }
 
         if (role === 'audit') {
-            // Audit: Multi Branch, Hide Single Branch
+            // Audit: Multi Branch, Single Division
             showElement('#multi-branch-group', '#single-branch-group');
             showElement('#single-division-group', '#multi-division-group');
         } 
         else if (role === 'leader') {
-            // Leader: Multi Division, Hide Single Division  
+            // Leader: Single Branch, Multi Division
             showElement('#single-branch-group', '#multi-branch-group');
             showElement('#multi-division-group', '#single-division-group');
         }
@@ -437,14 +486,6 @@
             showElement('#single-branch-group', '#multi-branch-group');
             showElement('#single-division-group', '#multi-division-group');
         }
-
-        // Reinit Select2 after toggle
-        setTimeout(function() {
-            $('.select2:visible').select2({
-                placeholder: "-- Pilih --",
-                allowClear: true
-            });
-        }, 100);
     }
 </script>
 @endpush
