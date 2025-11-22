@@ -1,74 +1,33 @@
-{{-- resources/views/users/create.blade.php --}}
 @extends('layout.master')
 
 @section('title', 'Tambah User')
 @section('heading', 'Tambah User Baru')
 
 @section('content')
-{{-- LOAD CSS LANGSUNG DI SINI SUPAYA TIDAK KENA TIMPA MASTER LAYOUT --}}
+{{-- LOAD CSS LANGSUNG DI SINI --}}
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
 
 <style>
-    /* --- CSS ANTI-CONFLICT (SAMA SEPERTI SEBELUMNYA) --- */
-    .select2-container ul, 
-    .select2-container li, 
-    .select2-selection__rendered,
-    span.select2-selection__choice {
-        list-style: none !important;
-        list-style-type: none !important;
-        padding-left: 0 !important;
-        margin-left: 0 !important;
+    /* --- CSS ANTI-CONFLICT --- */
+    .select2-container ul, .select2-container li, .select2-selection__rendered, span.select2-selection__choice {
+        list-style: none !important; list-style-type: none !important; padding-left: 0 !important; margin-left: 0 !important;
     }
-
     .select2-container--bootstrap-5 .select2-selection--multiple {
-        background-color: #fff !important;
-        border: 1px solid #ced4da !important;
-        min-height: 38px !important;
-        padding: 4px !important;
-        display: flex !important;
-        flex-wrap: wrap !important;
-        align-items: center !important;
+        background-color: #fff !important; border: 1px solid #ced4da !important; min-height: 38px !important; padding: 4px !important; display: flex !important; flex-wrap: wrap !important; align-items: center !important;
     }
-
-    /* Desain Tag/Pills */
     .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
-        background-color: #e9ecef !important;
-        border: 1px solid #dee2e6 !important;
-        border-radius: 20px !important;
-        padding: 2px 10px !important;
-        margin: 2px 4px !important;
-        font-size: 0.85rem !important;
-        color: #333 !important;
-        display: inline-flex !important;
-        align-items: center !important;
+        background-color: #e9ecef !important; border: 1px solid #dee2e6 !important; border-radius: 20px !important; padding: 2px 10px !important; margin: 2px 4px !important; font-size: 0.85rem !important; color: #333 !important; display: inline-flex !important; align-items: center !important;
     }
-
     .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice .select2-selection__choice__remove {
-        border: none !important;
-        background: transparent !important;
-        margin-right: 5px !important;
-        color: #999 !important;
-        font-weight: bold !important;
-        padding: 0 !important;
+        border: none !important; background: transparent !important; margin-right: 5px !important; color: #999 !important; font-weight: bold !important; padding: 0 !important;
     }
     .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice .select2-selection__choice__remove:hover {
         color: #dc3545 !important;
     }
-
-    /* Dropdown items */
-    .select2-results__option {
-        padding: 6px 12px !important;
-        font-size: 14px !important;
-    }
-    .select2-container--bootstrap-5 .select2-results__option--selected {
-        background-color: #e9ecef !important;
-        color: #333 !important;
-    }
-    .select2-container--bootstrap-5 .select2-results__option--highlighted {
-        background-color: #0d6efd !important;
-        color: #fff !important;
-    }
+    .select2-results__option { padding: 6px 12px !important; font-size: 14px !important; }
+    .select2-container--bootstrap-5 .select2-results__option--selected { background-color: #e9ecef !important; color: #333 !important; }
+    .select2-container--bootstrap-5 .select2-results__option--highlighted { background-color: #0d6efd !important; color: #fff !important; }
 </style>
 
 @if ($errors->any())
@@ -125,9 +84,9 @@
                 <div class="card-body">
                     <h4 class="card-title">Penempatan & Kontak</h4>
 
-                    {{-- LOGIKA CABANG: Masih dipisah (Audit Multi, Lainnya Single) --}}
+                    {{-- LOGIKA CABANG: Single (Homebase) WAJIB KECUALI SUPER ADMIN --}}
                     <div class="form-group mb-3" id="single-branch-group">
-                        <label>Cabang Utama</label>
+                        <label>Cabang Utama (Homebase)</label>
                         <select class="form-select select2-single" name="branch_id" data-placeholder="Pilih Cabang">
                             <option></option>
                             @foreach ($branches as $branch)
@@ -136,6 +95,7 @@
                         </select>
                     </div>
 
+                    {{-- LOGIKA CABANG: Multi (Hanya Audit) --}}
                     <div class="form-group mb-3 d-none" id="multi-branch-group">
                         <label class="text-primary fw-bold">Akses Wilayah Audit (Multi)</label>
                         <br>
@@ -150,9 +110,7 @@
                         </div>
                     </div>
 
-                    {{-- LOGIKA DIVISI: SEMUA ROLE PAKAI MULTI SELECT --}}
-                    {{-- Input Single Division dihapus karena semua role bisa multi --}}
-                    
+                    {{-- LOGIKA DIVISI: SEMUA MULTI --}}
                     <div class="form-group mb-3" id="multi-division-group">
                         <label class="text-success fw-bold">Divisi (Multi Select)</label>
                         <br>
@@ -200,54 +158,36 @@
     
     <script>
         $(document).ready(function() {
-            
-            // Inisialisasi Single Select (Untuk Branch Biasa)
-            $('.select2-single').select2({
-                theme: "bootstrap-5",
-                width: '100%',
-                placeholder: "Silahkan pilih...",
-                allowClear: true
-            });
+            $('.select2-single').select2({ theme: "bootstrap-5", width: '100%', placeholder: "Silahkan pilih...", allowClear: true });
+            $('.select2-multi').select2({ theme: "bootstrap-5", width: '100%', placeholder: "Pilih satu atau lebih...", closeOnSelect: false, allowClear: true });
 
-            // Inisialisasi Multi Select (Untuk Branch Audit & SEMUA DIVISI)
-            $('.select2-multi').select2({
-                theme: "bootstrap-5",
-                width: '100%',
-                placeholder: "Pilih satu atau lebih...",
-                closeOnSelect: false,
-                allowClear: true
-            });
+            window.selectAll = function(selector) { $(selector).find('option').prop('selected', true); $(selector).trigger('change'); }
+            window.clearAll = function(selector) { $(selector).val(null).trigger('change'); }
 
-            // Helper Functions
-            window.selectAll = function(selector) {
-                $(selector).find('option').prop('selected', true);
-                $(selector).trigger('change');
-            }
-
-            window.clearAll = function(selector) {
-                $(selector).val(null).trigger('change');
-            }
-
-            // Logic Ganti Role
             window.toggleInputs = function() {
                 const role = $('#role').val();
 
-                // --- LOGIKA CABANG (Audit vs Lainnya) ---
+                // 1. SINGLE BRANCH (HOMEBASE)
+                // Aturan: "Required unless admin". 
+                // Artinya: SEMUA role (termasuk Audit) butuh Homebase, KECUALI Super Admin.
+                if (role === 'admin') {
+                    $('#single-branch-group').addClass('d-none'); // Super admin bebas
+                } else {
+                    $('#single-branch-group').removeClass('d-none'); // Audit, Security, User Biasa, Leader WAJIB isi ini
+                }
+
+                // 2. MULTI BRANCH (SCOPE)
+                // Khusus untuk role Audit
                 if (role === 'audit') {
-                    $('#single-branch-group').addClass('d-none');
                     $('#multi-branch-group').removeClass('d-none');
                 } else {
-                    // Default semua role selain audit pakai single branch
-                    $('#single-branch-group').removeClass('d-none');
                     $('#multi-branch-group').addClass('d-none');
                 }
 
-                // --- LOGIKA DIVISI (Semua Role = Multi) ---
-                // Tidak perlu ada logika toggle/hide karena div "multi-division-group" 
-                // sudah kita set visible permanen di HTML dan single division sudah dihapus.
+                // 3. DIVISI
+                // Selalu muncul (Multi)
             };
 
-            // Jalankan saat load
             toggleInputs();
         });
     </script>
