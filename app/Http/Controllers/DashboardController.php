@@ -40,15 +40,15 @@ class DashboardController extends Controller
         }
 
         // ======================================================
-        // 2. DATA IZIN HARI INI - DIPERBAIKI
+        // 2. DATA IZIN HARI INI
         // ======================================================
         $data['myLeaveToday'] = $this->getTodayLeaveRequest($user->id);
 
         // ======================================================
-        // 3. ISI DATA BERDASARKAN ROLE - SEMUA ROLE DAPAT ID CARD & STATUS ABSENSI
+        // 3. ISI DATA BERDASARKAN ROLE & ID CARD
         // ======================================================
 
-        // DATA UNTUK SEMUA ROLE: ID Card & Status Absensi
+        // DATA UNTUK SEMUA ROLE: ID Card & Status Absensi (Logika Cross-day diterapkan di sini)
         $data = $this->getCommonDataForAllRoles($user, $data);
 
         if ($user->role == 'admin') {
@@ -99,14 +99,14 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get today's leave request for user - DIPERBAIKI
+     * Get today's leave request for user
      */
     private function getTodayLeaveRequest($user_id)
     {
-        return LeaveRequest::where('user_id', $user_id) // PASTIKAN hanya ambil data user yang login
+        return LeaveRequest::where('user_id', $user_id)
             ->where('is_active', true)
             ->where('status', 'approved')
-            ->where(function($query) use ($user_id) {
+            ->where(function($query) {
                 $query->where(function($q) {
                     // Untuk izin sakit & cuti (berjangka waktu)
                     $q->whereIn('type', ['sakit', 'izin'])
@@ -123,37 +123,33 @@ class DashboardController extends Controller
 
     /**
      * Get common data for ALL roles (ID Card & Attendance Status)
+     * UPDATE: MENDUKUNG LEMBUR LINTAS HARI (Cross-day)
      */
     private function getCommonDataForAllRoles($user, $data)
     {
-        // AMBIL SEMUA absensi hari ini untuk user yang login
-        $todayAttendances = Attendance::where('user_id', $user->id)
-            ->whereDate('check_in_time', today())
-            ->orderBy('check_in_time', 'desc')
-            ->get();
+        // PRIORITAS 1: Cari Sesi Aktif (Belum Pulang) - Lookback 24 jam
+        // Ini untuk menangani user yang lembur melewati tengah malam.
+        // Jika jam 01:00 pagi user buka dashboard, yang muncul adalah data masuk kemarin sore.
+        $activeSession = Attendance::where('user_id', $user->id)
+            ->whereNull('check_out_time')
+            ->where('check_in_time', '>=', Carbon::now()->subHours(24))
+            ->latest('check_in_time')
+            ->first();
 
-        // LOGIC PRIORITY untuk semua role:
-        // 1. Cari yang SUDAH PULANG (check_out_time NOT NULL)
-        $attendanceWithCheckout = $todayAttendances->first(function ($attendance) {
-            return !is_null($attendance->check_out_time);
-        });
-
-        if ($attendanceWithCheckout) {
-            // JIKA ADA YANG SUDAH PULANG
-            $data['myAttendanceToday'] = $attendanceWithCheckout;
+        if ($activeSession) {
+            // Jika ada sesi aktif (Masih Kerja), tampilkan ini
+            $data['myAttendanceToday'] = $activeSession;
         } else {
-            // 2. Cari yang punya photo_out_path (data rusak tapi sudah pulang)
-            $attendanceWithPhotoOut = $todayAttendances->first(function ($attendance) {
-                return !is_null($attendance->photo_out_path);
-            });
-
-            if ($attendanceWithPhotoOut) {
-                // JIKA ADA YANG SUDAH PULANG (tapi check_out_time NULL)
-                $data['myAttendanceToday'] = $attendanceWithPhotoOut;
-            } else {
-                // 3. Ambil yang terakhir (masih masuk)
-                $data['myAttendanceToday'] = $todayAttendances->first();
-            }
+            // PRIORITAS 2: Jika tidak ada sesi aktif, cari sesi yang SUDAH SELESAI hari ini
+            // (Masuk hari ini, Pulang hari ini)
+            $finishedSession = Attendance::where('user_id', $user->id)
+                ->whereDate('check_in_time', today())
+                ->whereNotNull('check_out_time')
+                ->latest('check_in_time')
+                ->first();
+            
+            // Jika ada data selesai hari ini tampilkan, jika tidak maka NULL (Belum Absen)
+            $data['myAttendanceToday'] = $finishedSession;
         }
 
         return $data;
@@ -170,6 +166,7 @@ class DashboardController extends Controller
             $query->where('branch_id', $branch_id);
         }
 
+        // Statistik Admin tetap menggunakan filter hari ini
         $totalAttendances = $query->whereDate('check_in_time', today())->count();
         $present = $query->clone()->where('status', 'present')->count();
         $late = $query->clone()->where('status', 'late')->count();
@@ -245,6 +242,7 @@ class DashboardController extends Controller
      */
     private function getUserAttendanceStats($user_id, $branch_id = null)
     {
+        // Statistik User menampilkan history 30 hari terakhir
         $query = Attendance::where('user_id', $user_id)
             ->whereDate('check_in_time', '>=', now()->subDays(30));
         

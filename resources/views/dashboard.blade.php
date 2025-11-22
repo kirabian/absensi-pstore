@@ -245,7 +245,7 @@
                 <div class="card card-status">
                     <div class="card-body">
                         <h4 class="card-title mb-4">
-                            <i class="mdi mdi-calendar-today me-2"></i>Status Absensi Hari Ini
+                            <i class="mdi mdi-calendar-today me-2"></i>Status Absensi
                         </h4>
 
                         @if (session('success'))
@@ -265,9 +265,19 @@
 
                         {{-- LOGIKA TAMPILAN --}}
 
-                        {{-- 1. JIKA SUDAH ABSEN (PRIORITAS UTAMA) --}}
+                        {{-- 1. JIKA SUDAH ADA DATA (MASUK ATAU PULANG) --}}
                         @if ($myAttendanceToday)
-                            {{-- Logika Absen (Sama seperti sebelumnya, tidak diubah) --}}
+                            
+                            {{-- CEK APAKAH LINTAS HARI? --}}
+                            @php
+                                $isCrossDay = false;
+                                // Jika belum checkout, cek apakah tanggal checkin != hari ini
+                                if (!$myAttendanceToday->check_out_time) {
+                                    $isCrossDay = $myAttendanceToday->check_in_time->format('Y-m-d') !== date('Y-m-d');
+                                }
+                            @endphp
+
+                            {{-- JIKA SUDAH CHECKOUT / PULANG --}}
                             @if ($myAttendanceToday->check_out_time || $myAttendanceToday->photo_out_path)
                                 <div class="status-card status-success mb-3">
                                     <div class="d-flex align-items-center">
@@ -276,7 +286,7 @@
                                         </div>
                                         <div class="flex-grow-1">
                                             <h5 class="mb-1 fw-bold">Anda Sudah Pulang</h5>
-                                            <p class="text-muted mb-0 small">Terima kasih atas kerja keras Anda hari ini!
+                                            <p class="text-muted mb-0 small">Terima kasih atas kerja keras Anda!
                                             </p>
                                         </div>
                                     </div>
@@ -285,7 +295,11 @@
                                         <div class="col-6 border-end">
                                             <small class="text-muted d-block">JAM MASUK</small>
                                             <h4 class="fw-bold text-success mb-0">
-                                                {{ $myAttendanceToday->check_in_time->format('H:i') }}</h4>
+                                                {{ $myAttendanceToday->check_in_time->format('H:i') }}
+                                                @if($myAttendanceToday->check_in_time->format('Y-m-d') !== date('Y-m-d'))
+                                                    <span class="d-block" style="font-size: 10px;">({{ $myAttendanceToday->check_in_time->format('d M') }})</span>
+                                                @endif
+                                            </h4>
                                         </div>
                                         <div class="col-6">
                                             <small class="text-muted d-block">JAM PULANG</small>
@@ -295,18 +309,29 @@
                                         </div>
                                     </div>
                                 </div>
+                            
+                            {{-- JIKA MASIH AKTIF (BELUM PULANG) --}}
                             @else
-                                {{-- Masih Bekerja --}}
-                                <div class="status-card status-success mb-3">
+                                {{-- TAMPILAN SESUAI KONDISI (CROSS DAY ATAU NORMAL) --}}
+                                <div class="status-card {{ $isCrossDay ? 'status-warning' : 'status-success' }} mb-3">
                                     <div class="d-flex align-items-center">
                                         <div class="status-icon">
-                                            <i class="mdi mdi-clock-check"></i>
+                                            {{-- Icon Beda jika Lembur Lintas Hari --}}
+                                            <i class="mdi {{ $isCrossDay ? 'mdi-calendar-clock' : 'mdi-clock-check' }}"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <h5 class="mb-1 fw-bold">Sedang Bekerja</h5>
-                                            <p class="mb-0">Masuk Pukul:
-                                                <strong>{{ $myAttendanceToday->check_in_time->format('H:i') }}</strong>
-                                            </p>
+                                            @if($isCrossDay)
+                                                <h5 class="mb-1 fw-bold text-danger">Lembur Lintas Hari</h5>
+                                                <p class="mb-0 small text-dark">
+                                                    Anda masuk tanggal: <strong>{{ $myAttendanceToday->check_in_time->format('d M Y, H:i') }}</strong>
+                                                </p>
+                                                <small class="text-muted">Sesi belum ditutup dari kemarin.</small>
+                                            @else
+                                                <h5 class="mb-1 fw-bold">Sedang Bekerja</h5>
+                                                <p class="mb-0">Masuk Pukul:
+                                                    <strong>{{ $myAttendanceToday->check_in_time->format('H:i') }}</strong>
+                                                </p>
+                                            @endif
                                         </div>
                                     </div>
 
@@ -315,7 +340,8 @@
                                         <div class="mt-3 pt-3 border-top text-center">
                                             <a href="{{ route('self.attend.create') }}"
                                                 class="btn btn-danger btn-sm w-100">
-                                                <i class="mdi mdi-logout me-1"></i>Absen Pulang Mandiri
+                                                <i class="mdi mdi-logout me-1"></i>
+                                                {{ $isCrossDay ? 'Absen Pulang (Tutup Sesi)' : 'Absen Pulang Mandiri' }}
                                             </a>
                                         </div>
                                     @endif
