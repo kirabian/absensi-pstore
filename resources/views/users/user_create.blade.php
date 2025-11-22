@@ -4,12 +4,12 @@
 @section('heading', 'Tambah User Baru')
 
 @section('content')
-{{-- LOAD CSS LANGSUNG DI SINI --}}
+{{-- LOAD CSS LANGSUNG DI SINI (ANTI-CONFLICT) --}}
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
 
 <style>
-    /* --- CSS ANTI-CONFLICT --- */
+    /* --- CSS KHUSUS AGAR TAMPILAN SELECT2 RAPI --- */
     .select2-container ul, .select2-container li, .select2-selection__rendered, span.select2-selection__choice {
         list-style: none !important; list-style-type: none !important; padding-left: 0 !important; margin-left: 0 !important;
     }
@@ -43,6 +43,7 @@
 <form class="forms-sample" action="{{ route('users.store') }}" method="POST" enctype="multipart/form-data">
     @csrf
     <div class="row">
+        <!-- KARTU 1: DATA LOGIN & ROLE -->
         <div class="col-md-6 grid-margin stretch-card">
             <div class="card">
                 <div class="card-body">
@@ -79,12 +80,15 @@
             </div>
         </div>
 
+        <!-- KARTU 2: PENEMPATAN -->
         <div class="col-md-6 grid-margin stretch-card">
             <div class="card">
                 <div class="card-body">
                     <h4 class="card-title">Penempatan & Kontak</h4>
 
-                    {{-- LOGIKA CABANG: Single (Homebase) WAJIB KECUALI SUPER ADMIN --}}
+                    {{-- SINGLE BRANCH (HOMEBASE) --}}
+                    {{-- WAJIB UNTUK: Audit, Leader, Security, User Biasa --}}
+                    {{-- HANYA ADMIN YANG BOLEH KOSONG --}}
                     <div class="form-group mb-3" id="single-branch-group">
                         <label>Cabang Utama (Homebase)</label>
                         <select class="form-select select2-single" name="branch_id" data-placeholder="Pilih Cabang">
@@ -95,7 +99,8 @@
                         </select>
                     </div>
 
-                    {{-- LOGIKA CABANG: Multi (Hanya Audit) --}}
+                    {{-- MULTI BRANCH (WILAYAH AUDIT) --}}
+                    {{-- HANYA MUNCUL JIKA ROLE = AUDIT --}}
                     <div class="form-group mb-3 d-none" id="multi-branch-group">
                         <label class="text-primary fw-bold">Akses Wilayah Audit (Multi)</label>
                         <br>
@@ -110,7 +115,7 @@
                         </div>
                     </div>
 
-                    {{-- LOGIKA DIVISI: SEMUA MULTI --}}
+                    {{-- DIVISI (MULTI SELECT UNTUK SEMUA ROLE) --}}
                     <div class="form-group mb-3" id="multi-division-group">
                         <label class="text-success fw-bold">Divisi (Multi Select)</label>
                         <br>
@@ -158,26 +163,30 @@
     
     <script>
         $(document).ready(function() {
+            
+            // Init Select2
             $('.select2-single').select2({ theme: "bootstrap-5", width: '100%', placeholder: "Silahkan pilih...", allowClear: true });
             $('.select2-multi').select2({ theme: "bootstrap-5", width: '100%', placeholder: "Pilih satu atau lebih...", closeOnSelect: false, allowClear: true });
 
+            // Helper Functions
             window.selectAll = function(selector) { $(selector).find('option').prop('selected', true); $(selector).trigger('change'); }
             window.clearAll = function(selector) { $(selector).val(null).trigger('change'); }
 
+            // LOGIKA PENTING: TOGGLE INPUT BERDASARKAN ROLE
             window.toggleInputs = function() {
                 const role = $('#role').val();
 
                 // 1. SINGLE BRANCH (HOMEBASE)
-                // Aturan: "Required unless admin". 
-                // Artinya: SEMUA role (termasuk Audit) butuh Homebase, KECUALI Super Admin.
+                // Aturan: Wajib untuk SEMUA ROLE kecuali 'admin' (Super Admin).
+                // Jadi jika role = audit, field ini HARUS MUNCUL.
                 if (role === 'admin') {
-                    $('#single-branch-group').addClass('d-none'); // Super admin bebas
+                    $('#single-branch-group').addClass('d-none'); 
                 } else {
-                    $('#single-branch-group').removeClass('d-none'); // Audit, Security, User Biasa, Leader WAJIB isi ini
+                    $('#single-branch-group').removeClass('d-none'); 
                 }
 
-                // 2. MULTI BRANCH (SCOPE)
-                // Khusus untuk role Audit
+                // 2. MULTI BRANCH (WILAYAH AUDIT)
+                // Aturan: Hanya muncul jika role = 'audit'.
                 if (role === 'audit') {
                     $('#multi-branch-group').removeClass('d-none');
                 } else {
@@ -185,9 +194,10 @@
                 }
 
                 // 3. DIVISI
-                // Selalu muncul (Multi)
+                // Selalu muncul untuk semua role.
             };
 
+            // Jalankan saat halaman dimuat
             toggleInputs();
         });
     </script>
