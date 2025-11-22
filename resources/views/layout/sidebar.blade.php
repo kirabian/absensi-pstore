@@ -24,7 +24,7 @@
         {{-- =================================== --}}
         {{--   MENU UNTUK SUPER ADMIN & AUDIT   --}}
         {{-- =================================== --}}
-        @if (auth()->user()->role == 'admin')
+        @if (auth()->user()->role == 'admin' | auth()->user()->role == 'audit')
             <li class="nav-item nav-category">Manajemen Tim</li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('divisions.index') }}">
