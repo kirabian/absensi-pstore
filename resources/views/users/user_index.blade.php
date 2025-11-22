@@ -14,9 +14,12 @@
             <div class="card">
                 <div class="card-body">
                     <h4 class="card-title">Daftar Semua User</h4>
-                    <a href="{{ route('users.create') }}" class="btn btn-primary btn-sm mb-3">
-                        <i class="mdi mdi-plus"></i> Tambah User Baru
-                    </a>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <a href="{{ route('users.create') }}" class="btn btn-primary btn-sm">
+                            <i class="mdi mdi-plus"></i> Tambah User Baru
+                        </a>
+                    </div>
 
                     @if (session('success'))
                         <div class="alert alert-success" role="alert">
@@ -30,15 +33,15 @@
                     @endif
 
                     <div class="table-responsive">
-                        <table class="table">
+                        <table class="table table-hover">
                             <thead>
                                 <tr>
                                     <th> # </th>
-                                    <th> Nama </th>
-                                    <th> Email </th>
+                                    <th> Profil Pengguna </th> {{-- Gabungan Foto, Nama, Login ID --}}
+                                    <th> Kontak </th>          {{-- Gabungan Email & WA --}}
                                     <th> Role </th>
-                                    <th> Cabang </th> {{-- <-- KOLOM BARU --}}
-                                    <th> Divisi </th>
+                                    <th> Penempatan </th>      {{-- Gabungan Cabang & Divisi --}}
+                                    <th> Tanggal Join </th>    {{-- Hire Date --}}
                                     <th> QR Code </th>
                                     <th> Aksi </th>
                                 </tr>
@@ -47,17 +50,48 @@
                                 @forelse ($users as $key => $user)
                                     <tr>
                                         <td> {{ $key + 1 }} </td>
-                                        <td> {{ $user->name }} </td>
-                                        <td> {{ $user->email }} </td>
+                                        
+                                        {{-- KOLOM PROFIL (FOTO + NAMA + LOGIN ID) --}}
                                         <td>
-                                            {{-- LOGIKA BADGE BARU --}}
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-3">
+                                                    @if($user->profile_photo_path)
+                                                        <img src="{{ asset('storage/' . $user->profile_photo_path) }}" 
+                                                             alt="profile" 
+                                                             class="img-sm rounded-circle"
+                                                             style="width: 40px; height: 40px; object-fit: cover;">
+                                                    @else
+                                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=random" 
+                                                             alt="profile" 
+                                                             class="img-sm rounded-circle">
+                                                    @endif
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold">{{ $user->name }}</div>
+                                                    <small class="text-muted">ID: {{ $user->login_id ?? '-' }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        {{-- KOLOM KONTAK (EMAIL & WA) --}}
+                                        <td>
+                                            <div><i class="mdi mdi-email-outline me-1"></i> {{ $user->email }}</div>
+                                            @if($user->whatsapp)
+                                                <div class="text-success mt-1">
+                                                    <i class="mdi mdi-whatsapp me-1"></i> {{ $user->whatsapp }}
+                                                </div>
+                                            @endif
+                                        </td>
+
+                                        {{-- KOLOM ROLE --}}
+                                        <td>
                                             @if($user->role == 'admin' && $user->branch_id == null)
                                                 <span class="badge badge-danger">Super Admin</span>
                                             @elseif($user->role == 'admin' && $user->branch_id != null)
                                                 <span class="badge badge-primary">Admin Cabang</span>
                                             @elseif($user->role == 'audit')
                                                 <span class="badge badge-info">Audit</span>
-                                            @elseif($user->role == 'leader') {{-- <-- ROLE BARU --}}
+                                            @elseif($user->role == 'leader')
                                                 <span class="badge badge-success">Leader</span>
                                             @elseif($user->role == 'security')
                                                 <span class="badge badge-warning">Security</span>
@@ -65,11 +99,22 @@
                                                 <span class="badge badge-secondary">User Biasa</span>
                                             @endif
                                         </td>
-                                        <td> {{ $user->branch->name ?? 'N/A' }} </td> {{-- <-- DATA BARU --}}
-                                        <td> {{ $user->division->name ?? 'N/A' }} </td>
+
+                                        {{-- KOLOM PENEMPATAN (CABANG & DIVISI) --}}
+                                        <td>
+                                            <div class="fw-bold">{{ $user->branch->name ?? 'Semua Cabang' }}</div>
+                                            <small class="text-muted">{{ $user->division->name ?? 'Tanpa Divisi' }}</small>
+                                        </td>
+
+                                        {{-- KOLOM TANGGAL JOIN --}}
+                                        <td>
+                                            {{ $user->hire_date ? \Carbon\Carbon::parse($user->hire_date)->format('d M Y') : '-' }}
+                                        </td>
+
+                                        {{-- KOLOM QR CODE --}}
                                         <td>
                                             @if($user->qr_code_value)
-                                                <button type="button" class="btn btn-inverse-info btn-icon"
+                                                <button type="button" class="btn btn-inverse-dark btn-icon btn-sm"
                                                         data-bs-toggle="modal"
                                                         data-bs-target="#qrModal"
                                                         data-name="{{ $user->name }}"
@@ -77,12 +122,14 @@
                                                     <i class="mdi mdi-qrcode"></i>
                                                 </button>
                                             @else
-                                                N/A
+                                                <span class="text-muted text-small">N/A</span>
                                             @endif
                                         </td>
+
+                                        {{-- KOLOM AKSI --}}
                                         <td>
                                             <a href="{{ route('users.edit', $user->id) }}"
-                                                class="btn btn-inverse-warning btn-icon">
+                                                class="btn btn-inverse-warning btn-icon btn-sm" title="Edit">
                                                 <i class="mdi mdi-pencil"></i>
                                             </a>
 
@@ -91,7 +138,7 @@
                                                     class="d-inline" onsubmit="return confirm('Yakin ingin menghapus user ini?');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-inverse-danger btn-icon">
+                                                    <button type="submit" class="btn btn-inverse-danger btn-icon btn-sm" title="Hapus">
                                                         <i class="mdi mdi-delete"></i>
                                                     </button>
                                                 </form>
@@ -100,7 +147,9 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="text-center">Belum ada data user.</td> {{-- <-- Colspan jadi 8 --}}
+                                        <td colspan="8" class="text-center py-4">
+                                            <div class="text-muted">Belum ada data user.</div>
+                                        </td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -111,20 +160,19 @@
         </div>
     </div>
 
-
     {{-- =================================== --}}
-    {{-- MODAL HTML BARU (QR Code) --}}
+    {{-- MODAL HTML (QR Code) --}}
     {{-- =================================== --}}
     <div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="qrModalLabel">QR Code untuk</h5>
+                    <h5 class="modal-title" id="qrModalLabel">QR Code User</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-center">
-                    {{-- Konten QR akan digambar oleh JavaScript di sini --}}
-                    <div id="qrcode-container" class="d-flex justify-content-center"></div>
+                    <div id="qrcode-container" class="d-flex justify-content-center my-3"></div>
+                    <p class="text-muted small mt-2">Scan QR ini untuk absensi</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
@@ -134,45 +182,41 @@
     </div>
 @endsection
 
-
 {{-- =================================== --}}
-{{-- SCRIPT BARU (WAJIB) --}}
+{{-- SCRIPT --}}
 {{-- =================================== --}}
 @push('scripts')
-    {{-- 1. Import library untuk generate QR Code --}}
+    {{-- Import library QR Code --}}
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
     <script>
-        // 2. Tangkap event saat modal akan ditampilkan
         var qrModal = document.getElementById('qrModal');
         qrModal.addEventListener('show.bs.modal', function (event) {
-
-            // Tombol yang di-klik
             var button = event.relatedTarget;
-
-            // Ambil data dari atribut 'data-*' di tombol
+            
             var name = button.getAttribute('data-name');
             var qrValue = button.getAttribute('data-qr');
 
             // Update judul modal
             var modalTitle = qrModal.querySelector('.modal-title');
-            modalTitle.textContent = 'QR Code Absensi untuk ' + name;
+            modalTitle.textContent = 'QR Code: ' + name;
 
-            // Cari container QR Code di dalam modal
+            // Render QR
             var qrContainer = document.getElementById('qrcode-container');
+            qrContainer.innerHTML = ''; // Reset
 
-            // Hapus QR code lama (jika ada)
-            qrContainer.innerHTML = '';
-
-            // Buat QR code baru
-            new QRCode(qrContainer, {
-                text: qrValue,
-                width: 256,
-                height: 256,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
+            if(qrValue){
+                new QRCode(qrContainer, {
+                    text: qrValue,
+                    width: 200,
+                    height: 200,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            } else {
+                qrContainer.innerHTML = '<span class="text-danger">Value QR Code tidak ditemukan</span>';
+            }
         });
     </script>
 @endpush
