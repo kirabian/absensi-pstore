@@ -37,11 +37,11 @@
                             <thead>
                                 <tr>
                                     <th> # </th>
-                                    <th> Profil Pengguna </th> {{-- Gabungan Foto, Nama, Login ID --}}
-                                    <th> Kontak </th>          {{-- Gabungan Email & WA --}}
+                                    <th> Profil Pengguna </th>
+                                    <th> Kontak </th>
                                     <th> Role </th>
-                                    <th> Penempatan </th>      {{-- Gabungan Cabang & Divisi --}}
-                                    <th> Tanggal Join </th>    {{-- Hire Date --}}
+                                    <th> Penempatan </th>
+                                    <th> Tanggal Join </th>
                                     <th> QR Code </th>
                                     <th> Aksi </th>
                                 </tr>
@@ -49,9 +49,9 @@
                             <tbody>
                                 @forelse ($users as $key => $user)
                                     <tr>
-                                        <td> {{ $key + 1 }} </td>
+                                        <td> {{ $users->firstItem() + $key }} </td>
                                         
-                                        {{-- KOLOM PROFIL (FOTO + NAMA + LOGIN ID) --}}
+                                        {{-- PROFIL --}}
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div class="me-3">
@@ -73,7 +73,7 @@
                                             </div>
                                         </td>
 
-                                        {{-- KOLOM KONTAK (EMAIL & WA) --}}
+                                        {{-- KONTAK --}}
                                         <td>
                                             <div><i class="mdi mdi-email-outline me-1"></i> {{ $user->email }}</div>
                                             @if($user->whatsapp)
@@ -83,7 +83,7 @@
                                             @endif
                                         </td>
 
-                                        {{-- KOLOM ROLE --}}
+                                        {{-- ROLE --}}
                                         <td>
                                             @if($user->role == 'admin' && $user->branch_id == null)
                                                 <span class="badge badge-danger">Super Admin</span>
@@ -100,18 +100,34 @@
                                             @endif
                                         </td>
 
-                                        {{-- KOLOM PENEMPATAN (CABANG & DIVISI) --}}
+                                        {{-- PENEMPATAN (LOGIKA UTAMA DISINI) --}}
                                         <td>
-                                            <div class="fw-bold">{{ $user->branch->name ?? 'Semua Cabang' }}</div>
-                                            <small class="text-muted">{{ $user->division->name ?? 'Tanpa Divisi' }}</small>
+                                            @if($user->role == 'audit')
+                                                {{-- Tampilkan Multi Cabang --}}
+                                                <div class="fw-bold text-primary">Audit Wilayah:</div>
+                                                <small class="text-muted" style="white-space: normal;">
+                                                    {{ $user->branches->pluck('name')->join(', ') ?: 'Belum ada wilayah' }}
+                                                </small>
+                                            @elseif($user->role == 'leader')
+                                                {{-- Tampilkan Cabang Homebase + Multi Divisi --}}
+                                                <div class="fw-bold">{{ $user->branch->name ?? 'N/A' }}</div>
+                                                <div class="text-success text-small fw-bold mt-1">Memimpin Divisi:</div>
+                                                <small class="text-muted" style="white-space: normal;">
+                                                    {{ $user->divisions->pluck('name')->join(', ') ?: 'Belum ada divisi' }}
+                                                </small>
+                                            @else
+                                                {{-- User Biasa / Admin / Security --}}
+                                                <div class="fw-bold">{{ $user->branch->name ?? 'Semua Cabang' }}</div>
+                                                <small class="text-muted">{{ $user->division->name ?? 'Tanpa Divisi' }}</small>
+                                            @endif
                                         </td>
 
-                                        {{-- KOLOM TANGGAL JOIN --}}
+                                        {{-- TANGGAL JOIN --}}
                                         <td>
                                             {{ $user->hire_date ? \Carbon\Carbon::parse($user->hire_date)->format('d M Y') : '-' }}
                                         </td>
 
-                                        {{-- KOLOM QR CODE --}}
+                                        {{-- QR CODE --}}
                                         <td>
                                             @if($user->qr_code_value)
                                                 <button type="button" class="btn btn-inverse-dark btn-icon btn-sm"
@@ -126,7 +142,7 @@
                                             @endif
                                         </td>
 
-                                        {{-- KOLOM AKSI --}}
+                                        {{-- AKSI --}}
                                         <td>
                                             <a href="{{ route('users.edit', $user->id) }}"
                                                 class="btn btn-inverse-warning btn-icon btn-sm" title="Edit">
@@ -155,14 +171,17 @@
                             </tbody>
                         </table>
                     </div>
+                    
+                    {{-- Pagination Link --}}
+                    <div class="mt-3">
+                        {{ $users->links() }}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- =================================== --}}
-    {{-- MODAL HTML (QR Code) --}}
-    {{-- =================================== --}}
+    {{-- MODAL QR Code --}}
     <div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -182,28 +201,18 @@
     </div>
 @endsection
 
-{{-- =================================== --}}
-{{-- SCRIPT --}}
-{{-- =================================== --}}
 @push('scripts')
-    {{-- Import library QR Code --}}
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-
     <script>
         var qrModal = document.getElementById('qrModal');
         qrModal.addEventListener('show.bs.modal', function (event) {
             var button = event.relatedTarget;
-            
             var name = button.getAttribute('data-name');
             var qrValue = button.getAttribute('data-qr');
-
-            // Update judul modal
             var modalTitle = qrModal.querySelector('.modal-title');
             modalTitle.textContent = 'QR Code: ' + name;
-
-            // Render QR
             var qrContainer = document.getElementById('qrcode-container');
-            qrContainer.innerHTML = ''; // Reset
+            qrContainer.innerHTML = ''; 
 
             if(qrValue){
                 new QRCode(qrContainer, {

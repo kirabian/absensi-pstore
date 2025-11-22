@@ -9,14 +9,17 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-// --- TAMBAHAN UNTUK MERAPIKAN ---
+use Illuminate\Database\Eloquent\Relations\BelongsToMany; // <-- TAMBAHAN PENTING
+
+// --- MODEL IMPORTS ---
 use App\Models\WorkHistory;
 use App\Models\Inventory;
 use App\Models\LateNotification;
 use App\Models\Division;
 use App\Models\Branch;
 use App\Models\Attendance;
-// ---------------------------------
+use App\Models\Broadcast;
+// ---------------------
 
 class User extends Authenticatable
 {
@@ -25,14 +28,14 @@ class User extends Authenticatable
     /**
      * The attributes that are mass assignable.
      */
-     protected $fillable = [
+    protected $fillable = [
         'name',
         'login_id',        // ID Login khusus (wajib)
         'password',
         'role',
-        'division_id',
+        'division_id',     // Primary Division (Homebase)
         'qr_code_value',
-        'branch_id',
+        'branch_id',       // Primary Branch (Homebase)
         'profile_photo_path',
         'ktp_photo_path',
         'hire_date',
@@ -47,7 +50,7 @@ class User extends Authenticatable
     /**
      * The attributes that should be hidden for serialization.
      */
-     protected $hidden = [
+    protected $hidden = [
         'password',
         'remember_token',
     ];
@@ -60,6 +63,10 @@ class User extends Authenticatable
         'hire_date' => 'date',
     ];
 
+    // =================================================================
+    // RELASI SINGLE (ONE TO MANY) - HOMEBASE / PRIMARY
+    // =================================================================
+
     public function division(): BelongsTo
     {
         return $this->belongsTo(Division::class, 'division_id', 'id');
@@ -69,6 +76,34 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Branch::class, 'branch_id', 'id');
     }
+
+    // =================================================================
+    // RELASI MULTI (MANY TO MANY) - KHUSUS AUDIT & LEADER
+    // =================================================================
+
+    /**
+     * Relasi Many-to-Many ke Branch.
+     * Digunakan oleh role 'audit' untuk mengakses banyak cabang.
+     */
+    public function branches(): BelongsToMany
+    {
+        return $this->belongsToMany(Branch::class, 'branch_user', 'user_id', 'branch_id')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Relasi Many-to-Many ke Division.
+     * Digunakan oleh role 'leader' untuk memimpin banyak divisi.
+     */
+    public function divisions(): BelongsToMany
+    {
+        return $this->belongsToMany(Division::class, 'division_user', 'user_id', 'division_id')
+                    ->withTimestamps();
+    }
+
+    // =================================================================
+    // RELASI DATA PENDUKUNG
+    // =================================================================
 
     public function attendances(): HasMany
     {
@@ -103,7 +138,7 @@ class User extends Authenticatable
         return $this->hasMany(Broadcast::class, 'created_by');
     }
 
-     /**
+    /**
      * Find user by login credentials (whatsapp, instagram, tiktok, or email)
      */
     public function findForLogin($loginId)

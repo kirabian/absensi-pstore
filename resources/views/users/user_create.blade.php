@@ -1,15 +1,24 @@
 @extends('layout.master')
-@section('title')
-    Tambah User
-@endsection
-@section('heading')
-    Tambah User Baru
+@section('title', 'Tambah User')
+@section('heading', 'Tambah User Baru')
+
+{{-- Tambahkan CSS Select2 --}}
+@section('styles')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container .select2-selection--single { height: 46px; }
+    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 46px; }
+    /* Style untuk multi select */
+    .select2-container--default .select2-selection--multiple .select2-selection__choice { 
+        background-color: #4B49AC; border: none; color: white; font-size: 12px;
+    }
+</style>
 @endsection
 
 @section('content')
 @if ($errors->any())
     <div class="alert alert-danger">
-        <ul>
+        <ul class="mb-0">
             @foreach ($errors->all() as $error)
                 <li>{{ $error }}</li>
             @endforeach
@@ -17,38 +26,40 @@
     </div>
 @endif
 
-<form class="forms-sample" action="{{ route('users.store') }}" method="POST">
+<form class="forms-sample" action="{{ route('users.store') }}" method="POST" enctype="multipart/form-data">
     @csrf
     <div class="row">
-        {{-- KARTU DATA LOGIN & ROLE --}}
+        {{-- KARTU 1: LOGIN & ROLE --}}
         <div class="col-md-6 grid-margin stretch-card">
             <div class="card">
                 <div class="card-body">
                     <h4 class="card-title">Data Login & Role</h4>
+                    
                     <div class="form-group">
-                        <label for="name">Nama Lengkap</label>
-                        <input type="text" class="form-control" id="name" name="name" placeholder="Nama Lengkap" value="{{ old('name') }}" required>
+                        <label>Nama Lengkap</label>
+                        <input type="text" class="form-control" name="name" value="{{ old('name') }}" required>
                     </div>
                     <div class="form-group">
-                        <label for="login_id">ID Login *</label>
-                        <input type="text" class="form-control" id="login_id" name="login_id" placeholder="ID Login (untuk masuk sistem)" value="{{ old('login_id') }}" required>
-                        <small class="text-muted">ID Login ini yang digunakan untuk masuk ke sistem</small>
+                        <label>ID Login *</label>
+                        <input type="text" class="form-control" name="login_id" value="{{ old('login_id') }}" required>
+                        <small class="text-muted">Digunakan untuk login.</small>
                     </div>
                     <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+                        <label>Password</label>
+                        <input type="password" class="form-control" name="password" required>
                     </div>
                     <div class="form-group">
-                        <label for="password_confirmation">Konfirmasi Password</label>
-                        <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" placeholder="Ulangi Password" required>
+                        <label>Konfirmasi Password</label>
+                        <input type="password" class="form-control" name="password_confirmation" required>
                     </div>
+                    
                     <div class="form-group">
-                        <label for="role">Role</label>
-                        <select class="form-control" id="role" name="role" required>
+                        <label>Role</label>
+                        <select class="form-control" id="role" name="role" onchange="toggleInputs()" required>
                             <option value="">-- Pilih Role --</option>
                             <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Super Admin</option>
-                            <option value="audit" {{ old('role') == 'audit' ? 'selected' : '' }}>Audit</option>
-                            <option value="leader" {{ old('role') == 'leader' ? 'selected' : '' }}>Leader</option>
+                            <option value="audit" {{ old('role') == 'audit' ? 'selected' : '' }}>Audit (Multi Cabang)</option>
+                            <option value="leader" {{ old('role') == 'leader' ? 'selected' : '' }}>Leader (Multi Divisi)</option>
                             <option value="security" {{ old('role') == 'security' ? 'selected' : '' }}>Security</option>
                             <option value="user_biasa" {{ old('role') == 'user_biasa' ? 'selected' : '' }}>Karyawan</option>
                         </select>
@@ -57,39 +68,41 @@
             </div>
         </div>
 
-        {{-- KARTU DATA KARYAWAN & SOSMED --}}
+        {{-- KARTU 2: PENEMPATAN & KONTAK --}}
         <div class="col-md-6 grid-margin stretch-card">
             <div class="card">
                 <div class="card-body">
-                    <h4 class="card-title">Data Karyawan & Kontak</h4>
-                    
-                    <div class="form-group">
-                        <label for="hire_date">Tanggal Masuk PStore</label>
-                        <input type="date" class="form-control" id="hire_date" name="hire_date" value="{{ old('hire_date') }}">
+                    <h4 class="card-title">Penempatan & Kontak</h4>
+
+                    {{-- INPUT CABANG (Single vs Multi) --}}
+                    <div class="form-group" id="single-branch-group">
+                        <label>Cabang Utama (Homebase)</label>
+                        <select class="form-control select2" name="branch_id" style="width:100%">
+                            <option value="">-- Pilih Cabang --</option>
+                            @foreach ($branches as $branch)
+                                <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
+                                    {{ $branch->name }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
 
-                    <div class="form-group">
-                        <label for="branch_id">Cabang</label>
-                        @if ($branches->count() == 1 && Auth::user()->branch_id != null)
-                            <input type="text" class="form-control" value="{{ $branches->first()->name }}" readonly>
-                            <input type="hidden" name="branch_id" value="{{ $branches->first()->id }}">
-                        @else
-                            <select class="form-control" id="branch_id" name="branch_id">
-                                <option value="">-- Pilih Cabang --</option>
-                                <option value="">Super Admin (Tidak Punya Cabang)</option> 
-                                @foreach ($branches as $branch)
-                                    <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
-                                        {{ $branch->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <small class="text-muted">Pilih "Super Admin" jika role-nya 'admin'.</small>
-                        @endif
+                    <div class="form-group d-none" id="multi-branch-group">
+                        <label class="text-primary fw-bold">Akses Wilayah Audit (Multi Select)</label>
+                        <select class="form-control select2" name="multi_branches[]" multiple="multiple" style="width:100%">
+                            @foreach ($branches as $branch)
+                                <option value="{{ $branch->id }}" 
+                                    {{ (collect(old('multi_branches'))->contains($branch->id)) ? 'selected' : '' }}>
+                                    {{ $branch->name }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="division_id">Divisi / Tim</label>
-                        <select class="form-control" id="division_id" name="division_id">
+
+                    {{-- INPUT DIVISI (Single vs Multi) --}}
+                    <div class="form-group" id="single-division-group">
+                        <label>Divisi Utama</label>
+                        <select class="form-control select2" name="division_id" style="width:100%">
                             <option value="">-- Pilih Divisi --</option>
                             @foreach ($divisions as $division)
                                 <option value="{{ $division->id }}" {{ old('division_id') == $division->id ? 'selected' : '' }}>
@@ -99,22 +112,45 @@
                         </select>
                     </div>
 
-                    <h5 class="mt-4">Info Kontak (Opsional)</h5>
+                    <div class="form-group d-none" id="multi-division-group">
+                        <label class="text-success fw-bold">Pimpin Divisi (Multi Select)</label>
+                        <select class="form-control select2" name="multi_divisions[]" multiple="multiple" style="width:100%">
+                            @foreach ($divisions as $division)
+                                <option value="{{ $division->id }}"
+                                    {{ (collect(old('multi_divisions'))->contains($division->id)) ? 'selected' : '' }}>
+                                    {{ $division->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <hr>
                     <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" class="form-control" id="email" name="email" placeholder="email@example.com" value="{{ old('email') }}">
+                        <label>Foto Profil</label>
+                        <input type="file" class="form-control" name="profile_photo_path">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" class="form-control" name="email" value="{{ old('email') }}">
                     </div>
                     <div class="form-group">
-                        <label for="whatsapp">Nomor WhatsApp</label>
-                        <input type="text" class="form-control" id="whatsapp" name="whatsapp" placeholder="62812..." value="{{ old('whatsapp') }}">
+                        <label>WhatsApp</label>
+                        <input type="text" class="form-control" name="whatsapp" value="{{ old('whatsapp') }}">
                     </div>
-                    <div class="form-group">
-                        <label for="instagram">Instagram</label>
-                        <input type="text" class="form-control" id="instagram" name="instagram" placeholder="username" value="{{ old('instagram') }}">
-                    </div>
-                    <div class="form-group">
-                        <label for="tiktok">TikTok</label>
-                        <input type="text" class="form-control" id="tiktok" name="tiktok" placeholder="username" value="{{ old('tiktok') }}">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Instagram</label>
+                                <input type="text" class="form-control" name="instagram" value="{{ old('instagram') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>TikTok</label>
+                                <input type="text" class="form-control" name="tiktok" value="{{ old('tiktok') }}">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -129,3 +165,34 @@
     </div>
 </form>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('.select2').select2(); // Init Select2
+        toggleInputs(); // Run on load in case of old input
+    });
+
+    function toggleInputs() {
+        var role = document.getElementById('role').value;
+        
+        // Reset Visibility
+        $('#single-branch-group').removeClass('d-none');
+        $('#multi-branch-group').addClass('d-none');
+        $('#single-division-group').removeClass('d-none');
+        $('#multi-division-group').addClass('d-none');
+
+        if (role === 'audit') {
+            // Audit: Multi Branch, Hide Single Branch
+            $('#single-branch-group').addClass('d-none');
+            $('#multi-branch-group').removeClass('d-none');
+        } 
+        else if (role === 'leader') {
+            // Leader: Multi Division, Hide Single Division
+            $('#single-division-group').addClass('d-none');
+            $('#multi-division-group').removeClass('d-none');
+        }
+    }
+</script>
+@endpush

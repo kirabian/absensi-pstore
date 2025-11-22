@@ -7,98 +7,98 @@ use Illuminate\Http\Request;
 
 class DivisionController extends Controller
 {
-    /**
-     * Menampilkan daftar semua divisi.
-     */
-    public function index()
-    {
-        $divisions = Division::latest()->get(); // Mengambil data terbaru
-        // Memanggil file view: resources/views/division/division_index.blade.php
-        return view('division.division_index', compact('divisions'));
-    }
+/**
+ * Menampilkan daftar semua divisi.
+ */
+public function index()
+{
+    $divisions = Division::latest()->get(); // Mengambil data terbaru
+    // Memanggil file view: resources/views/division/division_index.blade.php
+    return view('division.division_index', compact('divisions'));
+}
 
-    /**
-     * Menampilkan form untuk membuat divisi baru.
-     */
-    public function create()
-    {
-        // Memanggil file view: resources/views/division/division_create.blade.php
-        return view('division.division_create');
-    }
+/**
+ * Menampilkan form untuk membuat divisi baru.
+ */
+public function create()
+{
+    // Memanggil file view: resources/views/division/division_create.blade.php
+    return view('division.division_create');
+}
 
-    /**
-     * Menyimpan divisi baru ke database.
-     */
-    public function store(Request $request)
-    {
-        // Validasi input
-        $request->validate([
-            'name' => 'required|string|max:255|unique:divisions',
-        ]);
+/**
+ * Menyimpan divisi baru ke database.
+ */
+public function store(Request $request)
+{
+    // Validasi input
+    $request->validate([
+        'name' => 'required|string|max:255|unique:divisions',
+    ]);
 
-        // Buat divisi baru
-        Division::create([
-            'name' => $request->name,
-        ]);
+    // Buat divisi baru
+    Division::create([
+        'name' => $request->name,
+    ]);
+
+    return redirect()->route('divisions.index')
+        ->with('success', 'Divisi baru berhasil ditambahkan.');
+}
+
+/**
+ * Menampilkan detail satu divisi.
+ * (Kita arahkan ke halaman edit)
+ */
+public function show(Division $division)
+{
+    // Memanggil file view: resources/views/division/division_edit.blade.php
+    return view('division.division_edit', compact('division'));
+}
+
+/**
+ * Menampilkan form untuk mengedit divisi.
+ */
+public function edit(Division $division)
+{
+    // Memanggil file view: resources/views/division/division_edit.blade.php
+    return view('division.division_edit', compact('division'));
+}
+
+/**
+ * Update data divisi di database.
+ */
+public function update(Request $request, Division $division)
+{
+    // Validasi input
+    $request->validate([
+        // Pastikan nama unik, KECUALI untuk ID dia sendiri
+        'name' => 'required|string|max:255|unique:divisions,name,' . $division->id,
+    ]);
+
+    // Update divisi
+    $division->update([
+        'name' => $request->name,
+    ]);
+
+    return redirect()->route('divisions.index')
+        ->with('success', 'Data divisi berhasil diperbarui.');
+}
+
+/**
+ * Menghapus divisi dari database.
+ */
+public function destroy(Division $division)
+{
+    try {
+        // Hapus divisi
+        $division->delete();
 
         return redirect()->route('divisions.index')
-            ->with('success', 'Divisi baru berhasil ditambahkan.');
-    }
-
-    /**
-     * Menampilkan detail satu divisi.
-     * (Kita arahkan ke halaman edit)
-     */
-    public function show(Division $division)
-    {
-        // Memanggil file view: resources/views/division/division_edit.blade.php
-        return view('division.division_edit', compact('division'));
-    }
-
-    /**
-     * Menampilkan form untuk mengedit divisi.
-     */
-    public function edit(Division $division)
-    {
-        // Memanggil file view: resources/views/division/division_edit.blade.php
-        return view('division.division_edit', compact('division'));
-    }
-
-    /**
-     * Update data divisi di database.
-     */
-    public function update(Request $request, Division $division)
-    {
-        // Validasi input
-        $request->validate([
-            // Pastikan nama unik, KECUALI untuk ID dia sendiri
-            'name' => 'required|string|max:255|unique:divisions,name,' . $division->id,
-        ]);
-
-        // Update divisi
-        $division->update([
-            'name' => $request->name,
-        ]);
-
+            ->with('success', 'Divisi berhasil dihapus.');
+    } catch (\Illuminate\Database\QueryException $e) {
+        // Tangkap error jika divisi tidak bisa dihapus (karena masih dipakai user)
         return redirect()->route('divisions.index')
-            ->with('success', 'Data divisi berhasil diperbarui.');
+            ->with('error', 'Gagal menghapus divisi. Pastikan tidak ada user yang terhubung ke divisi ini.');
     }
-
-    /**
-     * Menghapus divisi dari database.
-     */
-    public function destroy(Division $division)
-    {
-        try {
-            // Hapus divisi
-            $division->delete();
-
-            return redirect()->route('divisions.index')
-                ->with('success', 'Divisi berhasil dihapus.');
-        } catch (\Illuminate\Database\QueryException $e) {
-            // Tangkap error jika divisi tidak bisa dihapus (karena masih dipakai user)
-            return redirect()->route('divisions.index')
-                ->with('error', 'Gagal menghapus divisi. Pastikan tidak ada user yang terhubung ke divisi ini.');
-        }
-    }
+}
 }
