@@ -42,7 +42,8 @@
                         <div class="form-group">
                             <label for="email">Email</label>
                             <input type="email" class="form-control" id="email" name="email"
-                                value="{{ old('email', $user->email) }}" required>
+                                value="{{ old('email', $user->email) }}">
+                            <small class="text-muted">Opsional, hanya untuk kontak</small>
                         </div>
                         <div class="form-group">
                             <label for="password">Password</label>
@@ -111,7 +112,7 @@
                                 @foreach ($divisions as $division)
                                     <option value="{{ $division->id }}"
                                         {{ old('division_id', $user->division_id) == $division->id ? 'selected' : '' }}>
-                                        {{ $division->name }} (Cabang: {{ $division->branch->name ?? 'N/A' }})
+                                        {{ $division->name }}
                                     </option>
                                 @endforeach
                             </select>

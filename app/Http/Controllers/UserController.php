@@ -18,12 +18,12 @@ class UserController extends Controller
         // Middleware untuk authorization
         $this->middleware(function ($request, $next) {
             $user = Auth::user();
-            
+
             // Cek apakah user memiliki role yang diizinkan
             if (!in_array($user->role, ['admin', 'audit'])) {
                 abort(403, 'Akses ditolak. Anda tidak memiliki hak akses.');
             }
-            
+
             return $next($request);
         });
     }
@@ -165,7 +165,7 @@ class UserController extends Controller
             'role' => 'required|string|in:admin,audit,leader,security,user_biasa',
             'branch_id' => 'required_unless:role,admin|nullable|exists:branches,id',
             'division_id' => 'nullable|exists:divisions,id',
-            'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)], // Email nullable
             'whatsapp' => 'nullable|string|max:20',
             'instagram' => 'nullable|string|max:50',
             'tiktok' => 'nullable|string|max:50',
