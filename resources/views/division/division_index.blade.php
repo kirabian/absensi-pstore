@@ -52,6 +52,12 @@
                                         <td> {{ $division->name }} </td>
                                         <td> {{ $division->created_at->format('d M Y') }} </td>
                                         <td>
+                                            {{-- TOMBOL LIHAT (BARU) --}}
+                                            <a href="{{ route('divisions.show', $division->id) }}"
+                                                class="btn btn-inverse-info btn-icon" title="Lihat Anggota">
+                                                <i class="mdi mdi-eye"></i>
+                                            </a>
+
                                             {{-- Tombol Edit --}}
                                             <a href="{{ route('divisions.edit', $division->id) }}"
                                                 class="btn btn-inverse-warning btn-icon">

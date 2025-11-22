@@ -20,9 +20,11 @@ class Division extends Model
         return $this->belongsTo(Branch::class);
     }
 
-    // Relasi ke User
+    // Relasi ke User (PERBAIKAN: Many-to-Many)
+    // Kita gunakan belongsToMany agar bisa mengambil data dari tabel pivot 'division_user'
     public function users()
     {
-        return $this->hasMany(User::class);
+        return $this->belongsToMany(User::class, 'division_user', 'division_id', 'user_id')
+                    ->withTimestamps();
     }
 }
