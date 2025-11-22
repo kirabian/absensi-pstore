@@ -4,7 +4,7 @@
 @section('heading', 'Edit User: ' . $user->name)
 
 @section('content')
-{{-- CSS SAMA --}}
+{{-- CSS SELECT2 (SAMA DENGAN CREATE) --}}
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
 
@@ -28,6 +28,9 @@
     .select2-results__option { padding: 6px 12px !important; font-size: 14px !important; }
     .select2-container--bootstrap-5 .select2-results__option--selected { background-color: #e9ecef !important; color: #333 !important; }
     .select2-container--bootstrap-5 .select2-results__option--highlighted { background-color: #0d6efd !important; color: #fff !important; }
+    
+    /* Badge akses */
+    .access-badge { font-size: 0.75rem; padding: 3px 8px; margin-left: 5px; }
 </style>
 
 @if ($errors->any())
@@ -45,7 +48,11 @@
     @method('PUT')
 
     @php
-        $isSuperAdmin = Auth::user()->role == 'admin';
+        // Cek hak akses user yang sedang login (bukan user yang sedang diedit)
+        $currentUser = Auth::user();
+        $isSuperAdmin = $currentUser->role == 'admin' && $currentUser->branch_id == null;
+        
+        // Jika bukan Super Admin, input Role & Branch dimatikan (disabled)
         $disabledAttr = $isSuperAdmin ? '' : 'disabled';
     @endphp
 
@@ -63,22 +70,36 @@
                         <label>ID Login *</label>
                         <input type="text" class="form-control" name="login_id" value="{{ old('login_id', $user->login_id) }}" required>
                     </div>
+
                     <div class="form-group mb-3">
                         <label>Role</label>
+                        {{-- Select Role --}}
                         <select class="form-select" id="role" name="role" onchange="toggleInputs()" required {{ $disabledAttr }}>
-                            <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>Super Admin</option>
-                            <option value="audit" {{ old('role', $user->role) == 'audit' ? 'selected' : '' }}>Audit (Multi Cabang)</option>
-                            <option value="leader" {{ old('role', $user->role) == 'leader' ? 'selected' : '' }}>Leader</option>
-                            <option value="security" {{ old('role', $user->role) == 'security' ? 'selected' : '' }}>Security</option>
-                            <option value="user_biasa" {{ old('role', $user->role) == 'user_biasa' ? 'selected' : '' }}>Karyawan</option>
+                            @foreach($allowedRoles as $roleOption)
+                                @if($roleOption == 'admin')
+                                    <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>Super Admin</option>
+                                @elseif($roleOption == 'audit')
+                                    <option value="audit" {{ old('role', $user->role) == 'audit' ? 'selected' : '' }}>Audit (Multi Cabang)</option>
+                                @elseif($roleOption == 'leader')
+                                    <option value="leader" {{ old('role', $user->role) == 'leader' ? 'selected' : '' }}>Leader</option>
+                                @elseif($roleOption == 'security')
+                                    <option value="security" {{ old('role', $user->role) == 'security' ? 'selected' : '' }}>Security</option>
+                                @elseif($roleOption == 'user_biasa')
+                                    <option value="user_biasa" {{ old('role', $user->role) == 'user_biasa' ? 'selected' : '' }}>Karyawan</option>
+                                @endif
+                            @endforeach
                         </select>
+                        
+                        {{-- Input Hidden untuk Role jika disabled --}}
                         @if(!$isSuperAdmin)
                             <input type="hidden" name="role" value="{{ $user->role }}">
                             <small class="text-danger mt-1 d-block">Hanya Super Admin yang bisa mengubah Role.</small>
                         @endif
                     </div>
+
                     <hr class="my-4">
                     <p class="card-description text-muted">Kosongkan password jika tidak ingin mengubahnya.</p>
+                    
                     <div class="form-group mb-3">
                         <label>Password Baru</label>
                         <input type="password" class="form-control" name="password" placeholder="********">
@@ -96,7 +117,7 @@
                 <div class="card-body">
                     <h4 class="card-title">Penempatan & Kontak</h4>
 
-                    {{-- SINGLE BRANCH: WAJIB UTK SEMUA KECUALI ADMIN --}}
+                    {{-- SINGLE BRANCH (HOMEBASE) --}}
                     <div class="form-group mb-3" id="single-branch-group">
                         <label>Cabang Utama (Homebase)</label>
                         <select class="form-select select2-single" name="branch_id" data-placeholder="Pilih Cabang" {{ $disabledAttr }}>
@@ -107,55 +128,65 @@
                                 </option>
                             @endforeach
                         </select>
+                        
+                        @if(!$isSuperAdmin && $user->branch_id)
+                             <input type="hidden" name="branch_id" value="{{ $user->branch_id }}">
+                        @endif
+                        <small class="text-muted">Lokasi utama user bekerja.</small>
                     </div>
 
-                    {{-- MULTI BRANCH: HANYA AUDIT --}}
+                    {{-- MULTI BRANCH (WILAYAH AUDIT) --}}
                     <div class="form-group mb-3 d-none" id="multi-branch-group">
-                        <label class="text-primary fw-bold mb-2">Akses Wilayah Audit (Multi)</label>
-                        <select class="form-select select2-multi" name="multi_branches[]" multiple="multiple" {{ $disabledAttr }}>
+                        <label class="text-primary fw-bold">Akses Wilayah Audit (Multi)</label>
+                        <br>
+                        <select class="form-select select2-multi" name="multi_branches[]" multiple="multiple" style="width: 100%" {{ $disabledAttr }}>
                             @foreach ($branches as $branch)
-                                <option value="{{ $branch->id }}" {{ (collect(old('multi_branches', $user->branches->pluck('id')))->contains($branch->id)) ? 'selected' : '' }}>
+                                <option value="{{ $branch->id }}" 
+                                    {{ in_array($branch->id, old('multi_branches', $user->branches->pluck('id')->toArray())) ? 'selected' : '' }}>
                                     {{ $branch->name }}
                                 </option>
                             @endforeach
                         </select>
+                        
                         @if($isSuperAdmin)
-                        <div class="mt-2 select-action-links">
-                            <a href="javascript:void(0)" onclick="selectAll('#multi-branch-group .select2-multi')" class="text-primary me-3">Pilih Semua</a>
-                            <a href="javascript:void(0)" onclick="clearAll('#multi-branch-group .select2-multi')" class="text-danger">Hapus Semua</a>
-                        </div>
+                            <div class="mt-2">
+                                <a href="javascript:void(0)" onclick="selectAll('#multi-branch-group .select2-multi')" class="me-2">Pilih Semua</a>
+                                <a href="javascript:void(0)" onclick="clearAll('#multi-branch-group .select2-multi')" class="text-danger">Hapus Semua</a>
+                            </div>
                         @endif
+                        <small class="text-muted">Pilih wilayah audit user ini.</small>
                     </div>
 
-                    {{-- DIVISI: SEMUA MULTI --}}
+                    {{-- DIVISI (GLOBAL - MULTI SELECT) --}}
                     <div class="form-group mb-3" id="multi-division-group">
-                        <label class="text-success fw-bold mb-2">Divisi (Multi Select)</label>
-                        <select class="form-select select2-multi" name="multi_divisions[]" multiple="multiple" {{ $disabledAttr }}>
+                        <label class="text-success fw-bold">Divisi (Multi Select)</label>
+                        <br>
+                        <select class="form-select select2-multi" name="multi_divisions[]" multiple="multiple" style="width: 100%">
                             @foreach ($divisions as $division)
-                                <option value="{{ $division->id }}" {{ (collect(old('multi_divisions', $user->divisions->pluck('id')))->contains($division->id)) ? 'selected' : '' }}>
+                                <option value="{{ $division->id }}" 
+                                    {{ in_array($division->id, old('multi_divisions', $user->divisions->pluck('id')->toArray())) ? 'selected' : '' }}>
+                                    {{-- PERBAIKAN: HANYA TAMPILKAN NAMA DIVISI (GLOBAL) --}}
                                     {{ $division->name }}
                                 </option>
                             @endforeach
                         </select>
-                        @if($isSuperAdmin)
-                        <div class="mt-2 select-action-links">
-                            <a href="javascript:void(0)" onclick="selectAll('#multi-division-group .select2-multi')" class="text-primary me-3">Pilih Semua</a>
+                        <div class="mt-2">
+                            <a href="javascript:void(0)" onclick="selectAll('#multi-division-group .select2-multi')" class="me-2">Pilih Semua</a>
                             <a href="javascript:void(0)" onclick="clearAll('#multi-division-group .select2-multi')" class="text-danger">Hapus Semua</a>
                         </div>
-                        @endif
+                        <small class="text-muted">Pilih satu atau lebih divisi (Jabatan).</small>
                     </div>
 
-                    @if(!$isSuperAdmin)
-                        <small class="text-danger d-block mb-3">Hubungi Super Admin untuk pindah Cabang/Divisi.</small>
-                        @if($user->branch_id) <input type="hidden" name="branch_id" value="{{ $user->branch_id }}"> @endif
-                    @endif
-
                     <hr>
+
                     <div class="form-group mb-3">
                         <label>Foto Profil</label>
                         <input type="file" class="form-control" name="profile_photo_path">
                         @if($user->profile_photo_path)
-                            <small class="text-muted mt-1 d-block">Foto saat ini tersedia.</small>
+                            <div class="mt-2">
+                                <small class="text-muted">Foto saat ini:</small><br>
+                                <img src="{{ asset('storage/' . $user->profile_photo_path) }}" alt="Profile" class="img-thumbnail" style="max-height: 100px">
+                            </div>
                         @endif
                     </div>
                     <div class="form-group mb-3">
@@ -185,24 +216,47 @@
     
     <script>
         $(document).ready(function() {
-            $('.select2-single').select2({ theme: "bootstrap-5", width: '100%', placeholder: "Silahkan pilih...", allowClear: true });
-            $('.select2-multi').select2({ theme: "bootstrap-5", width: '100%', placeholder: "Pilih data...", closeOnSelect: false, allowClear: true });
+            
+            // Init Select2
+            $('.select2-single').select2({ 
+                theme: "bootstrap-5", 
+                width: '100%', 
+                placeholder: "Silahkan pilih...", 
+                allowClear: true 
+            });
+            
+            $('.select2-multi').select2({ 
+                theme: "bootstrap-5", 
+                width: '100%', 
+                placeholder: "Pilih data...", 
+                closeOnSelect: false, 
+                allowClear: true 
+            });
 
-            window.selectAll = function(selector) { $(selector).find('option').prop('selected', true); $(selector).trigger('change'); }
-            window.clearAll = function(selector) { $(selector).val(null).trigger('change'); }
+            // Helper Functions
+            window.selectAll = function(selector) { 
+                $(selector).find('option').prop('selected', true); 
+                $(selector).trigger('change'); 
+            }
+            
+            window.clearAll = function(selector) { 
+                $(selector).val(null).trigger('change'); 
+            }
 
+            // LOGIKA TOGGLE INPUT (SAMA DENGAN CREATE)
             window.toggleInputs = function() {
                 const role = $('#role').val();
 
-                // --- PERBAIKAN LOGIKA ---
-                // Single Branch (Homebase) harus muncul untuk Audit juga agar lolos validasi Controller
+                // 1. SINGLE BRANCH (HOMEBASE)
+                // Disembunyikan hanya untuk Super Admin (admin)
                 if (role === 'admin') {
                     $('#single-branch-group').addClass('d-none'); 
                 } else {
                     $('#single-branch-group').removeClass('d-none'); 
                 }
 
-                // Multi Branch hanya untuk Audit
+                // 2. MULTI BRANCH (WILAYAH AUDIT)
+                // Ditampilkan hanya untuk Audit
                 if (role === 'audit') {
                     $('#multi-branch-group').removeClass('d-none');
                 } else {
@@ -210,6 +264,7 @@
                 }
             };
 
+            // Jalankan saat halaman dimuat
             toggleInputs();
         });
     </script>
