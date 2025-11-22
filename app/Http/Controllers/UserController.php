@@ -55,34 +55,29 @@ class UserController extends Controller
      * Form tambah user.
      */
     public function create()
-    {
-        $user = Auth::user();
+{
+    $user = Auth::user();
 
-        // A. Admin Cabang (Hanya bisa tambah di cabangnya)
-        if ($user->role == 'admin' && $user->branch_id != null) {
-            $branches = Branch::where('id', $user->branch_id)->get();
-            $divisions = Division::where('branch_id', $user->branch_id)->get();
-            $allowedRoles = ['leader', 'security', 'user_biasa']; // Admin cabang tidak bisa buat admin/audit
-        } 
-        // B. Audit (Hanya bisa tambah di wilayah auditnya)
-        elseif ($user->role == 'audit') {
-            // Ambil cabang dari relasi pivot (wilayah audit dia)
-            $branches = $user->branches; 
-            
-            // Ambil divisi yang ada di cabang-cabang tersebut
-            $branchIds = $branches->pluck('id');
-            $divisions = Division::whereIn('branch_id', $branchIds)->get();
-            $allowedRoles = ['audit', 'leader', 'security', 'user_biasa']; // Audit bisa buat semua kecuali admin
-        } 
-        // C. Super Admin (Bisa semua)
-        else {
-            $branches = Branch::all();
-            $divisions = Division::all();
-            $allowedRoles = ['admin', 'audit', 'leader', 'security', 'user_biasa']; // Super admin bisa buat semua
-        }
-
-        return view('users.user_create', compact('divisions', 'branches', 'allowedRoles'));
+    // 1. Ambil Data Cabang (Sesuai Logika Role)
+    if ($user->role == 'admin' && $user->branch_id != null) {
+        $branches = Branch::where('id', $user->branch_id)->get();
+        $allowedRoles = ['leader', 'security', 'user_biasa'];
+    } 
+    elseif ($user->role == 'audit') {
+        $branches = $user->branches; 
+        $allowedRoles = ['audit', 'leader', 'security', 'user_biasa'];
+    } 
+    else { // Super Admin
+        $branches = Branch::all();
+        $allowedRoles = ['admin', 'audit', 'leader', 'security', 'user_biasa'];
     }
+
+    // 2. Ambil Data Divisi (GLOBAL - SEMUA DIVISI MUNCUL)
+    // Karena divisi sekarang master data, ambil saja semua.
+    $divisions = Division::all(); 
+
+    return view('users.user_create', compact('divisions', 'branches', 'allowedRoles'));
+}
 
     /**
      * Simpan user baru.
