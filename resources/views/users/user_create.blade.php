@@ -165,6 +165,16 @@
     }
 
     /* Badge for Multi-select Labels */
+    .badge-info {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
     .badge-gradient {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         padding: 6px 14px;
@@ -324,72 +334,40 @@
                 <div class="card-body">
                     <h4 class="card-title">📍 Penempatan & Kontak</h4>
 
-                    {{-- CONTAINER UNTUK CABANG --}}
-                    <div class="position-relative" style="min-height: 100px;">
-                        {{-- INPUT CABANG SINGLE --}}
-                        <div class="form-group position-absolute w-100" id="single-branch-group">
-                            <label>🏢 Cabang Utama (Homebase)</label>
-                            <select class="form-control select2-single" name="branch_id" style="width:100%">
-                                <option value="">-- Pilih Cabang --</option>
-                                @foreach ($branches as $branch)
-                                    <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
-                                        {{ $branch->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        {{-- INPUT CABANG MULTI --}}
-                        <div class="form-group position-absolute w-100 d-none" id="multi-branch-group">
-                            <label>
-                                <span class="badge badge-gradient text-white">
-                                    🔍 Akses Wilayah Audit (Multi Select)
-                                </span>
-                            </label>
-                            <select class="form-control select2-multi" name="multi_branches[]" multiple="multiple" style="width:100%">
-                                @foreach ($branches as $branch)
-                                    <option value="{{ $branch->id }}" 
-                                        {{ (collect(old('multi_branches'))->contains($branch->id)) ? 'selected' : '' }}>
-                                        {{ $branch->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <small class="text-muted d-block mt-1">💡 Pilih satu atau lebih cabang untuk diaudit</small>
-                        </div>
+                    {{-- INPUT CABANG (SELALU MULTI SELECT) --}}
+                    <div class="form-group">
+                        <label>
+                            🏢 Cabang <span class="badge badge-info text-white">Multi Select</span>
+                        </label>
+                        <select class="form-control select2-multi" name="branches[]" multiple="multiple" style="width:100%" id="branch-select">
+                            @foreach ($branches as $branch)
+                                <option value="{{ $branch->id }}" 
+                                    {{ (collect(old('branches'))->contains($branch->id)) ? 'selected' : '' }}>
+                                    {{ $branch->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <small class="text-muted d-block mt-1">
+                            💡 <span id="branch-count">0</span> cabang dipilih
+                        </small>
                     </div>
 
-                    {{-- CONTAINER UNTUK DIVISI --}}
-                    <div class="position-relative" style="min-height: 100px;">
-                        {{-- INPUT DIVISI SINGLE --}}
-                        <div class="form-group position-absolute w-100" id="single-division-group">
-                            <label>📋 Divisi Utama</label>
-                            <select class="form-control select2-single" name="division_id" style="width:100%">
-                                <option value="">-- Pilih Divisi --</option>
-                                @foreach ($divisions as $division)
-                                    <option value="{{ $division->id }}" {{ old('division_id') == $division->id ? 'selected' : '' }}>
-                                        {{ $division->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        {{-- INPUT DIVISI MULTI --}}
-                        <div class="form-group position-absolute w-100 d-none" id="multi-division-group">
-                            <label>
-                                <span class="badge badge-success-gradient text-white">
-                                    ⭐ Pimpin Divisi (Multi Select)
-                                </span>
-                            </label>
-                            <select class="form-control select2-multi" name="multi_divisions[]" multiple="multiple" style="width:100%">
-                                @foreach ($divisions as $division)
-                                    <option value="{{ $division->id }}"
-                                        {{ (collect(old('multi_divisions'))->contains($division->id)) ? 'selected' : '' }}>
-                                        {{ $division->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <small class="text-muted d-block mt-1">💡 Pilih divisi yang dipimpin</small>
-                        </div>
+                    {{-- INPUT DIVISI (SELALU MULTI SELECT) --}}
+                    <div class="form-group">
+                        <label>
+                            📋 Divisi <span class="badge badge-info text-white">Multi Select</span>
+                        </label>
+                        <select class="form-control select2-multi" name="divisions[]" multiple="multiple" style="width:100%" id="division-select">
+                            @foreach ($divisions as $division)
+                                <option value="{{ $division->id }}"
+                                    {{ (collect(old('divisions'))->contains($division->id)) ? 'selected' : '' }}>
+                                    {{ $division->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <small class="text-muted d-block mt-1">
+                            💡 <span id="division-count">0</span> divisi dipilih
+                        </small>
                     </div>
 
                     <hr>
