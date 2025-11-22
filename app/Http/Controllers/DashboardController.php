@@ -40,7 +40,7 @@ class DashboardController extends Controller
         }
 
         // ======================================================
-        // 2. DATA IZIN HARI INI - DITAMBAHKAN
+        // 2. DATA IZIN HARI INI - DIPERBAIKI
         // ======================================================
         $data['myLeaveToday'] = $this->getTodayLeaveRequest($user->id);
 
@@ -99,23 +99,24 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get today's leave request for user
+     * Get today's leave request for user - DIPERBAIKI
      */
     private function getTodayLeaveRequest($user_id)
     {
-        return LeaveRequest::where('user_id', $user_id)
+        return LeaveRequest::where('user_id', $user_id) // PASTIKAN hanya ambil data user yang login
             ->where('is_active', true)
-            ->where('status', 'approved') // Hanya yang sudah disetujui
-            ->where(function($query) {
-                $query->whereDate('start_date', '<=', today())
+            ->where('status', 'approved')
+            ->where(function($query) use ($user_id) {
+                $query->where(function($q) {
+                    // Untuk izin sakit & cuti (berjangka waktu)
+                    $q->whereIn('type', ['sakit', 'izin'])
+                      ->whereDate('start_date', '<=', today())
                       ->whereDate('end_date', '>=', today());
-            })
-            ->orWhere(function($query) {
-                // Untuk izin telat, hanya berlaku untuk hari ini
-                $query->where('type', 'telat')
-                      ->whereDate('start_date', today())
-                      ->where('is_active', true)
-                      ->where('status', 'approved');
+                })->orWhere(function($q) {
+                    // Untuk izin telat (hanya hari ini)
+                    $q->where('type', 'telat')
+                      ->whereDate('start_date', today());
+                });
             })
             ->first();
     }

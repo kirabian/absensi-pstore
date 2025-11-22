@@ -305,7 +305,8 @@
                                         <div class="flex-grow-1">
                                             <h5 class="mb-1 fw-bold">Sedang Bekerja</h5>
                                             <p class="mb-0">Masuk Pukul:
-                                                <strong>{{ $myAttendanceToday->check_in_time->format('H:i') }}</strong></p>
+                                                <strong>{{ $myAttendanceToday->check_in_time->format('H:i') }}</strong>
+                                            </p>
                                         </div>
                                     </div>
 
@@ -322,7 +323,8 @@
                             @endif
 
                             {{-- 2. JIKA TIDAK ABSEN, TAPI ADA IZIN (SAKIT/TELAT/CUTI) --}}
-                        @elseif(isset($myLeaveToday) && $myLeaveToday)
+                        @elseif(isset($myLeaveToday) && $myLeaveToday && $myLeaveToday->user_id == Auth::id())
+                            {{-- Tambahkan pengecekan user_id untuk memastikan --}}
                             @php
                                 $leaveColor = $myLeaveToday->status == 'approved' ? 'status-success' : 'status-warning';
                                 $leaveIcon =
