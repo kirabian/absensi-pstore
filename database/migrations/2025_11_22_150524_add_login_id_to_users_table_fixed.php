@@ -15,10 +15,8 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->string('login_id')->unique()->after('name');
-            $table->string('email')->nullable()->change();
         });
     }
-
 
     /**
      * Reverse the migrations.
@@ -28,7 +26,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('users', function (Blueprint $table) {
-            //
+            $table->dropColumn('login_id');
         });
     }
 };
