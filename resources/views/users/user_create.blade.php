@@ -10,18 +10,17 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
 
 <style>
-    /* --- LEVEL 1: HAPUS BULLET POINT (MASALAH UTAMA) --- */
+    /* --- CSS ANTI-CONFLICT (SAMA SEPERTI SEBELUMNYA) --- */
     .select2-container ul, 
     .select2-container li, 
     .select2-selection__rendered,
     span.select2-selection__choice {
-        list-style: none !important; /* Hilangkan bullet */
+        list-style: none !important;
         list-style-type: none !important;
         padding-left: 0 !important;
         margin-left: 0 !important;
     }
 
-    /* --- LEVEL 2: RAPIKAN CONTAINER INPUT --- */
     .select2-container--bootstrap-5 .select2-selection--multiple {
         background-color: #fff !important;
         border: 1px solid #ced4da !important;
@@ -32,21 +31,19 @@
         align-items: center !important;
     }
 
-    /* --- LEVEL 3: DESAIN PILL/TAG (SUPAYA GAK KOTAK JELEK) --- */
-    /* Warna Tag */
+    /* Desain Tag/Pills */
     .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
-        background-color: #e9ecef !important; /* Abu-abu terang */
+        background-color: #e9ecef !important;
         border: 1px solid #dee2e6 !important;
-        border-radius: 20px !important; /* Bikin bulat */
+        border-radius: 20px !important;
         padding: 2px 10px !important;
         margin: 2px 4px !important;
         font-size: 0.85rem !important;
         color: #333 !important;
-        display: inline-flex !important; /* Pastikan sejajar */
+        display: inline-flex !important;
         align-items: center !important;
     }
 
-    /* Tombol Silang (x) */
     .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice .select2-selection__choice__remove {
         border: none !important;
         background: transparent !important;
@@ -59,17 +56,15 @@
         color: #dc3545 !important;
     }
 
-    /* --- LEVEL 4: DROPDOWN HASIL PENCARIAN --- */
+    /* Dropdown items */
     .select2-results__option {
         padding: 6px 12px !important;
         font-size: 14px !important;
     }
-    /* Item yang dipilih di dropdown */
     .select2-container--bootstrap-5 .select2-results__option--selected {
         background-color: #e9ecef !important;
         color: #333 !important;
     }
-    /* Item saat di-hover */
     .select2-container--bootstrap-5 .select2-results__option--highlighted {
         background-color: #0d6efd !important;
         color: #fff !important;
@@ -116,7 +111,7 @@
                             <option value="">-- Pilih Role --</option>
                             <option value="admin">Super Admin</option>
                             <option value="audit">Audit (Multi Cabang)</option>
-                            <option value="leader">Leader (Multi Divisi)</option>
+                            <option value="leader">Leader</option>
                             <option value="security">Security</option>
                             <option value="user_biasa">Karyawan</option>
                         </select>
@@ -130,6 +125,7 @@
                 <div class="card-body">
                     <h4 class="card-title">Penempatan & Kontak</h4>
 
+                    {{-- LOGIKA CABANG: Masih dipisah (Audit Multi, Lainnya Single) --}}
                     <div class="form-group mb-3" id="single-branch-group">
                         <label>Cabang Utama</label>
                         <select class="form-select select2-single" name="branch_id" data-placeholder="Pilih Cabang">
@@ -154,18 +150,11 @@
                         </div>
                     </div>
 
-                    <div class="form-group mb-3" id="single-division-group">
-                        <label>Divisi Utama</label>
-                        <select class="form-select select2-single" name="division_id" data-placeholder="Pilih Divisi">
-                            <option></option>
-                            @foreach ($divisions as $division)
-                                <option value="{{ $division->id }}">{{ $division->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="form-group mb-3 d-none" id="multi-division-group">
-                        <label class="text-success fw-bold">Pimpin Divisi (Multi)</label>
+                    {{-- LOGIKA DIVISI: SEMUA ROLE PAKAI MULTI SELECT --}}
+                    {{-- Input Single Division dihapus karena semua role bisa multi --}}
+                    
+                    <div class="form-group mb-3" id="multi-division-group">
+                        <label class="text-success fw-bold">Divisi (Multi Select)</label>
                         <br>
                         <select class="form-select select2-multi" name="multi_divisions[]" multiple="multiple" style="width: 100%">
                             @foreach ($divisions as $division)
@@ -212,7 +201,7 @@
     <script>
         $(document).ready(function() {
             
-            // Inisialisasi Single Select
+            // Inisialisasi Single Select (Untuk Branch Biasa)
             $('.select2-single').select2({
                 theme: "bootstrap-5",
                 width: '100%',
@@ -220,10 +209,10 @@
                 allowClear: true
             });
 
-            // Inisialisasi Multi Select
+            // Inisialisasi Multi Select (Untuk Branch Audit & SEMUA DIVISI)
             $('.select2-multi').select2({
                 theme: "bootstrap-5",
-                width: '100%', // Paksa lebar 100%
+                width: '100%',
                 placeholder: "Pilih satu atau lebih...",
                 closeOnSelect: false,
                 allowClear: true
@@ -243,19 +232,22 @@
             window.toggleInputs = function() {
                 const role = $('#role').val();
 
-                $('#single-branch-group, #single-division-group').removeClass('d-none');
-                $('#multi-branch-group, #multi-division-group').addClass('d-none');
-
+                // --- LOGIKA CABANG (Audit vs Lainnya) ---
                 if (role === 'audit') {
                     $('#single-branch-group').addClass('d-none');
                     $('#multi-branch-group').removeClass('d-none');
-                } 
-                else if (role === 'leader') {
-                    $('#single-division-group').addClass('d-none');
-                    $('#multi-division-group').removeClass('d-none');
+                } else {
+                    // Default semua role selain audit pakai single branch
+                    $('#single-branch-group').removeClass('d-none');
+                    $('#multi-branch-group').addClass('d-none');
                 }
+
+                // --- LOGIKA DIVISI (Semua Role = Multi) ---
+                // Tidak perlu ada logika toggle/hide karena div "multi-division-group" 
+                // sudah kita set visible permanen di HTML dan single division sudah dihapus.
             };
 
+            // Jalankan saat load
             toggleInputs();
         });
     </script>
