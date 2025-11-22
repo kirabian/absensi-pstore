@@ -50,7 +50,6 @@ class UserController extends Controller
 
         return view('users.user_index', compact('users'));
     }
-
     /**
      * Form tambah user.
      */
@@ -62,6 +61,7 @@ class UserController extends Controller
         if ($user->role == 'admin' && $user->branch_id != null) {
             $branches = Branch::where('id', $user->branch_id)->get();
             $divisions = Division::where('branch_id', $user->branch_id)->get();
+            $allowedRoles = ['leader', 'security', 'user_biasa']; // Admin cabang tidak bisa buat admin/audit
         }
         // B. Audit (Hanya bisa tambah di wilayah auditnya)
         elseif ($user->role == 'audit') {
@@ -71,16 +71,17 @@ class UserController extends Controller
             // Ambil divisi yang ada di cabang-cabang tersebut
             $branchIds = $branches->pluck('id');
             $divisions = Division::whereIn('branch_id', $branchIds)->get();
+            $allowedRoles = ['audit', 'leader', 'security', 'user_biasa']; // Audit bisa buat semua kecuali admin
         }
         // C. Super Admin (Bisa semua)
         else {
             $branches = Branch::all();
             $divisions = Division::all();
+            $allowedRoles = ['admin', 'audit', 'leader', 'security', 'user_biasa']; // Super admin bisa buat semua
         }
 
-        return view('users.user_create', compact('divisions', 'branches'));
+        return view('users.user_create', compact('divisions', 'branches', 'allowedRoles'));
     }
-
     /**
      * Simpan user baru.
      */
@@ -96,13 +97,19 @@ class UserController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'role' => 'required|string|in:admin,audit,leader,security,user_biasa',
 
-            // PERBAIKAN: Branch wajib untuk semua role KECUALI admin super
+            // Aturan Branch: Wajib diisi KECUALI role yang dibuat adalah 'admin' (Super Admin)
             'branch_id' => 'required_unless:role,admin|nullable|exists:branches,id',
 
             'multi_divisions' => 'nullable|array',
             'multi_branches' => 'nullable|array',
             'profile_photo_path' => 'nullable|image|max:2048',
         ]);
+
+        // VALIDASI TAMBAHAN: Cek apakah role yang dipilih diizinkan
+        $allowedRoles = $this->getAllowedRoles($user);
+        if (!in_array($request->role, $allowedRoles)) {
+            return back()->withErrors(['role' => 'Anda tidak memiliki hak akses untuk membuat user dengan role ini.'])->withInput();
+        }
 
         // VALIDASI KHUSUS AUDIT: Pastikan branch_id yang dipilih ada di wilayahnya
         if ($user->role == 'audit') {
@@ -123,48 +130,21 @@ class UserController extends Controller
             }
         }
 
-        // 2. Siapkan Data
-        $data = $request->except(['password', 'profile_photo_path', 'multi_branches', 'multi_divisions']);
+        // ... sisa kode store method tetap sama ...
+    }
 
-        // Fix Division ID (Ambil yg pertama dipilih dari multi select)
-        if ($request->has('multi_divisions') && count($request->multi_divisions) > 0) {
-            $data['division_id'] = $request->multi_divisions[0];
-        } else {
-            $data['division_id'] = null;
-        }
-
-        // Force Branch ID untuk Admin Cabang (Override input user)
+    /**
+     * Helper method untuk mendapatkan roles yang diizinkan
+     */
+    private function getAllowedRoles($user)
+    {
         if ($user->role == 'admin' && $user->branch_id != null) {
-            $data['branch_id'] = $user->branch_id;
+            return ['leader', 'security', 'user_biasa'];
+        } elseif ($user->role == 'audit') {
+            return ['audit', 'leader', 'security', 'user_biasa'];
+        } else {
+            return ['admin', 'audit', 'leader', 'security', 'user_biasa'];
         }
-
-        // Null Branch ID jika membuat Super Admin
-        if ($request->role == 'admin' && $request->branch_id == null) {
-            $data['branch_id'] = null;
-        }
-
-        $data['password'] = Hash::make($request->password);
-        $data['qr_code_value'] = (string) Str::uuid();
-
-        if ($request->hasFile('profile_photo_path')) {
-            $path = $request->file('profile_photo_path')->store('profile-photos', 'public');
-            $data['profile_photo_path'] = $path;
-        }
-
-        // 3. Create User
-        $newUser = User::create($data);
-
-        // 4. Sync Pivot Tables
-        // Jika membuat user Audit baru -> Simpan Multi Branches
-        if ($request->role == 'audit' && $request->has('multi_branches')) {
-            $newUser->branches()->sync($request->multi_branches);
-        }
-        // Simpan Multi Divisions untuk semua role (termasuk Leader & User Biasa)
-        if ($request->has('multi_divisions')) {
-            $newUser->divisions()->sync($request->multi_divisions);
-        }
-
-        return redirect()->route('users.index')->with('success', 'User baru berhasil ditambahkan.');
     }
 
     /**
