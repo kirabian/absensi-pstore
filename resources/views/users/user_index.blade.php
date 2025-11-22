@@ -123,9 +123,9 @@
                                         </td>
 
                                         {{-- TANGGAL JOIN --}}
-                                        <td>
+                                        {{-- <td>
                                             {{ $user->hire_date ? \Carbon\Carbon::parse($user->hire_date)->format('d M Y') : '-' }}
-                                        </td>
+                                        </td> --}}
 
                                         {{-- QR CODE --}}
                                         <td>
