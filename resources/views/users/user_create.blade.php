@@ -2,70 +2,90 @@
 @section('title', 'Tambah User')
 @section('heading', 'Tambah User Baru')
 
-{{-- Tambahkan CSS Select2 --}}
+{{-- Tambahkan CSS CoreUI Multi Select --}}
 @section('styles')
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/@coreui/coreui@5.2.0/dist/css/coreui.min.css" rel="stylesheet" />
 <style>
-    /* Select2 Styling */
-    .select2-container .select2-selection--single { 
-        height: 46px; 
-        border: 1px solid #e8ecf1;
-        border-radius: 8px;
+    /* CoreUI Multi Select Custom Styling */
+    .form-multi-select-selection {
+        border: 1px solid #e8ecf1 !important;
+        border-radius: 8px !important;
+        min-height: 46px !important;
+        padding: 8px 12px !important;
+        transition: all 0.3s ease !important;
     }
-    .select2-container--default .select2-selection--single .select2-selection__rendered { 
-        line-height: 46px;
-        padding-left: 16px;
-    }
-    .select2-container--default .select2-selection--single .select2-selection__arrow {
-        height: 44px;
-    }
-    
-    /* Multi Select Styling */
-    .select2-container--default .select2-selection--multiple { 
-        border: 1px solid #e8ecf1;
-        border-radius: 8px;
-        min-height: 46px;
-        padding: 4px;
-    }
-    .select2-container--default .select2-selection--multiple .select2-selection__choice { 
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none; 
-        color: white; 
-        font-size: 13px;
-        border-radius: 6px;
-        padding: 4px 10px;
-        margin: 4px;
-    }
-    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-        color: white;
-        margin-right: 6px;
-    }
-    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
-        color: #ffd1dc;
+    .form-multi-select-selection:focus-within {
+        border-color: #667eea !important;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15) !important;
     }
     
-    /* Select2 Dropdown Styling */
-    .select2-container--default .select2-results__option {
-        padding: 10px 15px;
-        font-size: 0.95rem;
+    /* Selected Tags Styling */
+    .form-multi-select-tag {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border: none !important;
+        color: white !important;
+        font-size: 13px !important;
+        border-radius: 6px !important;
+        padding: 4px 10px !important;
+        margin: 2px 4px 2px 0 !important;
     }
-    .select2-container--default .select2-results__option--highlighted[aria-selected] {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+    .form-multi-select-tag-delete {
+        color: white !important;
+        opacity: 0.8 !important;
+        margin-left: 6px !important;
     }
-    .select2-dropdown {
-        border: 1px solid #e8ecf1;
-        border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    .form-multi-select-tag-delete:hover {
+        opacity: 1 !important;
+        color: #ffd1dc !important;
     }
-    .select2-search--dropdown .select2-search__field {
-        border: 1px solid #e8ecf1;
-        border-radius: 6px;
-        padding: 8px 12px;
+    
+    /* Dropdown Styling */
+    .form-multi-select-dropdown {
+        border: 1px solid #e8ecf1 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
+        margin-top: 4px !important;
     }
-    .select2-search--dropdown .select2-search__field:focus {
-        border-color: #667eea;
-        outline: none;
+    .form-multi-select-search {
+        border: 1px solid #e8ecf1 !important;
+        border-radius: 6px !important;
+        padding: 8px 12px !important;
+        margin: 8px !important;
+    }
+    .form-multi-select-search:focus {
+        border-color: #667eea !important;
+        outline: none !important;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15) !important;
+    }
+    
+    /* Options Styling */
+    .form-multi-select-option {
+        padding: 10px 15px !important;
+        font-size: 0.95rem !important;
+        transition: all 0.2s ease !important;
+        cursor: pointer !important;
+    }
+    .form-multi-select-option:hover {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+    }
+    .form-multi-select-option.selected {
+        background: rgba(102, 126, 234, 0.1) !important;
+        font-weight: 600 !important;
+    }
+    .form-multi-select-option.selected:hover {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+    }
+    
+    /* Optgroup Styling */
+    .form-multi-select-optgroup {
+        font-weight: 700 !important;
+        font-size: 0.85rem !important;
+        color: #667eea !important;
+        padding: 8px 15px 4px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
     }
 
     /* Card Enhancements */
@@ -175,64 +195,11 @@
         align-items: center;
         box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
     }
-    .badge-gradient {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-    }
-    .badge-success-gradient {
-        background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        box-shadow: 0 2px 8px rgba(86, 171, 47, 0.3);
-    }
-
-    /* Container for Toggle Fields */
-    .position-relative {
-        transition: min-height 0.3s ease;
-    }
-    .position-absolute {
-        transition: opacity 0.3s ease, visibility 0.3s ease;
-        opacity: 1;
-        visibility: visible;
-        z-index: 1;
-    }
-    .position-absolute.d-none {
-        opacity: 0;
-        visibility: hidden;
-        pointer-events: none;
-        z-index: 0;
-    }
     
-    /* Ensure Select2 dropdown appears above everything */
-    .select2-container {
-        z-index: 9999 !important;
-    }
-    .select2-dropdown {
-        z-index: 9999 !important;
-    }
-
-    /* Icon Styling */
-    .icon-wrapper {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 12px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        font-size: 1.2rem;
+    /* Counter Badge Styling */
+    #branch-count, #division-count {
+        font-weight: 700;
+        color: #667eea;
     }
 
     /* Divider */
@@ -334,12 +301,12 @@
                 <div class="card-body">
                     <h4 class="card-title">📍 Penempatan & Kontak</h4>
 
-                    {{-- INPUT CABANG (SELALU MULTI SELECT) --}}
+                    {{-- INPUT CABANG (MULTI SELECT) --}}
                     <div class="form-group">
                         <label>
                             🏢 Cabang <span class="badge badge-info text-white">Multi Select</span>
                         </label>
-                        <select class="form-control select2-multi" name="branches[]" multiple="multiple" style="width:100%" id="branch-select">
+                        <select class="form-multi-select" name="branches[]" multiple data-coreui-search="true" id="branch-select">
                             @foreach ($branches as $branch)
                                 <option value="{{ $branch->id }}" 
                                     {{ (collect(old('branches'))->contains($branch->id)) ? 'selected' : '' }}>
@@ -348,16 +315,16 @@
                             @endforeach
                         </select>
                         <small class="text-muted d-block mt-1">
-                            💡 <span id="branch-count">0</span> cabang dipilih
+                            💡 <span id="branch-count">0</span> cabang dipilih - Ketik untuk mencari
                         </small>
                     </div>
 
-                    {{-- INPUT DIVISI (SELALU MULTI SELECT) --}}
+                    {{-- INPUT DIVISI (MULTI SELECT) --}}
                     <div class="form-group">
                         <label>
                             📋 Divisi <span class="badge badge-info text-white">Multi Select</span>
                         </label>
-                        <select class="form-control select2-multi" name="divisions[]" multiple="multiple" style="width:100%" id="division-select">
+                        <select class="form-multi-select" name="divisions[]" multiple data-coreui-search="true" id="division-select">
                             @foreach ($divisions as $division)
                                 <option value="{{ $division->id }}"
                                     {{ (collect(old('divisions'))->contains($division->id)) ? 'selected' : '' }}>
@@ -366,7 +333,7 @@
                             @endforeach
                         </select>
                         <small class="text-muted d-block mt-1">
-                            💡 <span id="division-count">0</span> divisi dipilih
+                            💡 <span id="division-count">0</span> divisi dipilih - Ketik untuk mencari
                         </small>
                     </div>
 
@@ -414,56 +381,36 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@coreui/coreui@5.2.0/dist/js/coreui.bundle.min.js"></script>
 <script>
-    $(document).ready(function() {
-        // Init Select2 untuk single select
-        $('.select2-single').select2({
-            placeholder: "-- Pilih --",
-            allowClear: true,
-            width: '100%',
-            dropdownParent: $('.card-body')
-        });
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize CoreUI Multi Select
+        const branchSelect = document.querySelector('#branch-select');
+        const divisionSelect = document.querySelector('#division-select');
         
-        // Init Select2 untuk multi select
-        $('.select2-multi').select2({
-            placeholder: "-- Pilih satu atau lebih --",
-            allowClear: true,
-            width: '100%',
-            closeOnSelect: false,
-            dropdownParent: $('.card-body')
-        });
+        // Function to update counter
+        function updateCounter(selectElement, counterId) {
+            const selectedOptions = Array.from(selectElement.selectedOptions);
+            const count = selectedOptions.length;
+            document.getElementById(counterId).textContent = count;
+        }
         
-        toggleInputs();
+        // Update counters on change
+        if (branchSelect) {
+            branchSelect.addEventListener('change', function() {
+                updateCounter(this, 'branch-count');
+            });
+            // Initial count
+            updateCounter(branchSelect, 'branch-count');
+        }
+        
+        if (divisionSelect) {
+            divisionSelect.addEventListener('change', function() {
+                updateCounter(this, 'division-count');
+            });
+            // Initial count
+            updateCounter(divisionSelect, 'division-count');
+        }
     });
-
-    function toggleInputs() {
-        var role = document.getElementById('role').value;
-        
-        // Helper function untuk smooth toggle
-        function showElement(showId, hideId) {
-            $(hideId).addClass('d-none');
-            $(hideId).find('select').val(null).trigger('change'); // Clear selection
-            setTimeout(function() {
-                $(showId).removeClass('d-none');
-            }, 50);
-        }
-
-        if (role === 'audit') {
-            // Audit: Multi Branch, Single Division
-            showElement('#multi-branch-group', '#single-branch-group');
-            showElement('#single-division-group', '#multi-division-group');
-        } 
-        else if (role === 'leader') {
-            // Leader: Single Branch, Multi Division
-            showElement('#single-branch-group', '#multi-branch-group');
-            showElement('#multi-division-group', '#single-division-group');
-        }
-        else {
-            // Default: Single mode untuk keduanya
-            showElement('#single-branch-group', '#multi-branch-group');
-            showElement('#single-division-group', '#multi-division-group');
-        }
-    }
 </script>
 @endpush
