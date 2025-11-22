@@ -10,14 +10,29 @@ class DivisionSeeder extends Seeder
     public function run()
     {
         $divisions = [
-            'Tim Marketing',
-            'Tim Sales', 
-            'Tim IT',
-            'Tim HRD',
-            'Tim Finance',
-            'Tim Operations',
-            'Tim Customer Service',
-            'Tim Production'
+            'Freelance',
+            'Cheff',
+            'Creative',
+            'Purchasing',
+            'Design interior',
+            'Teknisi Handphone',
+            'Security',
+            'Training',
+            'Managament',
+            'Leader',
+            'Admin Sosial Media',
+            'Promotor SAMSUNG',
+            'Promotor TAM',
+            'Promotor XIAOMI',
+            'Promotor REALME',
+            'Promotor INFINIX',
+            'Promotor VIVO',
+            'Promotor OPPO',
+            'Audit',
+            'Marketing',
+            'Customer services',
+            'Team IT',
+            'Finance'
         ];
 
         foreach ($divisions as $divisionName) {

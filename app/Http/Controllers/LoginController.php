@@ -1,59 +1,63 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Auth;
 
+use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class LoginController extends Controller
 {
-    /**
-     * Menampilkan halaman form login.
-     */
     public function showLoginForm()
     {
-        // Jika user SUDAH login, lempar ke dashboard
-        if (Auth::check()) {
-            return redirect('/');
-        }
         return view('auth.login');
     }
 
-    /**
-     * Memproses data login yang dikirim dari form.
-     */
     public function login(Request $request)
     {
-        // 1. Validasi input
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
+        $request->validate([
+            'login_id' => 'required|string',
+            'password' => 'required|string',
         ]);
 
-        // 2. Coba lakukan login
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            $request->session()->regenerate();
+        $loginId = $request->login_id;
+        $password = $request->password;
 
-            // 3. Jika berhasil, arahkan ke dashboard
-            return redirect()->intended('/');
+        // Cari user berdasarkan login_id
+        $user = User::where('login_id', $loginId)->first();
+
+        if (!$user) {
+            return back()->withErrors([
+                'login_id' => 'ID Login tidak ditemukan.',
+            ])->withInput();
         }
 
-        // 4. Jika gagal, kembalikan ke login dengan pesan error
+        // Check password (case insensitive)
+        if (Hash::check(strtolower($password), $user->password) || 
+            Hash::check(strtoupper($password), $user->password) ||
+            Hash::check($password, $user->password)) {
+            
+            Auth::login($user, $request->remember);
+            
+            $request->session()->regenerate();
+            
+            return redirect()->intended('/dashboard');
+        }
+
         return back()->withErrors([
-            'email' => 'Email atau password yang Anda masukkan salah.',
-        ])->onlyInput('email');
+            'password' => 'Password yang dimasukkan salah.',
+        ])->withInput();
     }
 
-    /**
-     * Memproses logout user.
-     */
     public function logout(Request $request)
     {
         Auth::logout();
-
+        
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-
-        return redirect('/login');
+        
+        return redirect('/');
     }
 }

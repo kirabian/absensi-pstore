@@ -25,30 +25,29 @@ class User extends Authenticatable
     /**
      * The attributes that are mass assignable.
      */
-    protected $fillable = [
+     protected $fillable = [
         'name',
-        'email',
+        'login_id',        // ID Login khusus (wajib)
         'password',
         'role',
         'division_id',
         'qr_code_value',
         'branch_id',
-        // --- TAMBAHAN PROFIL BARU ---
         'profile_photo_path',
         'ktp_photo_path',
         'hire_date',
-        'whatsapp',
-        'instagram',
-        'tiktok',
+        'email',           // Opsional, hanya untuk sosmed
+        'whatsapp',        // Opsional, hanya untuk sosmed
+        'instagram',       // Opsional, hanya untuk sosmed
+        'tiktok',          // Opsional, hanya untuk sosmed
         'facebook',
         'linkedin',
-        // -------------------------
     ];
 
     /**
      * The attributes that should be hidden for serialization.
      */
-    protected $hidden = [
+     protected $hidden = [
         'password',
         'remember_token',
     ];
@@ -58,7 +57,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'hire_date' => 'date', // <-- Tanggal Masuk
+        'hire_date' => 'date',
     ];
 
     public function division(): BelongsTo
@@ -79,8 +78,8 @@ class User extends Authenticatable
     public function activeLateStatus(): HasOne
     {
         return $this->hasOne(LateNotification::class)
-                    ->where('is_active', true)
-                    ->whereDate('created_at', today());
+            ->where('is_active', true)
+            ->whereDate('created_at', today());
     }
 
     /**
@@ -92,17 +91,27 @@ class User extends Authenticatable
     }
 
     /**
-    * Relasi ke Inventory
-    */
+     * Relasi ke Inventory
+     */
     public function inventories()
     {
         return $this->hasMany(Inventory::class);
     }
 
-        public function broadcasts()
+    public function broadcasts()
     {
         return $this->hasMany(Broadcast::class, 'created_by');
     }
 
-    
+     /**
+     * Find user by login credentials (whatsapp, instagram, tiktok, or email)
+     */
+    public function findForLogin($loginId)
+    {
+        return $this->where('whatsapp', $loginId)
+                    ->orWhere('instagram', $loginId)
+                    ->orWhere('tiktok', $loginId)
+                    ->orWhere('email', $loginId)
+                    ->first();
+    }
 }

@@ -13,7 +13,6 @@
     <link rel="stylesheet" href="{{ asset('assets/vendors/css/vendor.bundle.base.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
     <link rel="shortcut icon" href="{{ asset('assets/images/favicon.png') }}" />
-    
 
     <style>
         .auth-page {
@@ -226,6 +225,48 @@
         .border-bottom {
             border-bottom: 2px solid #000 !important;
         }
+
+        .login-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #000;
+        }
+
+        .login-info h6 {
+            color: #000;
+            margin-bottom: 8px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+
+        .login-info ul {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .login-info li {
+            margin-bottom: 4px;
+        }
+
+        .input-group.focused {
+            position: relative;
+        }
+
+        .input-group.focused::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #000;
+            border-radius: 0 0 10px 10px;
+        }
     </style>
 </head>
 
@@ -247,10 +288,28 @@
                             </div>
 
                             <h4 class="fw-bold mb-3 text-dark">Selamat Datang</h4>
-                            <p class="text-muted mb-4">Masuk untuk mengakses dashboard</p>
+                            <p class="text-muted mb-4">Masuk dengan ID Login Anda</p>
 
-                            {{-- Tampilkan Error Jika Gagal Login --}}
-                            @error('email')
+                            <!-- Informasi Login -->
+                            <div class="login-info text-start">
+                                <h6><i class="mdi mdi-information-outline me-2"></i>Cara Login:</h6>
+                                <ul>
+                                    <li>Gunakan <strong>ID Login</strong> yang telah diberikan</li>
+                                    <li>Password tidak case-sensitive (BESAR/kecil sama)</li>
+                                </ul>
+                            </div>
+
+                            {{-- Tampilkan Error --}}
+                            @error('login_id')
+                                <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                                    <i class="mdi mdi-alert-circle-outline me-2"></i>
+                                    {{ $message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                        aria-label="Close"></button>
+                                </div>
+                            @enderror
+
+                            @error('password')
                                 <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
                                     <i class="mdi mdi-alert-circle-outline me-2"></i>
                                     {{ $message }}
@@ -268,16 +327,29 @@
                                 </div>
                             @endif
 
+                            @if(session('error'))
+                                <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                                    <i class="mdi mdi-alert-circle-outline me-2"></i>
+                                    {{ session('error') }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                        aria-label="Close"></button>
+                                </div>
+                            @endif
+
                             <form class="pt-3" action="{{ route('login.submit') }}" method="POST">
                                 @csrf
                                 <div class="form-group mb-3">
                                     <div class="input-group">
                                         <span class="input-group-text bg-transparent">
-                                            <i class="mdi mdi-email-outline"></i>
+                                            <i class="mdi mdi-account-outline"></i>
                                         </span>
-                                        <input type="email" class="form-control" id="email" name="email"
-                                            placeholder="Alamat Email" value="{{ old('email') }}" required>
+                                        <input type="text" class="form-control" id="login_id" name="login_id"
+                                            placeholder="Masukkan ID Login Anda" 
+                                            value="{{ old('login_id') }}" required autofocus>
                                     </div>
+                                    @error('login_id')
+                                        <small class="text-danger mt-1">{{ $message }}</small>
+                                    @enderror
                                 </div>
 
                                 <div class="form-group mb-4">
@@ -291,6 +363,9 @@
                                             <i class="mdi mdi-eye-outline" id="password-icon"></i>
                                         </button>
                                     </div>
+                                    @error('password')
+                                        <small class="text-danger mt-1">{{ $message }}</small>
+                                    @enderror
                                 </div>
 
                                 <div class="mb-4">
@@ -302,8 +377,8 @@
 
                                 <div class="d-flex justify-content-between align-items-center mb-4">
                                     <div class="form-check">
-                                        <label class="form-check-label">
-                                            <input type="checkbox" class="form-check-input" name="remember">
+                                        <label class="form-check-label text-muted">
+                                            <input type="checkbox" class="form-check-input" name="remember" {{ old('remember') ? 'checked' : '' }}>
                                             Ingat saya
                                         </label>
                                     </div>
@@ -314,7 +389,7 @@
 
                                 <div class="text-center mt-4 pt-3 border-top">
                                     <p class="text-muted small mb-0">
-                                        &copy; 2024 PStore Absensi System. All rights reserved.
+                                        &copy; {{ date('Y') }} PStore Absensi System. All rights reserved.
                                     </p>
                                 </div>
                             </form>
@@ -343,7 +418,7 @@
         }
 
         // Add loading state to form
-        document.querySelector('form').addEventListener('submit', function (e) {
+        document.querySelector('form').addEventListener('submit', function(e) {
             const btn = this.querySelector('button[type="submit"]');
             btn.innerHTML = '<i class="mdi mdi-loading mdi-spin me-2"></i>Memproses...';
             btn.disabled = true;
@@ -352,12 +427,35 @@
         // Add input focus effects
         const inputs = document.querySelectorAll('.form-control');
         inputs.forEach(input => {
-            input.addEventListener('focus', function () {
+            input.addEventListener('focus', function() {
                 this.parentElement.parentElement.classList.add('focused');
             });
 
-            input.addEventListener('blur', function () {
+            input.addEventListener('blur', function() {
                 this.parentElement.parentElement.classList.remove('focused');
+            });
+        });
+
+        // Auto focus on login_id field when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginIdField = document.getElementById('login_id');
+            if (loginIdField) {
+                loginIdField.focus();
+            }
+        });
+
+        // Clear error messages when user starts typing
+        inputs.forEach(input => {
+            input.addEventListener('input', function() {
+                const errorElement = this.parentElement.parentElement.querySelector('.text-danger');
+                if (errorElement) {
+                    errorElement.remove();
+                }
+                
+                const alertElement = document.querySelector('.alert');
+                if (alertElement) {
+                    alertElement.remove();
+                }
             });
         });
     </script>

@@ -30,8 +30,9 @@
                         <input type="text" class="form-control" id="name" name="name" placeholder="Nama Lengkap" value="{{ old('name') }}" required>
                     </div>
                     <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" class="form-control" id="email" name="email" placeholder="Email" value="{{ old('email') }}" required>
+                        <label for="login_id">ID Login *</label>
+                        <input type="text" class="form-control" id="login_id" name="login_id" placeholder="ID Login (untuk masuk sistem)" value="{{ old('login_id') }}" required>
+                        <small class="text-muted">ID Login ini yang digunakan untuk masuk ke sistem</small>
                     </div>
                     <div class="form-group">
                         <label for="password">Password</label>
@@ -99,6 +100,10 @@
                     </div>
 
                     <h5 class="mt-4">Info Kontak (Opsional)</h5>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" placeholder="email@example.com" value="{{ old('email') }}">
+                    </div>
                     <div class="form-group">
                         <label for="whatsapp">Nomor WhatsApp</label>
                         <input type="text" class="form-control" id="whatsapp" name="whatsapp" placeholder="62812..." value="{{ old('whatsapp') }}">

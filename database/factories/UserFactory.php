@@ -17,19 +17,27 @@ class UserFactory extends Factory
         // Ambil branch random yang ada
         $branch = Branch::inRandomOrder()->first();
         
-        // Ambil division random (sekarang independent dari branch)
+        // Ambil division random
         $division = Division::inRandomOrder()->first();
 
         return [
             'name' => $this->faker->name(),
-            'email' => $this->faker->unique()->safeEmail(),
+            'login_id' => $this->faker->unique()->userName(), // ID Login wajib dan unique
+            'email' => $this->faker->optional()->safeEmail(), // Email opsional
             'email_verified_at' => now(),
-            'password' => bcrypt('password'),
+            'password' => bcrypt('password'), // Password default
             'remember_token' => Str::random(10),
             'role' => 'user_biasa',
             'branch_id' => $branch ? $branch->id : null,
             'division_id' => $division ? $division->id : null,
-            'qr_code_value' => $this->faker->unique()->uuid(),
+            'qr_code_value' => Str::uuid(),
+            'hire_date' => $this->faker->dateTimeBetween('-2 years', 'now'),
+            // Sosial Media (opsional)
+            'whatsapp' => $this->faker->optional()->numerify('628##########'),
+            'instagram' => $this->faker->optional()->userName(),
+            'tiktok' => $this->faker->optional()->userName(),
+            'facebook' => $this->faker->optional()->userName(),
+            'linkedin' => $this->faker->optional()->userName(),
         ];
     }
 
@@ -41,10 +49,12 @@ class UserFactory extends Factory
         return $this->state(function (array $attributes) {
             return [
                 'name' => 'Super Admin PStore',
+                'login_id' => 'superadmin',
                 'email' => 'superadmin@pstore.com',
                 'role' => 'admin',
                 'branch_id' => null,
                 'division_id' => null,
+                'hire_date' => now()->subYears(1),
             ];
         });
     }
@@ -57,12 +67,13 @@ class UserFactory extends Factory
         return $this->state(function (array $attributes) use ($role) {
             return [
                 'role' => $role,
+                'login_id' => $role . '_' . Str::random(4),
             ];
         });
     }
 
     /**
-     * State untuk user tanpa divisi (Admin Cabang, Security)
+     * State untuk user tanpa divisi
      */
     public function withoutDivision()
     {
