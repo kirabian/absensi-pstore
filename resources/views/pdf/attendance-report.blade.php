@@ -6,172 +6,325 @@
     <style>
         @page {
             margin: 0cm 0cm;
+            size: A4;
         }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 12px;
-            color: #333;
-            margin-top: 3cm;
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-size: 11px;
+            color: #2d3748;
+            margin-top: 3.5cm;
             margin-left: 2cm;
             margin-right: 2cm;
-            margin-bottom: 2cm;
+            margin-bottom: 2.5cm;
             background-color: #ffffff;
+            line-height: 1.6;
         }
 
-        /* Header Style */
+        /* Header Style - Modern & Clean */
         header {
             position: fixed;
             top: 0cm;
             left: 0cm;
             right: 0cm;
-            height: 2.5cm;
-            background-color: #2c3e50; /* Dark Blue Header */
+            height: 3cm;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 0 2cm;
-            line-height: 2.5cm;
+            display: table;
+            width: 100%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
+        
+        header .header-content {
+            display: table-cell;
+            vertical-align: middle;
+        }
+        
         header .logo {
             float: left;
-            font-size: 18px;
-            font-weight: bold;
+            font-size: 20px;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
         }
+        
+        header .logo-subtitle {
+            float: left;
+            clear: left;
+            font-size: 9px;
+            opacity: 0.9;
+            margin-top: 3px;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        
         header .doc-id {
             float: right;
             font-size: 10px;
-            opacity: 0.8;
+            opacity: 0.95;
+            text-align: right;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-top: 10px;
         }
 
-        /* Title Section */
+        /* Title Section - Enhanced */
         .title-section {
-            margin-bottom: 30px;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #e2e8f0;
+            position: relative;
         }
+        
+        .title-section::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 80px;
+            height: 3px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
         .title-section h1 {
-            color: #2c3e50;
-            font-size: 24px;
-            margin: 0;
+            color: #1a202c;
+            font-size: 26px;
+            margin-bottom: 8px;
+            font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 1px;
         }
+        
         .title-section .subtitle {
-            color: #7f8c8d;
+            color: #718096;
             font-size: 12px;
-            margin-top: 5px;
+            font-weight: 400;
         }
 
-        /* User Info Grid */
+        /* User Info Grid - Improved Layout */
         .info-container {
             width: 100%;
             margin-bottom: 30px;
+            display: table;
+            table-layout: fixed;
         }
+        
         .info-box {
             width: 48%;
             float: left;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-left: 4px solid #3498db;
-            border-radius: 4px;
+            padding: 18px 20px;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-left: 4px solid #667eea;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         }
+        
         .info-box.right {
             float: right;
-            border-left-color: #2ecc71;
-            margin-left: 2%; /* Gap */
+            border-left-color: #48bb78;
         }
+        
         .info-row {
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             clear: both;
         }
+        
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        
         .info-label {
-            font-weight: bold;
-            color: #555;
-            width: 80px;
+            font-weight: 700;
+            color: #4a5568;
+            width: 90px;
             display: inline-block;
             text-transform: uppercase;
-            font-size: 10px;
+            font-size: 9px;
+            letter-spacing: 0.5px;
         }
+        
         .info-value {
-            color: #333;
+            color: #1a202c;
             font-weight: 600;
+            font-size: 12px;
         }
 
-        /* Statistics Cards */
+        /* Section Header */
+        .section-header {
+            margin: 30px 0 20px 0;
+            font-weight: 700;
+            font-size: 15px;
+            color: #1a202c;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding-left: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        /* Statistics Cards - Professional Design */
         .stats-wrapper {
             width: 100%;
             margin-top: 20px;
         }
+        
         .stat-card {
-            width: 30%; /* 3 cards per row approx */
+            width: 31%;
             float: left;
-            background: #fff;
-            border: 1px solid #e0e0e0;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
             border-radius: 8px;
-            padding: 15px;
-            margin-right: 3%;
+            padding: 18px;
+            margin-right: 3.5%;
             margin-bottom: 20px;
             box-sizing: border-box;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
         }
+        
         .stat-card:nth-child(3n) {
             margin-right: 0;
         }
         
-        .stat-number {
-            font-size: 28px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 5px;
+        .stat-card.full-width {
+            width: 100%;
+            margin-right: 0;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #bae6fd;
+            padding: 22px;
         }
+        
+        .stat-card.half-width {
+            width: 48%;
+            margin-right: 4%;
+        }
+        
+        .stat-card.half-width:nth-child(2n) {
+            margin-right: 0;
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 6px;
+            line-height: 1;
+        }
+        
+        .stat-card.full-width .stat-number {
+            font-size: 42px;
+            text-align: center;
+        }
+        
         .stat-label {
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
-            color: #7f8c8d;
-            letter-spacing: 0.5px;
+            color: #718096;
+            letter-spacing: 0.8px;
+            font-weight: 600;
+        }
+        
+        .stat-card.full-width .stat-label {
+            text-align: center;
+            font-size: 11px;
+        }
+        
+        .stat-detail {
+            font-size: 9px;
+            margin-top: 6px;
+            color: #a0aec0;
+            font-style: italic;
         }
 
-        /* Progress Bar */
+        /* Progress Bar - Enhanced */
         .progress-bg {
-            height: 6px;
+            height: 8px;
             width: 100%;
-            background-color: #ecf0f1;
-            border-radius: 3px;
-            margin-top: 10px;
+            background-color: #e2e8f0;
+            border-radius: 4px;
+            margin-top: 12px;
             overflow: hidden;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
         }
+        
         .progress-fill {
             height: 100%;
-            border-radius: 3px;
+            border-radius: 4px;
+            transition: width 0.3s ease;
         }
         
-        /* Colors */
-        .text-success { color: #27ae60; }
-        .bg-success { background-color: #27ae60; }
+        /* Colors - Updated Palette */
+        .text-success { color: #48bb78; }
+        .bg-success { background: linear-gradient(90deg, #48bb78 0%, #38a169 100%); }
         
-        .text-warning { color: #f39c12; }
-        .bg-warning { background-color: #f39c12; }
+        .text-warning { color: #ed8936; }
+        .bg-warning { background: linear-gradient(90deg, #ed8936 0%, #dd6b20 100%); }
         
-        .text-danger { color: #c0392b; }
-        .bg-danger { background-color: #c0392b; }
+        .text-danger { color: #f56565; }
+        .bg-danger { background: linear-gradient(90deg, #f56565 0%, #e53e3e 100%); }
         
-        .text-info { color: #2980b9; }
-        .bg-info { background-color: #2980b9; }
+        .text-info { color: #4299e1; }
+        .bg-info { background: linear-gradient(90deg, #4299e1 0%, #3182ce 100%); }
         
-        .text-grey { color: #7f8c8d; }
-        .bg-grey { background-color: #7f8c8d; }
+        .text-grey { color: #a0aec0; }
+        .bg-grey { background: linear-gradient(90deg, #a0aec0 0%, #718096 100%); }
 
-        /* Footer */
+        /* Footer - Modern */
         footer {
             position: fixed;
             bottom: 0cm;
             left: 0cm;
             right: 0cm;
-            height: 1.5cm;
-            background-color: #f8f9fa;
-            color: #7f8c8d;
+            height: 2cm;
+            background-color: #f7fafc;
+            color: #718096;
             text-align: center;
-            line-height: 1.5cm;
+            padding-top: 0.6cm;
+            font-size: 9px;
+            border-top: 2px solid #e2e8f0;
+        }
+        
+        footer .footer-text {
+            margin-bottom: 4px;
+        }
+        
+        footer .page-info {
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        /* Notice Box - Enhanced */
+        .notice-box {
+            margin-top: 35px;
+            padding: 18px 20px;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            border: 2px solid #fbbf24;
+            border-left: 5px solid #f59e0b;
+            border-radius: 6px;
             font-size: 10px;
-            border-top: 1px solid #e0e0e0;
+            color: #78350f;
+            box-shadow: 0 2px 4px rgba(251, 191, 36, 0.1);
+        }
+        
+        .notice-box strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #92400e;
+        }
+        
+        .notice-box p {
+            margin: 0;
+            line-height: 1.6;
         }
 
         /* Clearfix */
@@ -180,57 +333,68 @@
             clear: both;
             display: table;
         }
+        
+        /* Print Optimization */
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
     </style>
 </head>
 <body>
     <header>
-        <div class="logo">SISTEM ABSENSI</div>
-        <div class="doc-id">GEN-{{ date('dmY-His') }}</div>
+        <div class="header-content">
+            <div class="logo">SISTEM ABSENSI</div>
+            <div class="logo-subtitle">Attendance Management System</div>
+            <div class="doc-id">
+                DOC ID: GEN-{{ date('dmY-His') }}<br>
+                <span style="font-size: 8px;">Generated Report</span>
+            </div>
+        </div>
     </header>
 
     <footer>
-        Dicetak otomatis pada {{ $export_date }} | Halaman <span class="page-number">1</span>
+        <div class="footer-text">Dicetak otomatis pada {{ $export_date }}</div>
+        <div class="page-info">Halaman <span class="page-number">1</span> | Confidential Document</div>
     </footer>
 
     <div class="main-content">
         
         <div class="title-section">
             <h1>{{ $title }}</h1>
-            <div class="subtitle">Laporan resmi aktivitas absensi dan kehadiran.</div>
+            <div class="subtitle">Laporan resmi aktivitas absensi dan kehadiran karyawan</div>
         </div>
 
         <div class="info-container clearfix">
             <div class="info-box">
                 <div class="info-row">
-                    <span class="info-label">NAMA</span>
+                    <span class="info-label">Nama</span>
                     <span class="info-value">{{ strtoupper($user->name) }}</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">EMAIL</span>
+                    <span class="info-label">Email</span>
                     <span class="info-value">{{ $user->email }}</span>
                 </div>
             </div>
             <div class="info-box right">
                 <div class="info-row">
-                    <span class="info-label">JABATAN</span>
+                    <span class="info-label">Jabatan</span>
                     <span class="info-value">{{ strtoupper(str_replace('_', ' ', $role)) }}</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">PERIODE</span>
+                    <span class="info-label">Periode</span>
                     <span class="info-value">{{ \Carbon\Carbon::parse($period)->format('d F Y') }}</span>
                 </div>
             </div>
         </div>
 
-        <div style="margin-bottom: 15px; font-weight: bold; font-size: 14px; color: #2c3e50;">
-            RINGKASAN STATISTIK
-        </div>
+        <div class="section-header">Ringkasan Statistik</div>
 
         <div class="stats-wrapper clearfix">
             
             @php 
-                // Alias agar penulisan lebih pendek dan aman
-                // Default value array kosong jika undefined
                 $s = $stats ?? []; 
             @endphp
 
@@ -239,31 +403,46 @@
                 <div class="stat-card">
                     <div class="stat-number text-success">{{ $s['present'] ?? 0 }}</div>
                     <div class="stat-label">Total Hadir</div>
-                    <div class="progress-bg"><div class="progress-fill bg-success" style="width: {{ $s['present_percentage'] ?? 0 }}%"></div></div>
-                    <div style="font-size:10px; margin-top:5px; color:#aaa">{{ $s['present_percentage'] ?? 0 }}% dari Total User</div>
+                    <div class="progress-bg">
+                        <div class="progress-fill bg-success" style="width: {{ $s['present_percentage'] ?? 0 }}%"></div>
+                    </div>
+                    <div class="stat-detail">{{ $s['present_percentage'] ?? 0 }}% dari total user</div>
                 </div>
 
                 <div class="stat-card">
                     <div class="stat-number text-warning">{{ $s['late'] ?? 0 }}</div>
                     <div class="stat-label">Total Terlambat</div>
-                    <div class="progress-bg"><div class="progress-fill bg-warning" style="width: {{ $s['late_percentage'] ?? 0 }}%"></div></div>
+                    <div class="progress-bg">
+                        <div class="progress-fill bg-warning" style="width: {{ $s['late_percentage'] ?? 0 }}%"></div>
+                    </div>
+                    <div class="stat-detail">{{ $s['late_percentage'] ?? 0 }}% keterlambatan</div>
                 </div>
 
                 <div class="stat-card">
                     <div class="stat-number text-danger">{{ $s['absent'] ?? 0 }}</div>
                     <div class="stat-label">Tidak Hadir</div>
-                    <div class="progress-bg"><div class="progress-fill bg-danger" style="width: {{ $s['absent_percentage'] ?? 0 }}%"></div></div>
+                    <div class="progress-bg">
+                        <div class="progress-fill bg-danger" style="width: {{ $s['absent_percentage'] ?? 0 }}%"></div>
+                    </div>
+                    <div class="stat-detail">{{ $s['absent_percentage'] ?? 0 }}% absensi</div>
                 </div>
 
-                <div class="clearfix"></div> <div class="stat-card" style="margin-top: 15px;">
+                <div class="stat-card">
                     <div class="stat-number text-info">{{ $s['pending'] ?? 0 }}</div>
                     <div class="stat-label">Menunggu Verifikasi</div>
-                    <div class="progress-bg"><div class="progress-fill bg-info" style="width: {{ $s['pending_percentage'] ?? 0 }}%"></div></div>
+                    <div class="progress-bg">
+                        <div class="progress-fill bg-info" style="width: {{ $s['pending_percentage'] ?? 0 }}%"></div>
+                    </div>
+                    <div class="stat-detail">Perlu ditindaklanjuti</div>
                 </div>
 
-                <div class="stat-card" style="margin-top: 15px;">
+                <div class="stat-card">
                     <div class="stat-number text-success">{{ $s['on_time'] ?? 0 }}</div>
                     <div class="stat-label">Tepat Waktu</div>
+                    <div class="progress-bg">
+                        <div class="progress-fill bg-success" style="width: 100%"></div>
+                    </div>
+                    <div class="stat-detail">Kehadiran tepat waktu</div>
                 </div>
 
             {{-- ======================== AUDIT ======================== --}}
@@ -271,38 +450,53 @@
                 <div class="stat-card">
                     <div class="stat-number text-success">{{ $s['verified'] ?? 0 }}</div>
                     <div class="stat-label">Terverifikasi</div>
-                    <div class="progress-bg"><div class="progress-fill bg-success" style="width: {{ $s['verified_percentage'] ?? 0 }}%"></div></div>
+                    <div class="progress-bg">
+                        <div class="progress-fill bg-success" style="width: {{ $s['verified_percentage'] ?? 0 }}%"></div>
+                    </div>
+                    <div class="stat-detail">{{ $s['verified_percentage'] ?? 0 }}% telah diverifikasi</div>
                 </div>
 
                 <div class="stat-card">
                     <div class="stat-number text-warning">{{ $s['pending'] ?? 0 }}</div>
-                    <div class="stat-label">Menunggu</div>
-                    <div class="progress-bg"><div class="progress-fill bg-warning" style="width: {{ $s['pending_percentage'] ?? 0 }}%"></div></div>
+                    <div class="stat-label">Menunggu Review</div>
+                    <div class="progress-bg">
+                        <div class="progress-fill bg-warning" style="width: {{ $s['pending_percentage'] ?? 0 }}%"></div>
+                    </div>
+                    <div class="stat-detail">{{ $s['pending_percentage'] ?? 0 }}% dalam antrian</div>
                 </div>
 
                 <div class="stat-card">
                     <div class="stat-number text-danger">{{ $s['late'] ?? 0 }}</div>
                     <div class="stat-label">Flag Terlambat</div>
-                    <div class="progress-bg"><div class="progress-fill bg-danger" style="width: {{ $s['late_percentage'] ?? 0 }}%"></div></div>
+                    <div class="progress-bg">
+                        <div class="progress-fill bg-danger" style="width: {{ $s['late_percentage'] ?? 0 }}%"></div>
+                    </div>
+                    <div class="stat-detail">Memerlukan perhatian khusus</div>
                 </div>
 
             {{-- ======================== SECURITY ======================== --}}
             @elseif($role == 'Security')
-                <div class="stat-card" style="width: 100%; margin-bottom: 20px; background-color: #f0f8ff; border: 1px solid #b6d4fe;">
-                    <div class="stat-number text-info" style="text-align: center; font-size: 36px;">{{ $s['total_scans'] ?? 0 }}</div>
-                    <div class="stat-label" style="text-align: center;">TOTAL AKTIVITAS SCAN HARI INI</div>
+                <div class="stat-card full-width">
+                    <div class="stat-number text-info">{{ $s['total_scans'] ?? 0 }}</div>
+                    <div class="stat-label">Total Aktivitas Scan Hari Ini</div>
                 </div>
 
-                <div class="stat-card" style="width: 48%;">
+                <div class="stat-card half-width">
                     <div class="stat-number text-success">{{ $s['check_in_scans'] ?? 0 }}</div>
                     <div class="stat-label">Scan Masuk</div>
-                    <div class="progress-bg"><div class="progress-fill bg-success" style="width: {{ $s['check_in_percentage'] ?? 0 }}%"></div></div>
+                    <div class="progress-bg">
+                        <div class="progress-fill bg-success" style="width: {{ $s['check_in_percentage'] ?? 0 }}%"></div>
+                    </div>
+                    <div class="stat-detail">{{ $s['check_in_percentage'] ?? 0 }}% dari total</div>
                 </div>
 
-                <div class="stat-card" style="width: 48%; margin-right: 0;">
+                <div class="stat-card half-width">
                     <div class="stat-number text-info">{{ $s['check_out_scans'] ?? 0 }}</div>
                     <div class="stat-label">Scan Pulang</div>
-                    <div class="progress-bg"><div class="progress-fill bg-info" style="width: {{ $s['check_out_percentage'] ?? 0 }}%"></div></div>
+                    <div class="progress-bg">
+                        <div class="progress-fill bg-info" style="width: {{ $s['check_out_percentage'] ?? 0 }}%"></div>
+                    </div>
+                    <div class="stat-detail">{{ $s['check_out_percentage'] ?? 0 }}% dari total</div>
                 </div>
 
             {{-- ======================== KARYAWAN / USER BIASA ======================== --}}
@@ -310,40 +504,54 @@
                 <div class="stat-card">
                     <div class="stat-number text-success">{{ $s['present'] ?? 0 }}</div>
                     <div class="stat-label">Hadir (Bulan Ini)</div>
-                    <div class="progress-bg"><div class="progress-fill bg-success" style="width: 100%"></div></div>
+                    <div class="progress-bg">
+                        <div class="progress-fill bg-success" style="width: 100%"></div>
+                    </div>
+                    <div class="stat-detail">Total kehadiran bulan ini</div>
                 </div>
 
                 <div class="stat-card">
                     <div class="stat-number text-success">{{ $s['on_time'] ?? 0 }}</div>
                     <div class="stat-label">Tepat Waktu</div>
-                    <div class="progress-bg"><div class="progress-fill bg-success" style="width: {{ $s['on_time_percentage'] ?? 0 }}%"></div></div>
+                    <div class="progress-bg">
+                        <div class="progress-fill bg-success" style="width: {{ $s['on_time_percentage'] ?? 0 }}%"></div>
+                    </div>
+                    <div class="stat-detail">{{ $s['on_time_percentage'] ?? 0 }}% kehadiran tepat waktu</div>
                 </div>
 
                 <div class="stat-card">
                     <div class="stat-number text-warning">{{ $s['late'] ?? 0 }}</div>
                     <div class="stat-label">Terlambat</div>
-                    <div class="progress-bg"><div class="progress-fill bg-warning" style="width: {{ $s['late_percentage'] ?? 0 }}%"></div></div>
+                    <div class="progress-bg">
+                        <div class="progress-fill bg-warning" style="width: {{ $s['late_percentage'] ?? 0 }}%"></div>
+                    </div>
+                    <div class="stat-detail">{{ $s['late_percentage'] ?? 0 }}% keterlambatan</div>
                 </div>
 
-                <div class="clearfix"></div>
-
-                <div class="stat-card" style="margin-top: 15px;">
+                <div class="stat-card">
                     <div class="stat-number text-danger">{{ $s['early'] ?? 0 }}</div>
                     <div class="stat-label">Pulang Cepat</div>
+                    <div class="progress-bg">
+                        <div class="progress-fill bg-danger" style="width: 50%"></div>
+                    </div>
+                    <div class="stat-detail">Keluar sebelum jam kerja</div>
                 </div>
 
-                <div class="stat-card" style="margin-top: 15px;">
+                <div class="stat-card">
                     <div class="stat-number text-grey">{{ $s['pending'] ?? 0 }}</div>
                     <div class="stat-label">Status Pending</div>
-                    <div class="progress-bg"><div class="progress-fill bg-grey" style="width: {{ $s['pending_percentage'] ?? 0 }}%"></div></div>
+                    <div class="progress-bg">
+                        <div class="progress-fill bg-grey" style="width: {{ $s['pending_percentage'] ?? 0 }}%"></div>
+                    </div>
+                    <div class="stat-detail">{{ $s['pending_percentage'] ?? 0 }}% menunggu verifikasi</div>
                 </div>
             @endif
 
         </div>
 
-        <div style="margin-top: 40px; padding: 15px; background: #fffbe6; border: 1px solid #ffe58f; border-radius: 4px; font-size: 11px; color: #856404;">
-            <strong>Catatan:</strong>
-            <p style="margin: 5px 0 0 0;">Laporan ini digenerate secara real-time berdasarkan data yang tersedia di sistem saat ini. Harap verifikasi ulang jika terdapat perbedaan data manual.</p>
+        <div class="notice-box">
+            <strong>⚠ Catatan Penting</strong>
+            <p>Laporan ini digenerate secara real-time berdasarkan data yang tersedia di sistem pada saat pencetakan. Harap melakukan verifikasi ulang jika terdapat perbedaan dengan data manual. Untuk informasi lebih lanjut, hubungi departemen HR atau IT Support.</p>
         </div>
 
     </div>
