@@ -14,7 +14,7 @@
             <div class="card">
                 <div class="card-body">
                     <h4 class="card-title">Daftar Semua User</h4>
-                    
+
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <a href="{{ route('users.create') }}" class="btn btn-primary btn-sm">
                             <i class="mdi mdi-plus"></i> Tambah User Baru
@@ -50,20 +50,18 @@
                                 @forelse ($users as $key => $user)
                                     <tr>
                                         <td> {{ $users->firstItem() + $key }} </td>
-                                        
+
                                         {{-- PROFIL --}}
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div class="me-3">
-                                                    @if($user->profile_photo_path)
-                                                        <img src="{{ asset('storage/' . $user->profile_photo_path) }}" 
-                                                             alt="profile" 
-                                                             class="img-sm rounded-circle"
-                                                             style="width: 40px; height: 40px; object-fit: cover;">
+                                                    @if ($user->profile_photo_path)
+                                                        <img src="{{ asset('storage/' . $user->profile_photo_path) }}"
+                                                            alt="profile" class="img-sm rounded-circle"
+                                                            style="width: 40px; height: 40px; object-fit: cover;">
                                                     @else
-                                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=random" 
-                                                             alt="profile" 
-                                                             class="img-sm rounded-circle">
+                                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=random"
+                                                            alt="profile" class="img-sm rounded-circle">
                                                     @endif
                                                 </div>
                                                 <div>
@@ -76,7 +74,7 @@
                                         {{-- KONTAK --}}
                                         <td>
                                             <div><i class="mdi mdi-email-outline me-1"></i> {{ $user->email }}</div>
-                                            @if($user->whatsapp)
+                                            @if ($user->whatsapp)
                                                 <div class="text-success mt-1">
                                                     <i class="mdi mdi-whatsapp me-1"></i> {{ $user->whatsapp }}
                                                 </div>
@@ -85,7 +83,7 @@
 
                                         {{-- ROLE --}}
                                         <td>
-                                            @if($user->role == 'admin' && $user->branch_id == null)
+                                            @if ($user->role == 'admin' && $user->branch_id == null)
                                                 <span class="badge badge-danger">Super Admin</span>
                                             @elseif($user->role == 'admin' && $user->branch_id != null)
                                                 <span class="badge badge-primary">Admin Cabang</span>
@@ -102,7 +100,7 @@
 
                                         {{-- PENEMPATAN (LOGIKA UTAMA DISINI) --}}
                                         <td>
-                                            @if($user->role == 'audit')
+                                            @if ($user->role == 'audit')
                                                 {{-- Tampilkan Multi Cabang --}}
                                                 <div class="fw-bold text-primary">Audit Wilayah:</div>
                                                 <small class="text-muted" style="white-space: normal;">
@@ -118,7 +116,8 @@
                                             @else
                                                 {{-- User Biasa / Admin / Security --}}
                                                 <div class="fw-bold">{{ $user->branch->name ?? 'Semua Cabang' }}</div>
-                                                <small class="text-muted">{{ $user->division->name ?? 'Tanpa Divisi' }}</small>
+                                                <small
+                                                    class="text-muted">{{ $user->division->name ?? 'Tanpa Divisi' }}</small>
                                             @endif
                                         </td>
 
@@ -129,12 +128,10 @@
 
                                         {{-- QR CODE --}}
                                         <td>
-                                            @if($user->qr_code_value)
+                                            @if ($user->qr_code_value)
                                                 <button type="button" class="btn btn-inverse-dark btn-icon btn-sm"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#qrModal"
-                                                        data-name="{{ $user->name }}"
-                                                        data-qr="{{ $user->qr_code_value }}">
+                                                    data-bs-toggle="modal" data-bs-target="#qrModal"
+                                                    data-name="{{ $user->name }}" data-qr="{{ $user->qr_code_value }}">
                                                     <i class="mdi mdi-qrcode"></i>
                                                 </button>
                                             @else
@@ -144,6 +141,11 @@
 
                                         {{-- AKSI --}}
                                         <td>
+                                            {{-- Tombol SHOW (Mata) --}}
+                                            <a href="{{ route('users.show', $user->id) }}"
+                                                class="btn btn-inverse-info btn-icon btn-sm" title="Lihat Detail">
+                                                <i class="mdi mdi-eye"></i>
+                                            </a>
                                             <a href="{{ route('users.edit', $user->id) }}"
                                                 class="btn btn-inverse-warning btn-icon btn-sm" title="Edit">
                                                 <i class="mdi mdi-pencil"></i>
@@ -151,10 +153,12 @@
 
                                             @if ($user->id != auth()->id())
                                                 <form action="{{ route('users.destroy', $user->id) }}" method="POST"
-                                                    class="d-inline" onsubmit="return confirm('Yakin ingin menghapus user ini?');">
+                                                    class="d-inline"
+                                                    onsubmit="return confirm('Yakin ingin menghapus user ini?');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-inverse-danger btn-icon btn-sm" title="Hapus">
+                                                    <button type="submit" class="btn btn-inverse-danger btn-icon btn-sm"
+                                                        title="Hapus">
                                                         <i class="mdi mdi-delete"></i>
                                                     </button>
                                                 </form>
@@ -171,7 +175,7 @@
                             </tbody>
                         </table>
                     </div>
-                    
+
                     {{-- Pagination Link --}}
                     <div class="mt-3">
                         {{ $users->links() }}
@@ -205,16 +209,16 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script>
         var qrModal = document.getElementById('qrModal');
-        qrModal.addEventListener('show.bs.modal', function (event) {
+        qrModal.addEventListener('show.bs.modal', function(event) {
             var button = event.relatedTarget;
             var name = button.getAttribute('data-name');
             var qrValue = button.getAttribute('data-qr');
             var modalTitle = qrModal.querySelector('.modal-title');
             modalTitle.textContent = 'QR Code: ' + name;
             var qrContainer = document.getElementById('qrcode-container');
-            qrContainer.innerHTML = ''; 
+            qrContainer.innerHTML = '';
 
-            if(qrValue){
+            if (qrValue) {
                 new QRCode(qrContainer, {
                     text: qrValue,
                     width: 200,

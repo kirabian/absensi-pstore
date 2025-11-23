@@ -367,7 +367,68 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
-        return redirect()->route('users.edit', $user->id);
+        $auth_user = Auth::user();
+
+        // 1. Proteksi Akses (Sama seperti edit)
+        if ($auth_user->role == 'admin' && $auth_user->branch_id != null) {
+            if ($user->branch_id != $auth_user->branch_id) abort(403);
+        }
+        if ($auth_user->role == 'audit') {
+            $allowedBranchIds = $auth_user->branches->pluck('id')->toArray();
+            if (!in_array($user->branch_id, $allowedBranchIds)) abort(403);
+        }
+
+        // 2. Load Relasi
+        $user->load(['branch', 'division', 'branches', 'divisions', 'workHistories']);
+
+        // 3. Ambil Statistik (Logika meniru DashboardController)
+        $stats = $this->getSpecificUserStats($user->id);
+
+        // 4. Ambil 5 Riwayat Absensi Terakhir (Opsional, untuk preview)
+        $recentAttendance = Attendance::where('user_id', $user->id)
+                            ->latest('check_in_time')
+                            ->take(5)
+                            ->get();
+
+        return view('users.user_show', compact('user', 'stats', 'recentAttendance'));
+    }
+
+    /**
+     * Helper: Hitung Statistik User Spesifik (Bulan Ini)
+     * Logika ini diambil dari DashboardController::getUserAttendanceStats
+     */
+    private function getSpecificUserStats($user_id)
+    {
+        // Filter Bulan Ini
+        $query = Attendance::where('user_id', $user_id)
+            ->whereMonth('check_in_time', Carbon::now()->month)
+            ->whereYear('check_in_time', Carbon::now()->year);
+        
+        $totalAttendances = (clone $query)->count();
+        $present = $totalAttendances; 
+        $late = (clone $query)->where('is_late_checkin', true)->count();
+        $early = (clone $query)->where('is_early_checkout', true)->count();
+        $pending = (clone $query)->where('status', 'pending_verification')->count();
+        
+        // Tepat Waktu = Total - Terlambat
+        $onTime = max($totalAttendances - $late, 0);
+
+        // Hitung Persentase Kehadiran (Asumsi 22 hari kerja atau berdasarkan total hari berjalan)
+        // Disini kita pakai simpel saja based on kehadiran vs terlambat
+        $onTimePercentage = $totalAttendances > 0 ? round(($onTime / $totalAttendances) * 100) : 0;
+        $latePercentage = $totalAttendances > 0 ? round(($late / $totalAttendances) * 100) : 0;
+
+        return [
+            'total' => $totalAttendances,
+            'present' => $present,
+            'late' => $late,
+            'early' => $early,
+            'pending' => $pending,
+            'on_time' => $onTime,
+            'on_time_percentage' => $onTimePercentage,
+            'late_percentage' => $latePercentage,
+            'current_month' => Carbon::now()->translatedFormat('F Y')
+        ];
     }
 
     /**
