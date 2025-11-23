@@ -107,7 +107,7 @@
                         </h4>
 
                         <div class="form-group mb-3">
-                            <label>Nama Lengkap</label>
+                            <label>Nama Lengkap ( Sesuai KTP )</label>
                             <input type="text" class="form-control" name="name" value="{{ old('name') }}" required>
                         </div>
                         <div class="form-group mb-3">
@@ -185,7 +185,7 @@
 
                         {{-- SINGLE BRANCH (HOMEBASE) --}}
                         <div class="form-group mb-3" id="single-branch-group">
-                            <label>Cabang Utama (Homebase)</label>
+                            <label>Cabang Utama (Lokasi Kerja)</label>
                             <select class="form-select select2-single" name="branch_id" data-placeholder="Pilih Cabang">
                                 <option></option>
                                 @foreach ($branches as $branch)

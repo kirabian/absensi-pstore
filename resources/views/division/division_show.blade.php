@@ -30,7 +30,7 @@
                                     <th> # </th>
                                     <th> Nama Anggota </th>
                                     <th> Role </th>
-                                    <th> Cabang (Homebase) </th>
+                                    <th> Cabang (Lokasi Kerja) </th>
                                     <th> Status </th>
                                 </tr>
                             </thead>

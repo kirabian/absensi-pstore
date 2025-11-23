@@ -122,7 +122,7 @@
 
                     <h4 class="card-title">Informasi Akun</h4>
                     <div class="form-group">
-                        <label for="name">Nama Lengkap</label>
+                        <label for="name">Nama Lengkap ( Sesuai KTP )</label>
                         <input type="text" class="form-control" id="name" name="name" value="{{ old('name', $user->name) }}" required>
                     </div>
                     <div class="form-group">
