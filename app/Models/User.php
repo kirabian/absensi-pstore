@@ -36,6 +36,7 @@ class User extends Authenticatable
         'division_id',     // Primary Division (Homebase)
         'qr_code_value',
         'branch_id',       // Primary Branch (Homebase)
+        'is_active',
         'profile_photo_path',
         'ktp_photo_path',
         'hire_date',
@@ -61,6 +62,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'hire_date' => 'date',
+        'is_active' => 'boolean',
     ];
 
     // =================================================================
