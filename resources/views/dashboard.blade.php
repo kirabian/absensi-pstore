@@ -1159,26 +1159,33 @@
         document.addEventListener('DOMContentLoaded', function() {
             const ctx = document.getElementById('attendancePieChart').getContext('2d');
 
+            /* CATATAN: 
+               Variabel PHP $stats dikirim dari Controller.
+               Pastikan di controller nama variabelnya $stats atau sesuaikan ($attendanceStats).
+            */
+
             @if (auth()->user()->role == 'admin')
+                // CHART ADMIN: Menampilkan status kehadiran detail
                 new Chart(ctx, {
-                    type: 'pie',
+                    type: 'doughnut', // Ganti ke doughnut biar lebih modern
                     data: {
-                        labels: ['Hadir', 'Terlambat', 'Pending', 'Tidak Hadir'],
+                        labels: ['Tepat Waktu', 'Terlambat (Masuk)', 'Pulang Cepat', 'Pending Verifikasi', 'Tidak Hadir'],
                         datasets: [{
                             data: [
-                                {{ $attendanceStats['present'] }},
-                                {{ $attendanceStats['late'] }},
-                                {{ $attendanceStats['pending'] }},
-                                {{ $attendanceStats['absent'] }}
+                                {{ $stats['on_time'] }},
+                                {{ $stats['late'] }},
+                                {{ $stats['early'] }},
+                                {{ $stats['pending'] }},
+                                {{ $stats['absent'] }}
                             ],
                             backgroundColor: [
-                                '#28a745',
-                                '#ffc107',
-                                '#17a2b8',
-                                '#dc3545'
+                                '#00d25b', // Hijau (Tepat Waktu)
+                                '#ffab00', // Kuning (Terlambat)
+                                '#fc424a', // Merah (Pulang Cepat)
+                                '#0090e7', // Biru (Pending)
+                                '#8c94a3'  // Abu-abu (Absen)
                             ],
-                            borderWidth: 2,
-                            borderColor: '#fff'
+                            borderWidth: 0
                         }]
                     },
                     options: {
@@ -1186,102 +1193,95 @@
                         maintainAspectRatio: false,
                         plugins: {
                             legend: {
-                                position: 'bottom',
-                                labels: {
-                                    padding: 20,
-                                    usePointStyle: true
-                                }
+                                position: 'right',
+                                labels: { usePointStyle: true, boxWidth: 6 }
                             },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const label = context.label || '';
-                                        const value = context.raw || 0;
-                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                        const percentage = total > 0 ? Math.round((value / total) *
-                                            100) : 0;
-                                        return `${label}: ${value} (${percentage}%)`;
-                                    }
-                                }
+                            title: {
+                                display: true,
+                                text: 'Statistik Kehadiran Hari Ini'
                             }
-                        }
+                        },
+                        cutout: '70%', // Membuat lubang tengah donat
                     }
                 });
+
             @elseif (auth()->user()->role == 'audit')
+                // CHART AUDIT: Fokus pada status verifikasi
                 new Chart(ctx, {
                     type: 'pie',
                     data: {
-                        labels: ['Terverifikasi', 'Menunggu', 'Terlambat'],
+                        labels: ['Sudah Diverifikasi', 'Menunggu Verifikasi', 'Terlambat (Flag)'],
                         datasets: [{
                             data: [
-                                {{ $attendanceStats['verified'] }},
-                                {{ $attendanceStats['pending'] }},
-                                {{ $attendanceStats['late'] }}
+                                {{ $stats['verified'] }},
+                                {{ $stats['pending'] }},
+                                {{ $stats['late'] }}
                             ],
                             backgroundColor: [
-                                '#28a745',
-                                '#ffc107',
-                                '#dc3545'
+                                '#00d25b', // Hijau
+                                '#ffab00', // Kuning/Orange
+                                '#fc424a'  // Merah
                             ],
                             borderWidth: 2,
-                            borderColor: '#fff'
+                            borderColor: '#ffffff'
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
+                            legend: { position: 'bottom' }
                         }
                     }
                 });
+
             @elseif (auth()->user()->role == 'security')
+                // CHART SECURITY: Fokus pada aktivitas Scan
                 new Chart(ctx, {
-                    type: 'pie',
+                    type: 'doughnut',
                     data: {
-                        labels: ['Scan Masuk', 'Scan Pulang'],
+                        labels: ['Scan Masuk (QR)', 'Scan Pulang (QR)'],
                         datasets: [{
                             data: [
-                                {{ $attendanceStats['check_in_scans'] }},
-                                {{ $attendanceStats['check_out_scans'] }}
+                                {{ $stats['check_in_scans'] }},
+                                {{ $stats['check_out_scans'] }}
                             ],
                             backgroundColor: [
-                                '#28a745',
-                                '#17a2b8'
+                                '#00d25b', // Hijau
+                                '#0090e7'  // Biru
                             ],
-                            borderWidth: 2,
-                            borderColor: '#fff'
+                            borderWidth: 0
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        cutout: '60%',
                         plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
+                            legend: { position: 'bottom' },
+                            title: { display: true, text: 'Aktivitas Scan Hari Ini' }
                         }
                     }
                 });
+
             @else
+                // CHART USER BIASA: Statistik Performa BULAN INI
                 new Chart(ctx, {
                     type: 'pie',
                     data: {
-                        labels: ['Hadir', 'Terlambat', 'Tepat Waktu', 'Pending'],
+                        labels: ['Tepat Waktu', 'Terlambat', 'Pulang Cepat', 'Pending'],
                         datasets: [{
                             data: [
-                                {{ $attendanceStats['present'] }},
-                                {{ $attendanceStats['late'] }},
-                                {{ $attendanceStats['on_time'] }},
-                                {{ $attendanceStats['pending'] }}
+                                {{ $stats['on_time'] }},
+                                {{ $stats['late'] }},
+                                {{ $stats['early'] }},
+                                {{ $stats['pending'] }}
                             ],
                             backgroundColor: [
-                                '#28a745',
-                                '#ffc107',
-                                '#17a2b8',
-                                '#6c757d'
+                                '#00d25b', // Hijau
+                                '#ffab00', // Kuning
+                                '#fc424a', // Merah
+                                '#8c94a3'  // Abu
                             ],
                             borderWidth: 2,
                             borderColor: '#fff'
@@ -1291,9 +1291,8 @@
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
+                            legend: { position: 'bottom' },
+                            title: { display: true, text: 'Performa Absensi Bulan Ini' }
                         }
                     }
                 });

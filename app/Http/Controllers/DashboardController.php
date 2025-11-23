@@ -10,7 +10,7 @@ use App\Models\LeaveRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
-use PDF;
+use PDF; // Pastikan package barryvdh/laravel-dompdf terinstall
 
 class DashboardController extends Controller
 {
@@ -31,8 +31,8 @@ class DashboardController extends Controller
         $divisionQuery = Division::query();
         $lateQuery = LateNotification::query();
 
+        // Admin melihat semua jika tidak ada branch_id, role lain terkunci di branch
         if ($user->role != 'admin' || $branch_id != null) {
-            // Filter per cabang untuk User/Leader/Security/Admin Cabang
             $attendanceQuery->where('branch_id', $branch_id);
             $userQuery->where('branch_id', $branch_id);
             $divisionQuery->where('branch_id', $branch_id);
@@ -40,7 +40,7 @@ class DashboardController extends Controller
         }
 
         // ======================================================
-        // 2. DATA IZIN HARI INI
+        // 2. DATA IZIN HARI INI (Untuk Notifikasi User)
         // ======================================================
         $data['myLeaveToday'] = $this->getTodayLeaveRequest($user->id);
 
@@ -55,31 +55,36 @@ class DashboardController extends Controller
             // --- ADMIN ---
             $data['totalUsers'] = $userQuery->count();
             $data['totalDivisions'] = $divisionQuery->count();
+            // Total record hari ini
             $data['attendancesToday'] = $attendanceQuery->whereDate('check_in_time', today())->count();
+            // Pending Verification Global
             $data['pendingVerifications'] = $attendanceQuery->where('status', 'pending_verification')->count();
             
-            // Statistik untuk Admin
-            $data['attendanceStats'] = $this->getAdminAttendanceStats($branch_id);
+            // Statistik Lengkap untuk Admin (Chart)
+            $data['stats'] = $this->getAdminAttendanceStats($branch_id);
             
         } elseif ($user->role == 'audit') {
             // --- AUDIT ---
+            // Anggota tim = user biasa & leader di cabang yang sama
             $data['myTeamMembers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])->count();
             $data['pendingVerifications'] = $attendanceQuery->where('status', 'pending_verification')->count();
             $data['attendancesToday'] = $attendanceQuery->whereDate('check_in_time', today())->count();
             
-            // Statistik untuk Audit
-            $data['attendanceStats'] = $this->getAuditAttendanceStats($branch_id);
+            // Statistik untuk Audit (Chart)
+            $data['stats'] = $this->getAuditAttendanceStats($branch_id);
             
         } elseif ($user->role == 'security') {
             // --- SECURITY ---
+            // Hitung scan yang dilakukan security ini hari ini
             $data['myScansToday'] = Attendance::where('scanned_by_user_id', $user->id)
                 ->whereDate('check_in_time', today())
                 ->count();
 
+            // Total user yang "bisa" discan
             $data['totalUsers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])->count();
             
-            // Statistik untuk Security
-            $data['attendanceStats'] = $this->getSecurityAttendanceStats($user->id, $branch_id);
+            // Statistik untuk Security (Chart)
+            $data['stats'] = $this->getSecurityAttendanceStats($user->id, $branch_id);
             
         } elseif ($user->role == 'user_biasa' || $user->role == 'leader') {
             // --- USER BIASA & LEADER ---
@@ -87,19 +92,25 @@ class DashboardController extends Controller
                 ->where('status', 'pending_verification')
                 ->count();
 
+            // Rekan satu divisi
             $data['myTeamCount'] = User::where('division_id', $user->division_id)
                 ->where('id', '!=', $user->id)
                 ->count();
                 
-            // Statistik untuk User Biasa & Leader
-            $data['attendanceStats'] = $this->getUserAttendanceStats($user->id, $branch_id);
+            // Statistik Personal (Chart)
+            $data['stats'] = $this->getUserAttendanceStats($user->id, $branch_id);
+        }
+
+        // Kirim variable $attendanceStats juga untuk kompatibilitas view lama jika ada
+        if (isset($data['stats'])) {
+            $data['attendanceStats'] = $data['stats'];
         }
 
         return view('dashboard', $data);
     }
 
     /**
-     * Get today's leave request for user
+     * Helper: Cek Izin Hari Ini (Sakit, Cuti, Telat)
      */
     private function getTodayLeaveRequest($user_id)
     {
@@ -108,12 +119,12 @@ class DashboardController extends Controller
             ->where('status', 'approved')
             ->where(function($query) {
                 $query->where(function($q) {
-                    // Untuk izin sakit & cuti (berjangka waktu)
+                    // Izin jangka panjang (Sakit/Cuti)
                     $q->whereIn('type', ['sakit', 'izin'])
                       ->whereDate('start_date', '<=', today())
                       ->whereDate('end_date', '>=', today());
                 })->orWhere(function($q) {
-                    // Untuk izin telat (hanya hari ini)
+                    // Izin harian (Telat)
                     $q->where('type', 'telat')
                       ->whereDate('start_date', today());
                 });
@@ -122,14 +133,12 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get common data for ALL roles (ID Card & Attendance Status)
-     * UPDATE: MENDUKUNG LEMBUR LINTAS HARI (Cross-day)
+     * Helper: Data ID Card & Status Absensi (Support Lembur Lintas Hari)
      */
     private function getCommonDataForAllRoles($user, $data)
     {
-        // PRIORITAS 1: Cari Sesi Aktif (Belum Pulang) - Lookback 24 jam
-        // Ini untuk menangani user yang lembur melewati tengah malam.
-        // Jika jam 01:00 pagi user buka dashboard, yang muncul adalah data masuk kemarin sore.
+        // 1. Cari Sesi Aktif (Check In ada, Check Out kosong) - Lookback 24 jam
+        // Ini menangani kasus lembur melewati jam 00:00
         $activeSession = Attendance::where('user_id', $user->id)
             ->whereNull('check_out_time')
             ->where('check_in_time', '>=', Carbon::now()->subHours(24))
@@ -137,18 +146,15 @@ class DashboardController extends Controller
             ->first();
 
         if ($activeSession) {
-            // Jika ada sesi aktif (Masih Kerja), tampilkan ini
             $data['myAttendanceToday'] = $activeSession;
         } else {
-            // PRIORITAS 2: Jika tidak ada sesi aktif, cari sesi yang SUDAH SELESAI hari ini
-            // (Masuk hari ini, Pulang hari ini)
+            // 2. Jika tidak ada sesi aktif, cari sesi yang SUDAH SELESAI hari ini
             $finishedSession = Attendance::where('user_id', $user->id)
                 ->whereDate('check_in_time', today())
                 ->whereNotNull('check_out_time')
                 ->latest('check_in_time')
                 ->first();
             
-            // Jika ada data selesai hari ini tampilkan, jika tidak maka NULL (Belum Absen)
             $data['myAttendanceToday'] = $finishedSession;
         }
 
@@ -156,161 +162,197 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get attendance statistics for Admin
+     * Statistik Admin: Global Hari Ini
      */
     private function getAdminAttendanceStats($branch_id = null)
     {
-        $query = Attendance::query();
+        $query = Attendance::whereDate('check_in_time', today());
         
         if ($branch_id) {
             $query->where('branch_id', $branch_id);
         }
 
-        // Statistik Admin tetap menggunakan filter hari ini
-        $totalAttendances = $query->whereDate('check_in_time', today())->count();
-        $present = $query->clone()->where('status', 'present')->count();
-        $late = $query->clone()->where('status', 'late')->count();
-        $pending = $query->clone()->where('status', 'pending_verification')->count();
-        $absent = $query->clone()->where('status', 'absent')->count();
+        $totalUsers = User::when($branch_id, function($q) use ($branch_id) {
+            return $q->where('branch_id', $branch_id);
+        })->count();
+
+        // Clone query untuk efisiensi
+        $presentCount = (clone $query)->count();
+        $lateCount = (clone $query)->where('is_late_checkin', true)->count();
+        $earlyCount = (clone $query)->where('is_early_checkout', true)->count();
+        $pendingCount = (clone $query)->where('status', 'pending_verification')->count();
+        
+        // On Time = Hadir - Terlambat
+        $onTimeCount = max($presentCount - $lateCount, 0);
+        // Absent = Total User - Hadir
+        $absentCount = max($totalUsers - $presentCount, 0);
 
         return [
-            'total' => $totalAttendances,
-            'present' => $present,
-            'late' => $late,
-            'pending' => $pending,
-            'absent' => $absent,
-            'present_percentage' => $totalAttendances > 0 ? round(($present / $totalAttendances) * 100, 2) : 0,
-            'late_percentage' => $totalAttendances > 0 ? round(($late / $totalAttendances) * 100, 2) : 0,
-            'pending_percentage' => $totalAttendances > 0 ? round(($pending / $totalAttendances) * 100, 2) : 0,
-            'absent_percentage' => $totalAttendances > 0 ? round(($absent / $totalAttendances) * 100, 2) : 0,
+            'total' => $presentCount,
+            'present' => $presentCount,
+            'late' => $lateCount,
+            'early' => $earlyCount,
+            'pending' => $pendingCount,
+            'on_time' => $onTimeCount,
+            'absent' => $absentCount,
+            
+            // Persentase
+            'present_percentage' => $totalUsers > 0 ? round(($presentCount / $totalUsers) * 100) : 0,
+            'late_percentage' => $presentCount > 0 ? round(($lateCount / $presentCount) * 100) : 0,
+            'pending_percentage' => $presentCount > 0 ? round(($pendingCount / $presentCount) * 100) : 0,
+            'absent_percentage' => $totalUsers > 0 ? round(($absentCount / $totalUsers) * 100) : 0,
         ];
     }
 
     /**
-     * Get attendance statistics for Audit
+     * Statistik Audit: Fokus Verifikasi Hari Ini
      */
     private function getAuditAttendanceStats($branch_id = null)
     {
-        $query = Attendance::query();
+        $query = Attendance::whereDate('check_in_time', today());
         
         if ($branch_id) {
             $query->where('branch_id', $branch_id);
         }
 
-        $totalAttendances = $query->whereDate('check_in_time', today())->count();
-        $verified = $query->clone()->whereNotNull('verified_by_user_id')->count();
-        $pending = $query->clone()->whereNull('verified_by_user_id')->count();
-        $late = $query->clone()->where('is_late_checkin', true)->count();
+        $totalToday = (clone $query)->count();
+        $verified = (clone $query)->whereNotNull('verified_by_user_id')->count();
+        $pending = (clone $query)->where('status', 'pending_verification')->count();
+        $late = (clone $query)->where('is_late_checkin', true)->count();
 
         return [
-            'total' => $totalAttendances,
+            'total' => $totalToday,
             'verified' => $verified,
             'pending' => $pending,
             'late' => $late,
-            'verified_percentage' => $totalAttendances > 0 ? round(($verified / $totalAttendances) * 100, 2) : 0,
-            'pending_percentage' => $totalAttendances > 0 ? round(($pending / $totalAttendances) * 100, 2) : 0,
-            'late_percentage' => $totalAttendances > 0 ? round(($late / $totalAttendances) * 100, 2) : 0,
+            
+            // Persentase
+            'verified_percentage' => $totalToday > 0 ? round(($verified / $totalToday) * 100) : 0,
+            'pending_percentage' => $totalToday > 0 ? round(($pending / $totalToday) * 100) : 0,
+            'late_percentage' => $totalToday > 0 ? round(($late / $totalToday) * 100) : 0,
         ];
     }
 
     /**
-     * Get attendance statistics for Security
+     * Statistik Security: Aktivitas Scan Hari Ini
      */
     private function getSecurityAttendanceStats($security_id, $branch_id = null)
     {
-        $query = Attendance::where('scanned_by_user_id', $security_id);
+        // Hitung semua scan hari ini (baik oleh security ini atau global branch, tergantung kebutuhan)
+        // Disini kita ambil global branch activity agar security tau progress absensi karyawan
+        $query = Attendance::whereDate('check_in_time', today());
         
         if ($branch_id) {
             $query->where('branch_id', $branch_id);
         }
+        
+        // Filter khusus tipe SCAN QR
+        $scanQuery = (clone $query)->where('attendance_type', 'scan');
 
-        $todayScans = $query->whereDate('check_in_time', today())->count();
-        $checkInScans = $query->clone()->whereNotNull('check_in_time')->whereNull('check_out_time')->count();
-        $checkOutScans = $query->clone()->whereNotNull('check_out_time')->count();
+        $totalScans = (clone $scanQuery)->count(); // Ini hitungan record, bukan hitungan 'beep' scanner
+        
+        // Scan Masuk = Record scan yang check_in ada
+        $checkInScans = (clone $scanQuery)->count(); 
+        
+        // Scan Pulang = Record scan yang check_out sudah terisi
+        $checkOutScans = (clone $scanQuery)->whereNotNull('check_out_time')->count();
+
+        // Total aktivitas 'beep' = Masuk + Pulang
+        $totalActivity = $checkInScans + $checkOutScans;
 
         return [
-            'total_scans' => $todayScans,
+            'total_scans' => $totalActivity,
             'check_in_scans' => $checkInScans,
             'check_out_scans' => $checkOutScans,
-            'check_in_percentage' => $todayScans > 0 ? round(($checkInScans / $todayScans) * 100, 2) : 0,
-            'check_out_percentage' => $todayScans > 0 ? round(($checkOutScans / $todayScans) * 100, 2) : 0,
+            
+            // Persentase (dari total karyawan yang diharapkan)
+            'check_in_percentage' => 100, // Placeholder
+            'check_out_percentage' => 100, // Placeholder
         ];
     }
 
     /**
-     * Get attendance statistics for User Biasa & Leader
+     * Statistik User Biasa / Leader: Performa Bulan Ini
      */
     private function getUserAttendanceStats($user_id, $branch_id = null)
     {
-        // Statistik User menampilkan history 30 hari terakhir
+        // Statistik User menampilkan BULAN INI agar lebih relevan
         $query = Attendance::where('user_id', $user_id)
-            ->whereDate('check_in_time', '>=', now()->subDays(30));
+            ->whereMonth('check_in_time', Carbon::now()->month)
+            ->whereYear('check_in_time', Carbon::now()->year);
         
         if ($branch_id) {
             $query->where('branch_id', $branch_id);
         }
 
-        $totalAttendances = $query->count();
-        $present = $query->clone()->where('status', 'present')->count();
-        $late = $query->clone()->where('status', 'late')->count();
-        $pending = $query->clone()->where('status', 'pending_verification')->count();
-        $onTime = $query->clone()->where('status', 'present')->where('is_late_checkin', false)->count();
+        $totalAttendances = (clone $query)->count();
+        $present = $totalAttendances; // Asumsi record ada berarti hadir
+        $late = (clone $query)->where('is_late_checkin', true)->count();
+        $early = (clone $query)->where('is_early_checkout', true)->count();
+        $pending = (clone $query)->where('status', 'pending_verification')->count();
+        
+        // Tepat Waktu = Total - Terlambat
+        $onTime = max($totalAttendances - $late, 0);
 
         return [
             'total' => $totalAttendances,
             'present' => $present,
             'late' => $late,
+            'early' => $early,
             'pending' => $pending,
             'on_time' => $onTime,
-            'present_percentage' => $totalAttendances > 0 ? round(($present / $totalAttendances) * 100, 2) : 0,
-            'late_percentage' => $totalAttendances > 0 ? round(($late / $totalAttendances) * 100, 2) : 0,
-            'pending_percentage' => $totalAttendances > 0 ? round(($pending / $totalAttendances) * 100, 2) : 0,
-            'on_time_percentage' => $totalAttendances > 0 ? round(($onTime / $totalAttendances) * 100, 2) : 0,
+            
+            // Persentase
+            'present_percentage' => 100,
+            'late_percentage' => $totalAttendances > 0 ? round(($late / $totalAttendances) * 100) : 0,
+            'on_time_percentage' => $totalAttendances > 0 ? round(($onTime / $totalAttendances) * 100) : 0,
+            'pending_percentage' => $totalAttendances > 0 ? round(($pending / $totalAttendances) * 100) : 0,
         ];
     }
 
     /**
-     * Export PDF untuk semua role
+     * Export PDF (Memanfaatkan data stats yang sudah ada)
      */
     public function exportAttendancePDF(Request $request)
     {
         $user = Auth::user();
-        $type = $request->get('type', 'today');
+        $branch_id = $user->branch_id;
         $date = $request->get('date', today()->format('Y-m-d'));
         
         $data = [];
+        $data['user'] = $user;
+        $data['export_date'] = now()->format('d-m-Y H:i:s');
+        $data['period'] = $date;
         
+        // Gunakan fungsi stats yang sama untuk konsistensi data
         switch ($user->role) {
             case 'admin':
-                $data = $this->getAdminAttendanceStats($user->branch_id);
-                $data['title'] = 'Laporan Absensi Admin';
+                $data['stats'] = $this->getAdminAttendanceStats($branch_id);
+                $data['title'] = 'Laporan Statistik Harian (Admin)';
                 $data['role'] = 'Admin';
                 break;
                 
             case 'audit':
-                $data = $this->getAuditAttendanceStats($user->branch_id);
+                $data['stats'] = $this->getAuditAttendanceStats($branch_id);
                 $data['title'] = 'Laporan Verifikasi Absensi';
                 $data['role'] = 'Audit';
                 break;
                 
             case 'security':
-                $data = $this->getSecurityAttendanceStats($user->id, $user->branch_id);
-                $data['title'] = 'Laporan Pindaian Security';
+                $data['stats'] = $this->getSecurityAttendanceStats($user->id, $branch_id);
+                $data['title'] = 'Laporan Aktivitas Security';
                 $data['role'] = 'Security';
                 break;
                 
             case 'user_biasa':
             case 'leader':
-                $data = $this->getUserAttendanceStats($user->id, $user->branch_id);
-                $data['title'] = 'Laporan Absensi Personal';
-                $data['role'] = ucfirst(str_replace('_', ' ', $user->role));
+                $data['stats'] = $this->getUserAttendanceStats($user->id, $branch_id);
+                $data['title'] = 'Laporan Absensi Personal (Bulan Ini)';
+                $data['role'] = 'Karyawan';
                 break;
         }
-        
-        $data['user'] = $user;
-        $data['export_date'] = now()->format('d-m-Y H:i:s');
-        $data['period'] = $date;
 
+        // Load View PDF (Pastikan file resources/views/pdf/attendance-report.blade.php ada)
         $pdf = PDF::loadView('pdf.attendance-report', $data);
         
         return $pdf->download('laporan-absensi-' . $user->role . '-' . now()->format('Y-m-d') . '.pdf');
