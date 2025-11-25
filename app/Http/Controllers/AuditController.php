@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Attendance;
-use App\Models\AuditTeam;
 use App\Models\LateNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,22 +20,43 @@ class AuditController extends Controller
     public function showVerificationList()
     {
         $user = Auth::user();
+        
+        // 1. QUERY DASAR: Cari yang statusnya pending
         $query = Attendance::where('status', 'pending_verification')
             ->with('user.division');
 
-        // --- PERBAIKAN: Filter melalui relasi user ---
-        if (($user->role == 'admin' && $user->branch_id != null) || ($user->role == 'audit' && $user->branch_id != null)) {
-            $query->whereHas('user', function ($q) use ($user) {
-                $q->where('branch_id', $user->branch_id);
-            });
+        // 2. KUMPULKAN CABANG (Logic Multi-Branch)
+        // Ambil dari Pivot Table (untuk Audit/Multi-branch)
+        $myBranchIds = $user->branches()->pluck('branches.id')->toArray();
+        
+        // Ambil dari Homebase (Primary Branch) jika ada
+        if ($user->branch_id) {
+            $myBranchIds[] = $user->branch_id;
         }
-        // Jika Super Admin (admin & branch_id == null), lihat semua tanpa filter
+        
+        // Hapus duplikat dan nilai kosong
+        $myBranchIds = array_filter(array_unique($myBranchIds));
+
+        // 3. TERAPKAN FILTER
+        // Logika:
+        // - Jika Super Admin (Admin & Tidak punya cabang spesifik): Lihat SEMUA.
+        // - Jika Audit ATAU Admin Cabang: Filter berdasarkan cabang yang mereka pegang.
+        
+        $isSuperAdmin = ($user->role == 'admin' && empty($myBranchIds));
+
+        if (!$isSuperAdmin) {
+            // Jika dia bukan super admin, WAJIB difilter berdasarkan cabang
+            if (!empty($myBranchIds)) {
+                $query->whereHas('user', function ($q) use ($myBranchIds) {
+                    $q->whereIn('branch_id', $myBranchIds);
+                });
+            } else {
+                // Safety: Jika role audit tapi belum diset cabang apapun, jangan tampilkan data (kosongkan)
+                $query->where('id', 0);
+            }
+        }
 
         $pendingAttendances = $query->latest()->get();
-
-        // DEBUG: Untuk memastikan query bekerja
-        // \Log::info('User: ' . $user->name . ', Role: ' . $user->role . ', Branch: ' . $user->branch_id);
-        // \Log::info('Pending Count: ' . $pendingAttendances->count());
 
         return view('audit.verification_list', compact('pendingAttendances'));
     }
@@ -66,9 +86,12 @@ class AuditController extends Controller
         $user = $attendance->user;
         $date = $attendance->check_in_time->format('d/m/Y');
 
+        // Hapus foto jika ada sebelum hapus data
         if ($attendance->photo_path) {
             Storage::delete($attendance->photo_path);
         }
+        
+        // Force Delete karena ditolak (agar user bisa absen ulang jika perlu, atau dianggap tidak hadir)
         $attendance->delete();
 
         $title = "Absensi Ditolak";
@@ -87,13 +110,25 @@ class AuditController extends Controller
         $user = Auth::user();
 
         $query = LateNotification::where('is_active', true)
-            ->with(['user', 'user.division']); // Eager load user dan division user
+            ->with(['user', 'user.division']); 
 
-        // Filter berdasarkan branch user melalui relasi
-        if (($user->role == 'admin' && $user->branch_id != null) || $user->role == 'audit') {
-            $query->whereHas('user', function ($q) use ($user) {
-                $q->where('branch_id', $user->branch_id);
-            });
+        // --- FILTER CABANG (Sama seperti Verification List) ---
+        $myBranchIds = $user->branches()->pluck('branches.id')->toArray();
+        if ($user->branch_id) {
+            $myBranchIds[] = $user->branch_id;
+        }
+        $myBranchIds = array_filter(array_unique($myBranchIds));
+
+        $isSuperAdmin = ($user->role == 'admin' && empty($myBranchIds));
+
+        if (!$isSuperAdmin) {
+            if (!empty($myBranchIds)) {
+                $query->whereHas('user', function ($q) use ($myBranchIds) {
+                    $q->whereIn('branch_id', $myBranchIds);
+                });
+            } else {
+                $query->where('id', 0);
+            }
         }
 
         $latePermissions = $query->latest()->get();
