@@ -51,23 +51,25 @@
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
                         <div>
                             <h4 class="mb-2 fw-bold">
-                                @if(Auth::user()->role == 'audit')
-                                    <i class="mdi mdi-account-group me-2"></i>Daftar Rekan di Wilayah Audit
+                                {{-- Judul Dinamis --}}
+                                @if(count($myBranchIds) > 1)
+                                    <i class="mdi mdi-domain me-2"></i>Tim Lintas Cabang
                                 @else
-                                    {{-- PERUBAHAN DISINI: Teks disesuaikan --}}
-                                    <i class="mdi mdi-office-building-marker me-2"></i>Rekan Kerja Satu Cabang
+                                    <i class="mdi mdi-office-building me-2"></i>Rekan Satu Cabang
                                 @endif
                             </h4>
                             <p class="mb-0 opacity-75 small">
-                                @if(Auth::user()->branch)
+                                @if(count($myBranchIds) > 1)
+                                    Menampilkan rekan dari {{ count($myBranchIds) }} cabang yang Anda kelola.
+                                @elseif(Auth::user()->branch)
                                     Lokasi: <strong>{{ Auth::user()->branch->name }}</strong>
                                 @else
-                                    Monitoring kehadiran tim real-time
+                                    Monitoring kehadiran tim
                                 @endif
                             </p>
                         </div>
                         <span class="team-count badge rounded-pill px-4 py-2 fs-6">
-                            <i class="mdi mdi-account-check me-2"></i>{{ $myTeam->count() }} Orang
+                            <i class="mdi mdi-account-group me-2"></i>{{ $myTeam->count() }} Orang
                         </span>
                     </div>
                 </div>
@@ -75,20 +77,13 @@
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
+                            {{-- THEAD SAMA --}}
                             <thead class="table-light">
                                 <tr>
-                                    <th class="ps-4 py-3" width="5%">
-                                        <span class="text-muted fw-bold">#</span>
-                                    </th>
-                                    <th class="py-3" width="40%">
-                                        <span class="text-muted fw-bold">Nama & Posisi</span>
-                                    </th>
-                                    <th class="py-3" width="25%">
-                                        <span class="text-muted fw-bold">Status Absensi</span>
-                                    </th>
-                                    <th class="py-3" width="30%">
-                                        <span class="text-muted fw-bold">Keterangan / Bukti</span>
-                                    </th>
+                                    <th class="ps-4 py-3" width="5%">#</th>
+                                    <th class="py-3" width="40%">Nama & Posisi</th>
+                                    <th class="py-3" width="25%">Status Absensi</th>
+                                    <th class="py-3" width="30%">Keterangan</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -100,126 +95,98 @@
                                             </span>
                                         </td>
                                         
-                                        {{-- KOLOM NAMA & FOTO --}}
                                         <td class="py-3">
                                             <div class="d-flex align-items-center">
+                                                {{-- LOGIKA AVATAR SAMA --}}
                                                 @php
                                                     $attendance = $member->attendances->first();
                                                     $isOnline = $attendance && !$attendance->check_out_time;
                                                 @endphp
                                                 
-                                                {{-- AVATAR --}}
                                                 <div class="avatar-wrapper me-3 flex-shrink-0 {{ $isOnline ? '' : 'offline' }}" 
                                                      style="width: 55px; height: 55px; min-width: 55px;">
                                                     @if($member->profile_photo_path)
-                                                        <img src="{{ Storage::url($member->profile_photo_path) }}" 
-                                                             alt="{{ $member->name }}" 
-                                                             class="rounded-circle shadow-sm"
-                                                             style="width: 55px; height: 55px; object-fit: cover; border: 3px solid white;">
+                                                        <img src="{{ Storage::url($member->profile_photo_path) }}" class="rounded-circle shadow-sm" style="width: 55px; height: 55px; object-fit: cover; border: 3px solid white;">
                                                     @else
-                                                        <div class="rounded-circle bg-gradient text-white fw-bold d-flex align-items-center justify-content-center shadow-sm"
-                                                             style="width: 55px; height: 55px; font-size: 22px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: 3px solid white;">
+                                                        <div class="rounded-circle bg-gradient text-white fw-bold d-flex align-items-center justify-content-center shadow-sm" style="width: 55px; height: 55px; font-size: 22px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: 3px solid white;">
                                                             {{ strtoupper(substr($member->name, 0, 1)) }}
                                                         </div>
                                                     @endif
                                                 </div>
                                                 
-                                                {{-- NAMA & INFO --}}
                                                 <div style="min-width: 0; flex: 1;">
                                                     <h6 class="mb-2 fw-bold text-dark" style="font-size: 1rem;">
                                                         {{ $member->name }}
                                                     </h6>
                                                     
                                                     <div class="d-flex flex-wrap gap-2">
-                                                        {{-- Cabang --}}
+                                                        {{-- Badge Cabang (Penting untuk Multi Branch view) --}}
                                                         <span class="branch-badge badge" style="font-size: 0.75rem;">
                                                             <i class="mdi mdi-map-marker me-1"></i>{{ $member->branch->name ?? 'No Branch' }}
                                                         </span>
 
-                                                        {{-- Divisi --}}
+                                                        {{-- Badge Divisi --}}
                                                         @foreach($member->divisions as $div)
                                                             <span class="division-badge badge" style="font-size: 0.75rem;">
                                                                 <i class="mdi mdi-briefcase-outline me-1"></i>{{ $div->name }}
                                                             </span>
-                                                            @if($loop->iteration >= 2)
-                                                                <span class="badge bg-light text-dark" style="font-size: 0.7rem; border: 1px solid #e2e8f0;">
-                                                                    +{{ $member->divisions->count() - 2 }} lainnya
-                                                                </span>
-                                                                @break
-                                                            @endif
+                                                            @if($loop->iteration >= 1) @break @endif {{-- Limit tampilan divisi biar ga penuh --}}
                                                         @endforeach
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
 
-                                        {{-- KOLOM STATUS --}}
+                                        {{-- KOLOM STATUS (SAMA) --}}
                                         <td class="py-3">
                                             @if ($attendance)
                                                 @if ($attendance->check_out_time)
                                                     <span class="status-badge bg-primary text-white">
-                                                        <i class="mdi mdi-home-variant"></i>
-                                                        <span>Pulang {{ $attendance->check_out_time->format('H:i') }}</span>
+                                                        <i class="mdi mdi-home-variant"></i> <span>Pulang {{ $attendance->check_out_time->format('H:i') }}</span>
                                                     </span>
                                                 @else
                                                     <span class="status-badge bg-success text-white">
-                                                        <i class="mdi mdi-briefcase-check"></i>
-                                                        <span>Masuk {{ $attendance->check_in_time->format('H:i') }}</span>
+                                                        <i class="mdi mdi-briefcase-check"></i> <span>Masuk {{ $attendance->check_in_time->format('H:i') }}</span>
                                                     </span>
                                                 @endif
                                             @elseif ($member->activeLateStatus)
                                                 <span class="status-badge bg-warning text-dark">
-                                                    <i class="mdi mdi-file-document"></i>
-                                                    <span>Izin/Sakit</span>
+                                                    <i class="mdi mdi-file-document"></i> <span>Izin/Sakit</span>
                                                 </span>
                                             @else
                                                 <span class="status-badge bg-danger text-white">
-                                                    <i class="mdi mdi-close-circle"></i>
-                                                    <span>Belum Hadir</span>
+                                                    <i class="mdi mdi-close-circle"></i> <span>Belum Hadir</span>
                                                 </span>
                                             @endif
                                         </td>
 
-                                        {{-- KOLOM KETERANGAN --}}
+                                        {{-- KOLOM BUKTI (SAMA) --}}
                                         <td class="py-3">
-                                            @if ($attendance)
-                                                @php
-                                                    $photo = $attendance->photo_out_path ?? $attendance->photo_path;
-                                                @endphp
-                                                @if($photo)
-                                                    <button type="button" class="view-photo-btn btn btn-sm" 
-                                                            data-bs-toggle="modal" data-bs-target="#imageModal" 
-                                                            data-src="{{ Storage::url($photo) }}">
-                                                        <div class="photo-preview">
-                                                            <img src="{{ Storage::url($photo) }}" style="width: 100%; height: 100%; object-fit: cover;">
-                                                        </div>
-                                                        <span>Lihat Foto</span>
-                                                    </button>
-                                                @else
-                                                    <span class="text-muted small fst-italic">
-                                                        <i class="mdi mdi-image-off me-1"></i>Tidak ada foto
-                                                    </span>
-                                                @endif
+                                            @if ($attendance && ($attendance->photo_out_path || $attendance->photo_path))
+                                                <button type="button" class="view-photo-btn btn btn-sm" 
+                                                        data-bs-toggle="modal" data-bs-target="#imageModal" 
+                                                        data-src="{{ Storage::url($attendance->photo_out_path ?? $attendance->photo_path) }}">
+                                                    <div class="photo-preview">
+                                                        <img src="{{ Storage::url($attendance->photo_out_path ?? $attendance->photo_path) }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                                    </div>
+                                                    <span>Lihat Foto</span>
+                                                </button>
                                             @elseif ($member->activeLateStatus)
                                                 <div class="late-message">
                                                     <i class="mdi mdi-message-text me-1"></i>
-                                                    <strong>Alasan:</strong> "{{ Str::limit($member->activeLateStatus->message, 50) }}"
+                                                    "{{ Str::limit($member->activeLateStatus->message, 30) }}"
                                                 </div>
                                             @else
-                                                <span class="text-muted small">
-                                                    <i class="mdi mdi-minus-circle me-1"></i>Tidak ada data
-                                                </span>
+                                                <span class="text-muted small"><i class="mdi mdi-minus-circle me-1"></i>-</span>
                                             @endif
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
                                         <td colspan="4" class="empty-state">
-                                            <div class="empty-state-icon">
-                                                <i class="mdi mdi-account-off"></i>
-                                            </div>
-                                            <h5 class="text-muted mb-2">Tidak Ada Rekan Kerja</h5>
-                                            <p class="text-muted small mb-0">Belum ada rekan kerja lain di cabang <strong>{{ Auth::user()->branch->name ?? 'ini' }}</strong>.</p>
+                                            <div class="empty-state-icon"><i class="mdi mdi-account-search"></i></div>
+                                            <h5 class="text-muted mb-2">Tidak Ada Data</h5>
+                                            <p class="text-muted small mb-0">Tidak ada rekan kerja ditemukan di cabang yang Anda kelola.</p>
                                         </td>
                                     </tr>
                                 @endforelse
