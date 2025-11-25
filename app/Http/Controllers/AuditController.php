@@ -133,6 +133,6 @@ class AuditController extends Controller
 
         $latePermissions = $query->latest()->get();
 
-        return view('audit.late-list', compact('latePermissions'));
+        return view('leave_requests.index', compact('latePermissions'));
     }
 }
