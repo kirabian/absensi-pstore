@@ -15,16 +15,36 @@ class LeaveRequestController extends Controller
         $user = Auth::user();
         $query = LeaveRequest::with('user')->latest();
 
-        // Logika Filter Role
+        // --- LOGIKA PERBAIKAN ROLE & CABANG ---
+
+        // 1. Kumpulkan ID Cabang (Logic Multi-Branch)
+        $myBranchIds = $user->branches()->pluck('branches.id')->toArray(); // Dari Pivot
+        if ($user->branch_id) {
+            $myBranchIds[] = $user->branch_id; // Dari Homebase
+        }
+        $myBranchIds = array_filter(array_unique($myBranchIds));
+
+        // 2. Terapkan Filter
         if ($user->role == 'admin') {
-            // Admin lihat semua
-        } elseif ($user->role == 'audit') {
-            // Audit lihat tim satu cabang
-            $query->whereHas('user', function ($q) use ($user) {
-                $q->where('branch_id', $user->branch_id);
-            });
-        } else {
-            // User biasa lihat punya sendiri
+            // Admin melihat semua data (kecuali jika admin cabang, tambahkan filter ini jika perlu)
+            if (!empty($myBranchIds)) {
+                 // Opsional: Jika Admin Cabang ingin dibatasi view-nya, uncomment baris ini:
+                 // $query->whereHas('user', fn($q) => $q->whereIn('branch_id', $myBranchIds));
+            }
+        } 
+        elseif ($user->role == 'audit') {
+            // AUDIT: Melihat request dari user di SEMUA cabang yang dipegangnya
+            if (!empty($myBranchIds)) {
+                $query->whereHas('user', function ($q) use ($myBranchIds) {
+                    $q->whereIn('branch_id', $myBranchIds);
+                });
+            } else {
+                // Safety: Jika audit belum di-assign cabang apapun, jangan tampilkan data
+                $query->where('id', 0);
+            }
+        } 
+        else {
+            // USER BIASA / LEADER / SECURITY: Hanya lihat punya sendiri
             $query->where('user_id', $user->id);
         }
 
@@ -102,6 +122,7 @@ class LeaveRequestController extends Controller
     // ACTION: APPROVE (Admin/Audit)
     public function approve(LeaveRequest $leaveRequest)
     {
+        // Opsional: Cek hak akses branch sebelum approve
         $leaveRequest->update(['status' => 'approved']);
         return redirect()->back()->with('success', 'Pengajuan disetujui.');
     }
