@@ -24,8 +24,9 @@
                         </div>
                         <div class="card-bank-content">
                             <p class="card-bank-label">Total User</p>
+                            {{-- Nilai ini sudah difilter di controller (tidak termasuk admin) --}}
                             <h2 class="card-bank-value">{{ $totalUsers }}</h2>
-                            <p class="card-bank-desc">User terdaftar di sistem</p>
+                            <p class="card-bank-desc">Karyawan terdaftar</p>
                         </div>
                         <div class="card-bank-pattern"></div>
                     </div>

@@ -53,7 +53,11 @@ class DashboardController extends Controller
 
         if ($user->role == 'admin') {
             // --- ADMIN ---
-            $data['totalUsers'] = $userQuery->count();
+            
+            // [UPDATED] Total Users: Exclude Admin accounts
+            // Agar jumlah admin tidak ketahuan user lain / statistik murni karyawan
+            $data['totalUsers'] = $userQuery->where('role', '!=', 'admin')->count();
+
             $data['totalDivisions'] = $divisionQuery->count();
             // Total record hari ini
             $data['attendancesToday'] = $attendanceQuery->whereDate('check_in_time', today())->count();
@@ -172,9 +176,13 @@ class DashboardController extends Controller
             $query->where('branch_id', $branch_id);
         }
 
+        // [UPDATED] Hitung total user real (exclude admin)
+        // Ini agar persentase kehadiran akurat terhadap jumlah karyawan
         $totalUsers = User::when($branch_id, function($q) use ($branch_id) {
             return $q->where('branch_id', $branch_id);
-        })->count();
+        })
+        ->where('role', '!=', 'admin') // Exclude Admin
+        ->count();
 
         // Clone query untuk efisiensi
         $presentCount = (clone $query)->count();
@@ -238,8 +246,7 @@ class DashboardController extends Controller
      */
     private function getSecurityAttendanceStats($security_id, $branch_id = null)
     {
-        // Hitung semua scan hari ini (baik oleh security ini atau global branch, tergantung kebutuhan)
-        // Disini kita ambil global branch activity agar security tau progress absensi karyawan
+        // Hitung semua scan hari ini
         $query = Attendance::whereDate('check_in_time', today());
         
         if ($branch_id) {
@@ -249,12 +256,8 @@ class DashboardController extends Controller
         // Filter khusus tipe SCAN QR
         $scanQuery = (clone $query)->where('attendance_type', 'scan');
 
-        $totalScans = (clone $scanQuery)->count(); // Ini hitungan record, bukan hitungan 'beep' scanner
-        
-        // Scan Masuk = Record scan yang check_in ada
+        $totalScans = (clone $scanQuery)->count(); 
         $checkInScans = (clone $scanQuery)->count(); 
-        
-        // Scan Pulang = Record scan yang check_out sudah terisi
         $checkOutScans = (clone $scanQuery)->whereNotNull('check_out_time')->count();
 
         // Total aktivitas 'beep' = Masuk + Pulang
@@ -265,9 +268,9 @@ class DashboardController extends Controller
             'check_in_scans' => $checkInScans,
             'check_out_scans' => $checkOutScans,
             
-            // Persentase (dari total karyawan yang diharapkan)
-            'check_in_percentage' => 100, // Placeholder
-            'check_out_percentage' => 100, // Placeholder
+            // Persentase (Placeholder)
+            'check_in_percentage' => 100, 
+            'check_out_percentage' => 100, 
         ];
     }
 
@@ -324,7 +327,6 @@ class DashboardController extends Controller
         $data['export_date'] = now()->format('d-m-Y H:i:s');
         $data['period'] = $date;
         
-        // Gunakan fungsi stats yang sama untuk konsistensi data
         switch ($user->role) {
             case 'admin':
                 $data['stats'] = $this->getAdminAttendanceStats($branch_id);
@@ -352,9 +354,7 @@ class DashboardController extends Controller
                 break;
         }
 
-        // Load View PDF (Pastikan file resources/views/pdf/attendance-report.blade.php ada)
         $pdf = PDF::loadView('pdf.attendance-report', $data);
-        
         return $pdf->download('laporan-absensi-' . $user->role . '-' . now()->format('Y-m-d') . '.pdf');
     }
 }
