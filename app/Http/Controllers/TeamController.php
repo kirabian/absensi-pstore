@@ -14,9 +14,10 @@ class TeamController extends Controller
         $myId = $user->id;
 
         // Mulai Query, kecualikan diri sendiri
-        $query = User::where('id', '!=', $myId);
+        $query = User::where('id', '!=', $myId)
+                     ->where('is_active', true); // Tambahan: Hanya tampilkan user aktif
 
-        // --- LOGIKA UNTUK ROLE AUDIT (Berdasarkan Cabang) ---
+        // --- LOGIKA UNTUK ROLE AUDIT (Tetap Multi Branch) ---
         if ($user->role == 'audit') {
             // Ambil semua ID cabang dari pivot table (Multi Branch)
             $myBranchIds = $user->branches()->pluck('branches.id')->toArray();
@@ -28,7 +29,7 @@ class TeamController extends Controller
             $myBranchIds = array_unique($myBranchIds); // Hapus duplikat
 
             // Cari user yang Homebase-nya ada di cabang tersebut
-            // ATAU user yang punya akses Multi Branch ke cabang tersebut (sesama auditor)
+            // ATAU user yang punya akses Multi Branch ke cabang tersebut
             $query->where(function($q) use ($myBranchIds) {
                 $q->whereIn('branch_id', $myBranchIds)
                   ->orWhereHas('branches', function($subQ) use ($myBranchIds) {
@@ -37,21 +38,15 @@ class TeamController extends Controller
             });
         } 
         
-        // --- LOGIKA UNTUK ROLE LAIN (Berdasarkan Divisi) ---
+        // --- LOGIKA UNTUK ANGGOTA BIASA (HANYA CABANG YANG SAMA) ---
         else {
-            // Ambil semua ID divisi dari pivot table (Multi Division)
-            $myDivisionIds = $user->divisions()->pluck('divisions.id')->toArray();
-
-            // Tambahkan Homebase division (jika ada, sebagai backup)
-            if ($user->division_id) {
-                $myDivisionIds[] = $user->division_id;
+            // Filter hanya user yang memiliki branch_id SAMA dengan user yang sedang login
+            if ($user->branch_id) {
+                $query->where('branch_id', $user->branch_id);
+            } else {
+                // Jika user yang login tidak punya cabang (error case), jangan tampilkan siapapun
+                $query->where('id', 0);
             }
-            $myDivisionIds = array_unique($myDivisionIds);
-
-            // Cari user yang memiliki SETIDAKNYA SATU divisi yang sama
-            $query->whereHas('divisions', function($q) use ($myDivisionIds) {
-                $q->whereIn('divisions.id', $myDivisionIds);
-            });
         }
 
         // Eager Load Absensi & Data Pendukung
@@ -60,10 +55,10 @@ class TeamController extends Controller
                     $q->whereDate('check_in_time', today());
                 },
                 'activeLateStatus',
-                'divisions', // Load relasi divisi untuk ditampilkan di view
-                'branch'     // Load relasi cabang
+                'divisions', 
+                'branch'    
             ])
-            ->orderBy('name', 'asc') // Urutkan abjad biar rapi
+            ->orderBy('name', 'asc')
             ->get();
 
         return view('user_biasa.team', compact('myTeam'));
