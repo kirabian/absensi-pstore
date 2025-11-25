@@ -13,35 +13,42 @@ class LeaveRequestController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $query = LeaveRequest::with('user')->latest();
+        // Eager load user & division untuk performa
+        $query = LeaveRequest::with(['user.division'])->latest();
 
-        // --- LOGIKA PERBAIKAN ROLE & CABANG ---
+        // --- LOGIKA ROLE & CABANG ---
 
-        // 1. Kumpulkan ID Cabang (Logic Multi-Branch)
-        $myBranchIds = $user->branches()->pluck('branches.id')->toArray(); // Dari Pivot
-        if ($user->branch_id) {
-            $myBranchIds[] = $user->branch_id; // Dari Homebase
-        }
-        $myBranchIds = array_filter(array_unique($myBranchIds));
-
-        // 2. Terapkan Filter
         if ($user->role == 'admin') {
-            // Admin melihat semua data (kecuali jika admin cabang, tambahkan filter ini jika perlu)
-            if (!empty($myBranchIds)) {
-                 // Opsional: Jika Admin Cabang ingin dibatasi view-nya, uncomment baris ini:
-                 // $query->whereHas('user', fn($q) => $q->whereIn('branch_id', $myBranchIds));
-            }
+            // ADMIN: Melihat Semua Data
+            // (Tidak ada filter tambahan)
         } 
         elseif ($user->role == 'audit') {
-            // AUDIT: Melihat request dari user di SEMUA cabang yang dipegangnya
-            if (!empty($myBranchIds)) {
-                $query->whereHas('user', function ($q) use ($myBranchIds) {
-                    $q->whereIn('branch_id', $myBranchIds);
-                });
-            } else {
-                // Safety: Jika audit belum di-assign cabang apapun, jangan tampilkan data
-                $query->where('id', 0);
-            }
+            // AUDIT: Melihat data cabang yang dipegang + Punya sendiri
+            
+            // 1. Ambil ID Cabang dari Pivot (Multi Branch)
+            // Gunakan 'branches.id' atau 'id' tergantung relasi, pakai 'id' lebih aman via Eloquent
+            $pivotBranchIds = $user->branches->pluck('id')->toArray();
+            
+            // 2. Ambil ID Cabang dari Homebase (Single Branch)
+            $homebaseBranchId = $user->branch_id ? [$user->branch_id] : [];
+            
+            // 3. Gabungkan & Hapus Duplikat
+            $myBranchIds = array_unique(array_merge($pivotBranchIds, $homebaseBranchId));
+
+            $query->where(function($mainQ) use ($user, $myBranchIds) {
+                // Kondisi A: User yang request ada di cabang yang dipegang Audit
+                if (!empty($myBranchIds)) {
+                    $mainQ->whereHas('user', function ($q) use ($myBranchIds) {
+                        $q->whereIn('users.branch_id', $myBranchIds);
+                    });
+                } else {
+                    // Jika Audit belum punya cabang, force false untuk kondisi ini
+                    $mainQ->where('id', 0); 
+                }
+
+                // Kondisi B: ATAU Melihat request milik diri sendiri (biar gak kosong melompong kalau belum assign cabang)
+                $mainQ->orWhere('user_id', $user->id);
+            });
         } 
         else {
             // USER BIASA / LEADER / SECURITY: Hanya lihat punya sendiri
@@ -52,6 +59,8 @@ class LeaveRequestController extends Controller
         return view('leave_requests.index', compact('requests'));
     }
 
+    // ... (Method create, store, dll TETAP SAMA, tidak perlu diubah) ...
+    
     // MENAMPILKAN FORM
     public function create()
     {
@@ -122,7 +131,6 @@ class LeaveRequestController extends Controller
     // ACTION: APPROVE (Admin/Audit)
     public function approve(LeaveRequest $leaveRequest)
     {
-        // Opsional: Cek hak akses branch sebelum approve
         $leaveRequest->update(['status' => 'approved']);
         return redirect()->back()->with('success', 'Pengajuan disetujui.');
     }
