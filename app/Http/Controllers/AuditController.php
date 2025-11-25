@@ -25,7 +25,7 @@ class AuditController extends Controller
             ->with('user.division');
 
         // --- PERBAIKAN: Filter melalui relasi user ---
-        if (($user->role == 'admin' && $user->branch_id != null) || $user->role == 'audit') {
+        if ($user->role == 'admin' || $user->role == 'audit') {
             $query->whereHas('user', function ($q) use ($user) {
                 $q->where('branch_id', $user->branch_id);
             });
