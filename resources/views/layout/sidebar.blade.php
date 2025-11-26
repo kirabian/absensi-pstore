@@ -93,7 +93,7 @@
         @if (auth()->user()->role == 'user_biasa' || auth()->user()->role == 'leader' || auth()->user()->role == 'audit')
             <li class="nav-item nav-category">Menu Pengguna</li>
             <li class="nav-item">
-                <a class="nav-link" href="{{ route('my.team') }}">
+                <a class="nav-link" href="{{ route('team.index') }}">
                     <i class="menu-icon mdi mdi-account-multiple-outline"></i>
                     <span class="menu-title">Tim Saya</span>
                 </a>
