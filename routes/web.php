@@ -166,6 +166,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/tim-saya', [TeamController::class, 'index'])->name('my.team');
         Route::get('/tim-saya/{user}', [TeamController::class, 'show'])->name('my.team.show');
         Route::get('/tim-saya/attendance/{user}', [TeamController::class, 'attendance'])->name('my.team.attendance');
+        Route::get('/team/branch/{id}', [TeamController::class, 'showBranch'])->name('team.branch.detail');
     });
 
     // === RUTE SELF ATTENDANCE (User Biasa & Leader Saja) ===
