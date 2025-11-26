@@ -163,7 +163,8 @@ Route::middleware(['auth'])->group(function () {
 
     // === RUTE TEAM MANAGEMENT ===
     Route::middleware(['role:user_biasa,leader,audit'])->group(function () {
-        Route::get('/tim-saya', [TeamController::class, 'index'])->name('my.team');
+        // PERBAIKAN: name('my.team') diganti menjadi name('team.index')
+        Route::get('/tim-saya', [TeamController::class, 'index'])->name('team.index'); 
         Route::get('/tim-saya/{user}', [TeamController::class, 'show'])->name('my.team.show');
         Route::get('/tim-saya/attendance/{user}', [TeamController::class, 'attendance'])->name('my.team.attendance');
         Route::get('/team/branch/{id}', [TeamController::class, 'showBranch'])->name('team.branch.detail');
