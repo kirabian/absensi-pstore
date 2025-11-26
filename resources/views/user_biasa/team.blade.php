@@ -5,12 +5,12 @@
 
 @extends('layout.master')
 
-@section('title', 'Tim Saya')
-@section('heading', 'Rekan Kerja')
+@section('title', 'Tim & Cabang Saya')
+@section('heading', 'Monitoring Tim & Wilayah')
 
 @push('styles')
 <style>
-    /* Style tetap sama seperti sebelumnya */
+    /* --- Style Tim (Lama) --- */
     .team-card { border: none; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; }
     .team-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; color: white; }
     .team-count { background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); }
@@ -30,13 +30,26 @@
     .late-message { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 0.75rem; border-radius: 8px; font-style: italic; color: #92400e; max-width: 250px; }
     .empty-state { padding: 4rem 2rem; text-align: center; }
     .empty-state-icon { font-size: 4rem; color: #cbd5e1; margin-bottom: 1rem; }
+    
+    /* --- Style Baru untuk Cabang Saya --- */
+    .branch-section-title { position: relative; padding-left: 1.5rem; margin-bottom: 1.5rem; color: #1e293b; font-weight: 700; }
+    .branch-section-title::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 6px; height: 24px; background: linear-gradient(to bottom, #667eea, #764ba2); border-radius: 4px; }
+    
+    .branch-card-item { background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); transition: all 0.3s ease; border: 1px solid #f1f5f9; overflow: hidden; height: 100%; }
+    .branch-card-item:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(102,126,234,0.15); border-color: #c7d2fe; }
+    
+    .branch-icon-box { width: 50px; height: 50px; background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #667eea; font-size: 24px; margin-bottom: 1rem; transition: all 0.3s ease; }
+    .branch-card-item:hover .branch-icon-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    
+    .branch-stat { background: #f8fafc; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.85rem; color: #64748b; font-weight: 500; }
+    .branch-stat strong { display: block; font-size: 1.1rem; color: #1e293b; margin-bottom: 0.1rem; }
+
     @media (max-width: 768px) {
         .team-header { padding: 1.5rem; }
         .team-header h4 { font-size: 1.1rem; }
         .status-badge { padding: 0.4rem 0.8rem; font-size: 0.75rem; }
         .member-card { padding: 1rem !important; }
         .avatar-wrapper { width: 45px !important; height: 45px !important; min-width: 45px !important; }
-        .avatar-wrapper img, .avatar-wrapper > div { width: 45px !important; height: 45px !important; }
     }
     .modal-content { border: none; border-radius: 20px; overflow: hidden; }
     .modal-image-wrapper { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 1rem; }
@@ -44,14 +57,14 @@
 @endpush
 
 @section('content')
-    <div class="row">
+    {{-- SECTION 1: TABEL TIM SAYA --}}
+    <div class="row mb-5">
         <div class="col-12">
             <div class="card team-card">
                 <div class="team-header">
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
                         <div>
                             <h4 class="mb-2 fw-bold">
-                                {{-- Judul Dinamis --}}
                                 @if(count($myBranchIds) > 1)
                                     <i class="mdi mdi-domain me-2"></i>Tim Lintas Cabang
                                 @else
@@ -77,7 +90,6 @@
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
-                            {{-- THEAD SAMA --}}
                             <thead class="table-light">
                                 <tr>
                                     <th class="ps-4 py-3" width="5%">#</th>
@@ -97,7 +109,6 @@
                                         
                                         <td class="py-3">
                                             <div class="d-flex align-items-center">
-                                                {{-- LOGIKA AVATAR SAMA --}}
                                                 @php
                                                     $attendance = $member->attendances->first();
                                                     $isOnline = $attendance && !$attendance->check_out_time;
@@ -120,24 +131,20 @@
                                                     </h6>
                                                     
                                                     <div class="d-flex flex-wrap gap-2">
-                                                        {{-- Badge Cabang (Penting untuk Multi Branch view) --}}
                                                         <span class="branch-badge badge" style="font-size: 0.75rem;">
                                                             <i class="mdi mdi-map-marker me-1"></i>{{ $member->branch->name ?? 'No Branch' }}
                                                         </span>
-
-                                                        {{-- Badge Divisi --}}
                                                         @foreach($member->divisions as $div)
                                                             <span class="division-badge badge" style="font-size: 0.75rem;">
                                                                 <i class="mdi mdi-briefcase-outline me-1"></i>{{ $div->name }}
                                                             </span>
-                                                            @if($loop->iteration >= 1) @break @endif {{-- Limit tampilan divisi biar ga penuh --}}
+                                                            @if($loop->iteration >= 1) @break @endif 
                                                         @endforeach
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
 
-                                        {{-- KOLOM STATUS (SAMA) --}}
                                         <td class="py-3">
                                             @if ($attendance)
                                                 @if ($attendance->check_out_time)
@@ -160,7 +167,6 @@
                                             @endif
                                         </td>
 
-                                        {{-- KOLOM BUKTI (SAMA) --}}
                                         <td class="py-3">
                                             @if ($attendance && ($attendance->photo_out_path || $attendance->photo_path))
                                                 <button type="button" class="view-photo-btn btn btn-sm" 
@@ -196,6 +202,55 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    {{-- SECTION 2: CABANG SAYA (BARU) --}}
+    <div class="row">
+        <div class="col-12">
+            <h4 class="branch-section-title">Cabang Saya ({{ count($controlledBranches) }})</h4>
+        </div>
+    </div>
+
+    <div class="row">
+        @forelse ($controlledBranches as $branch)
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="branch-card-item p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="branch-icon-box">
+                            <i class="mdi mdi-storefront-outline"></i>
+                        </div>
+                        <span class="badge bg-light text-secondary border">
+                           ID: {{ $branch->id }}
+                        </span>
+                    </div>
+                    
+                    <h5 class="fw-bold mb-2">{{ $branch->name }}</h5>
+                    <p class="text-muted small mb-3" style="min-height: 40px;">
+                        <i class="mdi mdi-map-marker-outline me-1"></i>
+                        {{ Str::limit($branch->address ?? 'Alamat belum diatur', 50) }}
+                    </p>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                        <div class="branch-stat">
+                            <strong>{{ $branch->users_count }}</strong>
+                            Karyawan
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                            Detail <i class="mdi mdi-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        @empty
+            <div class="col-12">
+                <div class="card p-5 text-center border-0 shadow-sm">
+                    <div class="text-muted">
+                        <i class="mdi mdi-office-building-off" style="font-size: 3rem;"></i>
+                        <p class="mt-2">Anda tidak memiliki kontrol cabang khusus.</p>
+                    </div>
+                </div>
+            </div>
+        @endforelse
     </div>
 
     {{-- Modal Image --}}

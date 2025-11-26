@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Branch; // Tambahkan ini
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -13,7 +14,7 @@ class TeamController extends Controller
         $user = Auth::user();
         $myId = $user->id;
 
-        // 1. KUMPULKAN SEMUA CABANG MILIK USER LOGIN
+        // 1. KUMPULKAN SEMUA ID CABANG MILIK USER LOGIN
         $myBranchIds = $user->branches()->pluck('branches.id')->toArray();
         
         if ($user->branch_id) {
@@ -22,16 +23,14 @@ class TeamController extends Controller
         
         $myBranchIds = array_filter(array_unique($myBranchIds));
 
-        // 2. QUERY USER LAIN (FIXED AMBIGUOUS COLUMN)
-        // Perhatikan penambahan 'users.' di depan 'id' dan 'is_active'
+        // 2. QUERY USER LAIN (TIM)
         $query = User::where('users.id', '!=', $myId) 
                      ->where('users.is_active', true);
 
         if (empty($myBranchIds)) {
-            $query->where('users.id', 0); // Force empty result
+            $query->where('users.id', 0); 
         } else {
             $query->where(function($q) use ($myBranchIds) {
-                // Tambahkan 'users.' prefix juga disini untuk keamanan
                 $q->whereIn('users.branch_id', $myBranchIds)
                   ->orWhereHas('branches', function($subQ) use ($myBranchIds) {
                       $subQ->whereIn('branches.id', $myBranchIds);
@@ -39,7 +38,7 @@ class TeamController extends Controller
             });
         }
 
-        // 3. EAGER LOAD DATA
+        // Ambil Data Tim
         $myTeam = $query->with([
                 'attendances' => function ($q) {
                     $q->whereDate('check_in_time', today());
@@ -54,6 +53,15 @@ class TeamController extends Controller
             ->select('users.*') 
             ->get();
 
-        return view('user_biasa.team', compact('myTeam', 'myBranchIds'));
+        // 3. BARU: AMBIL DATA DETAIL CABANG UNTUK SECTION BAWAH
+        // Kita ambil data cabang berdasarkan $myBranchIds dan hitung user aktifnya
+        $controlledBranches = Branch::whereIn('id', $myBranchIds)
+            ->withCount(['users' => function($q) {
+                $q->where('is_active', true);
+            }])
+            ->orderBy('name', 'asc')
+            ->get();
+
+        return view('user_biasa.team', compact('myTeam', 'myBranchIds', 'controlledBranches'));
     }
 }
