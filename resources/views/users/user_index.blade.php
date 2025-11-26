@@ -98,23 +98,20 @@
                                             @endif
                                         </td>
 
-                                        {{-- PENEMPATAN (LOGIKA UTAMA DISINI) --}}
+                                        {{-- PENEMPATAN --}}
                                         <td>
                                             @if ($user->role == 'audit')
-                                                {{-- Tampilkan Multi Cabang --}}
                                                 <div class="fw-bold text-primary">Audit Wilayah:</div>
                                                 <small class="text-muted" style="white-space: normal;">
                                                     {{ $user->branches->pluck('name')->join(', ') ?: 'Belum ada wilayah' }}
                                                 </small>
                                             @elseif($user->role == 'leader')
-                                                {{-- Tampilkan Cabang Homebase + Multi Divisi --}}
                                                 <div class="fw-bold">{{ $user->branch->name ?? 'N/A' }}</div>
                                                 <div class="text-success text-small fw-bold mt-1">Memimpin Divisi:</div>
                                                 <small class="text-muted" style="white-space: normal;">
                                                     {{ $user->divisions->pluck('name')->join(', ') ?: 'Belum ada divisi' }}
                                                 </small>
                                             @else
-                                                {{-- User Biasa / Admin / Security --}}
                                                 <div class="fw-bold">{{ $user->branch->name ?? 'Semua Cabang' }}</div>
                                                 <small
                                                     class="text-muted">{{ $user->division->name ?? 'Tanpa Divisi' }}</small>
@@ -122,9 +119,9 @@
                                         </td>
 
                                         {{-- TANGGAL JOIN --}}
-                                        {{-- <td>
-                                            {{ $user->hire_date ? \Carbon\Carbon::parse($user->hire_date)->format('d M Y') : '-' }}
-                                        </td> --}}
+                                        <td>
+                                            {{ $user->created_at ? \Carbon\Carbon::parse($user->created_at)->format('d M Y') : '-' }}
+                                        </td>
 
                                         {{-- QR CODE --}}
                                         <td>
@@ -141,7 +138,6 @@
 
                                         {{-- AKSI --}}
                                         <td>
-                                            {{-- Tombol SHOW (Mata) --}}
                                             <a href="{{ route('users.show', $user->id) }}"
                                                 class="btn btn-inverse-info btn-icon btn-sm" title="Lihat Detail">
                                                 <i class="mdi mdi-eye"></i>
@@ -176,10 +172,11 @@
                         </table>
                     </div>
 
-                    {{-- Pagination Link --}}
-                    <div class="mt-3">
-                        {{ $users->links() }}
+                    {{-- PERBAIKAN PAGINATION DISINI --}}
+                    <div class="mt-4 d-flex justify-content-end">
+                        {{ $users->links('pagination::bootstrap-5') }}
                     </div>
+                    
                 </div>
             </div>
         </div>
