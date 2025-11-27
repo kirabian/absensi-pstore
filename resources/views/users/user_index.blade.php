@@ -15,11 +15,33 @@
                 <div class="card-body">
                     <h4 class="card-title">Daftar Semua User</h4>
 
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    {{-- CONTAINER: TOMBOL TAMBAH & SEARCH FORM --}}
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        
+                        {{-- Tombol Tambah --}}
                         <a href="{{ route('users.create') }}" class="btn btn-primary btn-sm">
                             <i class="mdi mdi-plus"></i> Tambah User Baru
                         </a>
+
+                        {{-- Form Pencarian --}}
+                        <form action="{{ route('users.index') }}" method="GET" class="d-flex">
+                            <div class="input-group input-group-sm" style="width: 250px;">
+                                <input type="text" name="search" class="form-control" 
+                                       placeholder="Cari Nama / ID / Email..." 
+                                       value="{{ request('search') }}">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="mdi mdi-magnify"></i>
+                                </button>
+                                {{-- Tombol Reset (Hanya muncul jika ada search) --}}
+                                @if(request('search'))
+                                    <a href="{{ route('users.index') }}" class="btn btn-secondary" title="Reset Pencarian">
+                                        <i class="mdi mdi-refresh"></i>
+                                    </a>
+                                @endif
+                            </div>
+                        </form>
                     </div>
+                    {{-- AKHIR CONTAINER --}}
 
                     @if (session('success'))
                         <div class="alert alert-success" role="alert">
@@ -164,7 +186,7 @@
                                 @empty
                                     <tr>
                                         <td colspan="8" class="text-center py-4">
-                                            <div class="text-muted">Belum ada data user.</div>
+                                            <div class="text-muted">Tidak ada data user yang ditemukan.</div>
                                         </td>
                                     </tr>
                                 @endforelse
@@ -172,7 +194,6 @@
                         </table>
                     </div>
 
-                    {{-- PERBAIKAN PAGINATION DISINI --}}
                     <div class="mt-4 d-flex justify-content-end">
                         {{ $users->links('pagination::bootstrap-5') }}
                     </div>

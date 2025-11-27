@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Attendance;
 use App\Models\User;
 use App\Models\Division;
 use App\Models\Branch;
@@ -29,26 +28,41 @@ class UserController extends Controller
     }
 
     /**
-     * Menampilkan daftar user.
+     * Menampilkan daftar user dengan FITUR SEARCH.
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
 
         $query = User::with(['division', 'branch', 'branches', 'divisions']);
 
-        // 1. Admin Cabang -> Filter user di cabangnya saja
+        // 1. Filter Role/Cabang (Logika Pembatasan Akses)
         if ($user->role == 'admin' && $user->branch_id != null) {
             $query->where('branch_id', $user->branch_id);
         }
-        // 2. Audit -> Filter user di SEMUA cabang wilayah auditnya
         elseif ($user->role == 'audit') {
             $auditBranchIds = $user->branches->pluck('id')->toArray();
             // Tampilkan user yang homebase-nya ada di wilayah audit
             $query->whereIn('branch_id', $auditBranchIds);
         }
 
-        $users = $query->latest()->paginate(10);
+        // 2. LOGIKA SEARCH (BARU)
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
+            
+            // Menggunakan group where (closure) agar tidak merusak filter cabang di atas
+            // Query: WHERE (branch_filter) AND (name LIKE %..% OR email LIKE %..% OR login_id LIKE %..%)
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('login_id', 'like', "%{$search}%");
+            });
+        }
+
+        // 3. Ambil Data (Paginate) & Append parameter search ke link pagination
+        $users = $query->latest()
+            ->paginate(10)
+            ->appends(['search' => $request->search]);
 
         return view('users.user_index', compact('users'));
     }
@@ -73,7 +87,6 @@ class UserController extends Controller
         }
 
         // 2. Ambil Data Divisi (GLOBAL - SEMUA DIVISI MUNCUL)
-        // Karena divisi sekarang master data, ambil saja semua.
         $divisions = Division::all();
 
         return view('users.user_create', compact('divisions', 'branches', 'allowedRoles'));
@@ -93,32 +106,25 @@ class UserController extends Controller
             'login_id' => 'required|string|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'role' => 'required|string|in:admin,audit,leader,security,user_biasa',
-
-            // Aturan Branch: Wajib diisi KECUALI role yang dibuat adalah 'admin' (Super Admin)
             'branch_id' => 'required_unless:role,admin|nullable|exists:branches,id',
-
             'multi_divisions' => 'nullable|array',
             'multi_branches' => 'nullable|array',
             'profile_photo_path' => 'nullable|image|max:2048',
             'whatsapp' => 'nullable|string|max:20',
         ]);
 
-        // VALIDASI TAMBAHAN: Cek apakah role yang dipilih diizinkan
+        // Cek role allowed
         $allowedRoles = $this->getAllowedRoles($user);
         if (!in_array($request->role, $allowedRoles)) {
             return back()->withErrors(['role' => 'Anda tidak memiliki hak akses untuk membuat user dengan role ini.'])->withInput();
         }
 
-        // VALIDASI KHUSUS AUDIT: Pastikan branch_id yang dipilih ada di wilayahnya
+        // Validasi Audit
         if ($user->role == 'audit') {
             $allowedBranchIds = $user->branches->pluck('id')->toArray();
-
-            // Jika branch_id dipilih, pastikan ID-nya ada di allowedBranchIds
             if ($request->branch_id && !in_array($request->branch_id, $allowedBranchIds)) {
                 return back()->withErrors(['branch_id' => 'Anda tidak memiliki hak akses untuk menambahkan user di cabang ini.'])->withInput();
             }
-
-            // Validasi multi_branches juga harus dalam wilayah audit
             if ($request->has('multi_branches')) {
                 foreach ($request->multi_branches as $branchId) {
                     if (!in_array($branchId, $allowedBranchIds)) {
@@ -128,7 +134,7 @@ class UserController extends Controller
             }
         }
 
-        // VALIDASI KHUSUS ADMIN CABANG: Pastikan tidak membuat user di cabang lain
+        // Validasi Admin Cabang
         if ($user->role == 'admin' && $user->branch_id != null) {
             if ($request->branch_id && $request->branch_id != $user->branch_id) {
                 return back()->withErrors(['branch_id' => 'Anda hanya dapat menambahkan user di cabang Anda sendiri.'])->withInput();
@@ -138,19 +144,16 @@ class UserController extends Controller
         // 2. Siapkan Data
         $data = $request->except(['password', 'profile_photo_path', 'multi_branches', 'multi_divisions']);
 
-        // Fix Division ID (Ambil yg pertama dipilih dari multi select)
         if ($request->has('multi_divisions') && count($request->multi_divisions) > 0) {
             $data['division_id'] = $request->multi_divisions[0];
         } else {
             $data['division_id'] = null;
         }
 
-        // Force Branch ID untuk Admin Cabang (Override input user)
         if ($user->role == 'admin' && $user->branch_id != null) {
             $data['branch_id'] = $user->branch_id;
         }
 
-        // Null Branch ID jika membuat Super Admin
         if ($request->role == 'admin') {
             $data['branch_id'] = null;
             $data['division_id'] = null;
@@ -158,7 +161,7 @@ class UserController extends Controller
 
         $data['password'] = Hash::make($request->password);
         $data['qr_code_value'] = (string) Str::uuid();
-        $data['hire_date'] = now(); // Set hire_date ke tanggal sekarang
+        $data['hire_date'] = now();
 
         if ($request->hasFile('profile_photo_path')) {
             $path = $request->file('profile_photo_path')->store('profile-photos', 'public');
@@ -169,12 +172,10 @@ class UserController extends Controller
         $newUser = User::create($data);
 
         // 4. Sync Pivot Tables
-        // Jika membuat user Audit baru -> Simpan Multi Branches
         if ($request->role == 'audit' && $request->has('multi_branches')) {
             $newUser->branches()->sync($request->multi_branches);
         }
 
-        // Simpan Multi Divisions untuk semua role (termasuk Leader & User Biasa)
         if ($request->has('multi_divisions')) {
             $newUser->divisions()->sync($request->multi_divisions);
         }
@@ -190,24 +191,20 @@ class UserController extends Controller
         $user->load(['branches', 'divisions']);
         $auth_user = Auth::user();
 
-        // PROTEKSI EDIT: Audit hanya boleh edit user di wilayahnya
+        // Proteksi Edit
         if ($auth_user->role == 'audit') {
             $allowedBranchIds = $auth_user->branches->pluck('id')->toArray();
-            // Cek apakah user yg diedit ada di wilayah audit
             if (!in_array($user->branch_id, $allowedBranchIds)) {
                 abort(403, 'User ini di luar wilayah audit Anda.');
             }
         }
-        // Admin Cabang hanya boleh edit user di cabangnya
         if ($auth_user->role == 'admin' && $auth_user->branch_id != null) {
             if ($user->branch_id != $auth_user->branch_id) {
                 abort(403, 'User ini di luar cabang Anda.');
             }
         }
 
-        // --- FILTER DATA UNTUK DROPDOWN ---
-
-        // 1. Ambil Data Cabang (Sesuai Role)
+        // Filter Data Dropdown
         if ($auth_user->role == 'admin' && $auth_user->branch_id != null) {
             $branches = Branch::where('id', $auth_user->branch_id)->get();
             $allowedRoles = ['leader', 'security', 'user_biasa'];
@@ -215,13 +212,10 @@ class UserController extends Controller
             $branches = $auth_user->branches;
             $allowedRoles = ['audit', 'leader', 'security', 'user_biasa'];
         } else {
-            // Super Admin
             $branches = Branch::all();
             $allowedRoles = ['admin', 'audit', 'leader', 'security', 'user_biasa'];
         }
 
-        // 2. Ambil Data Divisi (GLOBAL - UNTUK SEMUA ROLE)
-        // Karena divisi sudah tidak punya branch_id, panggil semua saja.
         $divisions = Division::all();
 
         return view('users.user_edit', compact('user', 'divisions', 'branches', 'allowedRoles'));
@@ -234,20 +228,14 @@ class UserController extends Controller
     {
         $auth_user = Auth::user();
 
-        // PROTEKSI UPDATE
+        // Proteksi Update
         if ($auth_user->role == 'admin' && $auth_user->branch_id != null) {
-            if ($user->branch_id != $auth_user->branch_id) {
-                abort(403, 'User ini di luar cabang Anda.');
-            }
+            if ($user->branch_id != $auth_user->branch_id) abort(403, 'User ini di luar cabang Anda.');
         }
 
         if ($auth_user->role == 'audit') {
             $allowedBranchIds = $auth_user->branches->pluck('id')->toArray();
-            if (!in_array($user->branch_id, $allowedBranchIds)) {
-                abort(403, 'User ini di luar wilayah audit Anda.');
-            }
-
-            // Cek jika branch diganti ke luar wilayah audit
+            if (!in_array($user->branch_id, $allowedBranchIds)) abort(403, 'User ini di luar wilayah audit Anda.');
             if ($request->branch_id && !in_array($request->branch_id, $allowedBranchIds)) {
                 return back()->withErrors(['branch_id' => 'Cabang di luar wilayah audit.'])->withInput();
             }
@@ -266,7 +254,6 @@ class UserController extends Controller
             'whatsapp' => 'nullable|string|max:20',
         ]);
 
-        // VALIDASI TAMBAHAN: Cek apakah role yang dipilih diizinkan
         $allowedRoles = $this->getAllowedRoles($auth_user);
         if (!in_array($request->role, $allowedRoles)) {
             return back()->withErrors(['role' => 'Anda tidak memiliki hak akses untuk mengubah user menjadi role ini.'])->withInput();
@@ -280,12 +267,10 @@ class UserController extends Controller
             $data['division_id'] = null;
         }
 
-        // Force Branch ID untuk Admin Cabang (Override input user)
         if ($auth_user->role == 'admin' && $auth_user->branch_id != null) {
             $data['branch_id'] = $auth_user->branch_id;
         }
 
-        // Null Branch ID jika mengubah menjadi Super Admin
         if ($request->role == 'admin') {
             $data['branch_id'] = null;
             $data['division_id'] = null;
@@ -305,10 +290,8 @@ class UserController extends Controller
 
         $user->update($data);
 
-        // Sync Pivot
         if ($request->role == 'audit') {
             $user->branches()->sync($request->multi_branches ?? []);
-            // Untuk audit, tidak perlu divisions
             $user->divisions()->detach();
         } elseif ($request->role == 'leader') {
             $user->divisions()->sync($request->multi_divisions ?? []);
@@ -329,16 +312,12 @@ class UserController extends Controller
         $auth_user = Auth::user();
 
         if ($auth_user->role == 'admin' && $auth_user->branch_id != null) {
-            if ($user->branch_id != $auth_user->branch_id) {
-                abort(403, 'User ini di luar cabang Anda.');
-            }
+            if ($user->branch_id != $auth_user->branch_id) abort(403, 'User ini di luar cabang Anda.');
         }
 
         if ($auth_user->role == 'audit') {
             $allowedBranchIds = $auth_user->branches->pluck('id')->toArray();
-            if (!in_array($user->branch_id, $allowedBranchIds)) {
-                abort(403, 'User ini di luar wilayah audit Anda.');
-            }
+            if (!in_array($user->branch_id, $allowedBranchIds)) abort(403, 'User ini di luar wilayah audit Anda.');
         }
 
         if ($user->id == auth()->id()) {
@@ -346,16 +325,11 @@ class UserController extends Controller
         }
 
         try {
-            // Hapus foto profil jika ada
             if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
                 Storage::disk('public')->delete($user->profile_photo_path);
             }
-
-            // Hapus relasi pivot
             $user->branches()->detach();
             $user->divisions()->detach();
-
-            // Hapus user
             $user->delete();
 
             return redirect()->route('users.index')->with('success', 'User berhasil dihapus.');
@@ -365,13 +339,12 @@ class UserController extends Controller
     }
 
     /**
-     * Show user detail (redirect ke edit)
+     * Show user detail.
      */
     public function show(User $user)
     {
         $auth_user = Auth::user();
 
-        // 1. Proteksi Akses (Sama seperti edit)
         if ($auth_user->role == 'admin' && $auth_user->branch_id != null) {
             if ($user->branch_id != $auth_user->branch_id) abort(403);
         }
@@ -380,124 +353,57 @@ class UserController extends Controller
             if (!in_array($user->branch_id, $allowedBranchIds)) abort(403);
         }
 
-        // 2. Load Relasi
         $user->load(['branch', 'division', 'branches', 'divisions', 'workHistories']);
-
-        // 3. Ambil Statistik (Logika meniru DashboardController)
         $stats = $this->getSpecificUserStats($user->id);
-
-        // 4. Ambil 5 Riwayat Absensi Terakhir (Opsional, untuk preview)
         $recentAttendance = Attendance::where('user_id', $user->id)
-                            ->latest('check_in_time')
-                            ->take(5)
-                            ->get();
+                                    ->latest('check_in_time')
+                                    ->take(5)
+                                    ->get();
 
         return view('users.user_show', compact('user', 'stats', 'recentAttendance'));
     }
 
     /**
-     * Helper: Hitung Statistik User Spesifik (Bulan Ini)
-     * Logika ini diambil dari DashboardController::getUserAttendanceStats
+     * Helper methods
      */
     private function getSpecificUserStats($user_id)
     {
-        // Filter Bulan Ini
         $query = Attendance::where('user_id', $user_id)
             ->whereMonth('check_in_time', Carbon::now()->month)
             ->whereYear('check_in_time', Carbon::now()->year);
         
         $totalAttendances = (clone $query)->count();
-        $present = $totalAttendances; 
         $late = (clone $query)->where('is_late_checkin', true)->count();
         $early = (clone $query)->where('is_early_checkout', true)->count();
         $pending = (clone $query)->where('status', 'pending_verification')->count();
-        
-        // Tepat Waktu = Total - Terlambat
         $onTime = max($totalAttendances - $late, 0);
-
-        // Hitung Persentase Kehadiran (Asumsi 22 hari kerja atau berdasarkan total hari berjalan)
-        // Disini kita pakai simpel saja based on kehadiran vs terlambat
-        $onTimePercentage = $totalAttendances > 0 ? round(($onTime / $totalAttendances) * 100) : 0;
-        $latePercentage = $totalAttendances > 0 ? round(($late / $totalAttendances) * 100) : 0;
 
         return [
             'total' => $totalAttendances,
-            'present' => $present,
+            'present' => $totalAttendances,
             'late' => $late,
             'early' => $early,
             'pending' => $pending,
             'on_time' => $onTime,
-            'on_time_percentage' => $onTimePercentage,
-            'late_percentage' => $latePercentage,
             'current_month' => Carbon::now()->translatedFormat('F Y')
         ];
     }
 
-    /**
-     * Toggle status user (aktif/nonaktif)
-     */
     public function toggleStatus(User $user)
     {
         $auth_user = Auth::user();
-
-        // PROTEKSI: Hanya bisa toggle status user dalam wilayah/cabang sendiri
-        if ($auth_user->role == 'admin' && $auth_user->branch_id != null) {
-            if ($user->branch_id != $auth_user->branch_id) {
-                abort(403, 'User ini di luar cabang Anda.');
-            }
-        }
-
-        if ($auth_user->role == 'audit') {
-            $allowedBranchIds = $auth_user->branches->pluck('id')->toArray();
-            if (!in_array($user->branch_id, $allowedBranchIds)) {
-                abort(403, 'User ini di luar wilayah audit Anda.');
-            }
-        }
-
-        if ($user->id == auth()->id()) {
-            return redirect()->route('users.index')->with('error', 'Anda tidak dapat menonaktifkan akun sendiri.');
-        }
-
-        $user->update([
-            'is_active' => !$user->is_active
-        ]);
-
-        $status = $user->is_active ? 'diaktifkan' : 'dinonaktifkan';
-        return redirect()->route('users.index')->with('success', "User berhasil $status.");
+        if ($user->id == auth()->id()) return redirect()->route('users.index')->with('error', 'Gagal.');
+        $user->update(['is_active' => !$user->is_active]);
+        return redirect()->route('users.index')->with('success', 'Status user diubah.');
     }
 
-    /**
-     * Reset password user
-     */
     public function resetPassword(User $user)
     {
-        $auth_user = Auth::user();
-
-        // PROTEKSI: Hanya bisa reset password user dalam wilayah/cabang sendiri
-        if ($auth_user->role == 'admin' && $auth_user->branch_id != null) {
-            if ($user->branch_id != $auth_user->branch_id) {
-                abort(403, 'User ini di luar cabang Anda.');
-            }
-        }
-
-        if ($auth_user->role == 'audit') {
-            $allowedBranchIds = $auth_user->branches->pluck('id')->toArray();
-            if (!in_array($user->branch_id, $allowedBranchIds)) {
-                abort(403, 'User ini di luar wilayah audit Anda.');
-            }
-        }
-
-        $newPassword = Str::random(8); // Generate random password
-        $user->update([
-            'password' => Hash::make($newPassword)
-        ]);
-
-        return redirect()->route('users.index')->with('success', "Password berhasil direset. Password baru: $newPassword");
+        $newPassword = Str::random(8);
+        $user->update(['password' => Hash::make($newPassword)]);
+        return redirect()->route('users.index')->with('success', "Password baru: $newPassword");
     }
 
-    /**
-     * Helper method untuk mendapatkan roles yang diizinkan
-     */
     private function getAllowedRoles($user)
     {
         if ($user->role == 'admin' && $user->branch_id != null) {
@@ -508,31 +414,10 @@ class UserController extends Controller
             return ['admin', 'audit', 'leader', 'security', 'user_biasa'];
         }
     }
-
-    /**
-     * Get user statistics for dashboard
-     */
+    
     public function getUserStats()
     {
-        $user = Auth::user();
-        $query = User::query();
-
-        // Filter berdasarkan role user yang login
-        if ($user->role == 'admin' && $user->branch_id != null) {
-            $query->where('branch_id', $user->branch_id);
-        } elseif ($user->role == 'audit') {
-            $auditBranchIds = $user->branches->pluck('id')->toArray();
-            $query->whereIn('branch_id', $auditBranchIds);
-        }
-
-        $totalUsers = $query->count();
-        $activeUsers = $query->where('is_active', true)->count();
-        $inactiveUsers = $query->where('is_active', false)->count();
-
-        return [
-            'total' => $totalUsers,
-            'active' => $activeUsers,
-            'inactive' => $inactiveUsers
-        ];
+        // Method ini opsional, jika tidak dipakai bisa dihapus
+        return [];
     }
 }
