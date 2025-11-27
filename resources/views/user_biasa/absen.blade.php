@@ -55,22 +55,19 @@
                                         </div>
 
                                         <div class="d-flex gap-2 justify-content-center flex-wrap">
-                                            {{-- Tombol Ambil Foto --}}
+                                            {{-- Input File Hidden (Wajib ada untuk capture) --}}
                                             <input type="file" name="photo" id="photo-input" class="d-none" accept="image/*"
                                                 capture="user" required>
+                                            
+                                            {{-- Tombol Ambil Foto Saja --}}
                                             <button type="button" id="capture-btn" class="btn btn-dark">
                                                 <i class="mdi mdi-camera me-1"></i>Ambil Foto
-                                            </button>
-
-                                            {{-- Tombol Upload File (untuk desktop) --}}
-                                            <button type="button" id="upload-btn" class="btn btn-outline-dark">
-                                                <i class="mdi mdi-upload me-1"></i>Upload Foto
                                             </button>
                                         </div>
 
                                         <small class="text-muted d-block mt-2">
                                             <i class="mdi mdi-information-outline me-1"></i>
-                                            Di HP akan membuka kamera. Di PC bisa upload file existing.
+                                            Pastikan wajah terlihat jelas.
                                         </small>
                                     </div>
                                 </div>
@@ -241,7 +238,6 @@
         document.addEventListener('DOMContentLoaded', function () {
             const photoInput = document.getElementById('photo-input');
             const captureBtn = document.getElementById('capture-btn');
-            const uploadBtn = document.getElementById('upload-btn');
             const previewImage = document.getElementById('preview-image');
             const cameraPreview = document.getElementById('camera-preview');
             const cameraPlaceholder = document.getElementById('camera-placeholder');
@@ -286,11 +282,6 @@
 
             // Camera capture button
             captureBtn.addEventListener('click', function () {
-                photoInput.click();
-            });
-
-            // Upload button for desktop
-            uploadBtn.addEventListener('click', function () {
                 photoInput.click();
             });
 
