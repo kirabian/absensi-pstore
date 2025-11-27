@@ -7,6 +7,12 @@
                 <span class="menu-title">Dashboard</span>
             </a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ route('attendance.history') }}">
+                <i class="mdi mdi-history menu-icon"></i>
+                <span class="menu-title">Riwayat Absensi</span>
+            </a>
+        </li>
 
         {{-- =================================== --}}
         {{--     MENU UNTUK SUPER ADMIN        --}}

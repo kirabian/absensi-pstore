@@ -44,6 +44,8 @@ Route::middleware(['auth'])->group(function () {
 
     // --- Rute Search Global (Hanya untuk Admin) ---
     Route::get('/search', [GlobalSearchController::class, 'search'])->name('search');
+    // === RUTE RIWAYAT ABSENSI ===
+    Route::get('/riwayat-absensi', [App\Http\Controllers\AttendanceHistoryController::class, 'index'])->name('attendance.history');
 
     // === RUTE BROADCAST ===
     Route::prefix('broadcast')->name('broadcast.')->group(function () {
