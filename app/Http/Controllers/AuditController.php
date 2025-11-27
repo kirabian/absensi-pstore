@@ -26,16 +26,19 @@ class AuditController extends Controller
         $homebaseBranchId = $user->branch_id ? [$user->branch_id] : [];
         $myBranchIds = array_unique(array_merge($pivotBranchIds, $homebaseBranchId));
 
-        $isSuperAdmin = ($user->role == 'admin' && empty($myBranchIds));
+        // PERBAIKAN DISINI: 
+        // Izinkan 'admin' ATAU 'audit' menjadi Global Viewer jika mereka tidak terikat cabang spesifik
+        $isGlobalViewer = (in_array($user->role, ['admin', 'audit']) && empty($myBranchIds));
 
-        if (!$isSuperAdmin) {
+        if (!$isGlobalViewer) {
             if (!empty($myBranchIds)) {
                 $query->whereHas('user', function ($q) use ($myBranchIds) {
-                    // Gunakan prefix 'users.' agar aman
                     $q->whereIn('users.branch_id', $myBranchIds);
                 });
             } else {
-                // Jika audit tidak punya cabang, jangan tampilkan data user lain
+                // Jika user BUKAN admin/audit, dan TIDAK punya cabang, maka tidak lihat apa-apa.
+                // Tapi karena logika $isGlobalViewer di atas sudah mencakup audit, 
+                // maka audit tanpa cabang tidak akan masuk ke sini (mereka akan lihat semua).
                 $query->where('id', 0);
             }
         }
@@ -45,7 +48,7 @@ class AuditController extends Controller
         return view('audit.verification_list', compact('pendingAttendances'));
     }
 
-    // ... (Method approve & reject TETAP SAMA) ...
+    // ... (Method approve & reject tidak perlu diubah) ...
     public function approve(Attendance $attendance)
     {
         $attendance->update([
@@ -77,9 +80,6 @@ class AuditController extends Controller
         return back()->with('success', 'Absensi ditolak dan dihapus.');
     }
 
-    /**
-     * Menampilkan daftar user yang "Izin Telat Masuk" (Dari LateNotification / Mobile Realtime).
-     */
     public function showLatePermissions()
     {
         $user = Auth::user();
@@ -87,14 +87,15 @@ class AuditController extends Controller
         $query = LateNotification::where('is_active', true)
             ->with(['user', 'user.division']); 
 
-        // --- LOGIKA FILTER CABANG ---
+        // --- LOGIKA FILTER CABANG (Terapkan logika yang sama untuk Izin Telat) ---
         $pivotBranchIds = $user->branches->pluck('id')->toArray();
         $homebaseBranchId = $user->branch_id ? [$user->branch_id] : [];
         $myBranchIds = array_unique(array_merge($pivotBranchIds, $homebaseBranchId));
 
-        $isSuperAdmin = ($user->role == 'admin' && empty($myBranchIds));
+        // PERBAIKAN DISINI JUGA:
+        $isGlobalViewer = (in_array($user->role, ['admin', 'audit']) && empty($myBranchIds));
 
-        if (!$isSuperAdmin) {
+        if (!$isGlobalViewer) {
             if (!empty($myBranchIds)) {
                 $query->whereHas('user', function ($q) use ($myBranchIds) {
                     $q->whereIn('users.branch_id', $myBranchIds);
