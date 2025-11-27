@@ -119,6 +119,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/izin-telat', [AuditController::class, 'showLatePermissions'])->name('audit.late.list');
         Route::post('/izin-telat/{lateNotification}/approve', [AuditController::class, 'approveLatePermission'])->name('late.approve');
         Route::post('/izin-telat/{lateNotification}/reject', [AuditController::class, 'rejectLatePermission'])->name('late.reject');
+
+        Route::get('/audit/missed-checkouts', [App\Http\Controllers\AuditController::class, 'showMissedCheckouts'])->name('audit.missed-checkout.list');
+        Route::put('/audit/missed-checkouts/{id}', [App\Http\Controllers\AuditController::class, 'updateMissedCheckout'])->name('audit.missed-checkout.update');
     });
 
     // === RUTE SECURITY ===
