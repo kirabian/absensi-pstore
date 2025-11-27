@@ -24,7 +24,7 @@
         {{-- =================================== --}}
         {{--   MENU UNTUK SUPER ADMIN & AUDIT   --}}
         {{-- =================================== --}}
-        @if (auth()->user()->role == 'admin' | auth()->user()->role == 'audit')
+        @if ((auth()->user()->role == 'admin') | (auth()->user()->role == 'audit'))
             <li class="nav-item nav-category">Manajemen Tim</li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('divisions.index') }}">
@@ -64,7 +64,7 @@
                     <span class="menu-title">Verifikasi Absensi</span>
                 </a>
             </li>
-           <li class="nav-item">
+            <li class="nav-item">
                 {{-- Mengarah ke LeaveRequestController@index --}}
                 <a class="nav-link" href="{{ route('leave-requests.index') }}">
                     <i class="menu-icon mdi mdi-clock-alert-outline"></i>
@@ -98,6 +98,21 @@
                     <span class="menu-title">Tim Saya</span>
                 </a>
             </li>
+
+            {{-- ================================================ --}}
+            {{--  MENU BARU: CABANG SAYA (KHUSUS HANYA UTK AUDIT) --}}
+            {{-- ================================================ --}}
+            @if (auth()->user()->role == 'audit')
+                <li class="nav-item">
+                    {{-- Pastikan route 'team.my-branches' sudah dibuat di web.php --}}
+                    <a class="nav-link" href="{{ route('team.my-branches') }}">
+                        <i class="menu-icon mdi mdi-office-building-marker"></i>
+                        <span class="menu-title">Cabang Saya</span>
+                    </a>
+                </li>
+            @endif
+            {{-- ================================================ --}}
+
             {{-- <li class="nav-item">
                 <a class="nav-link" href="{{ route('broadcast.index') }}">
                     <i class="mdi mdi-bullhorn"></i> Pesan Broadcast
@@ -106,3 +121,9 @@
         @endif
     </ul>
 </nav>
+
+{{-- <li class="nav-item">
+        <a class="nav-link" href="{{ route('broadcast.index') }}">
+            <i class="mdi mdi-bullhorn"></i> Pesan Broadcast
+        </a>
+    </li> --}}
