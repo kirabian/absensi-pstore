@@ -20,6 +20,38 @@ class DashboardController extends Controller
         $data = [];
         $branch_id = $user->branch_id;
 
+        // =========================================================================
+        // LOGIKA NOMOR ID CARD CUSTOM
+        // Format: YY(Thn Masuk) MM(Bln Masuk) YY(Thn Lahir) [SPASI] MM(Bln Lahir) DD(Tgl Lahir) XXX(Urut ID)
+        // Contoh: 250399 0512001
+        // =========================================================================
+        
+        // 1. Ambil Data Tanggal Masuk (Hire Date)
+        // Jika kosong, gunakan waktu sekarang
+        $hireDate = $user->hire_date ? Carbon::parse($user->hire_date) : Carbon::now();
+        
+        // 2. Ambil Data Tanggal Lahir
+        // NOTE: Karena kolom 'birth_date' belum ada di schema yang kamu kirim, 
+        // saya beri default ke 1999-12-05 agar kode tidak error.
+        // Jika kamu tambah kolom 'birth_date' di table users, ganti logika ini.
+        $birthDate = $user->birth_date ? Carbon::parse($user->birth_date) : Carbon::parse('1999-05-12'); 
+
+        // 3. Pecah Format
+        $yyMasuk = $hireDate->format('y'); // 25 (2 digit tahun)
+        $mmMasuk = $hireDate->format('m'); // 03 (2 digit bulan)
+        
+        $yyLahir = $birthDate->format('y'); // 99 (2 digit tahun)
+        $mmLahir = $birthDate->format('m'); // 05 (2 digit bulan)
+        $ddLahir = $birthDate->format('d'); // 12 (2 digit tanggal)
+        
+        // 4. Nomor Urut (Padding 3 digit, misal ID 1 jadi 001)
+        $noUrut  = str_pad($user->id, 3, '0', STR_PAD_LEFT);
+
+        // 5. Gabungkan String
+        $data['idCardNumber'] = "{$yyMasuk}{$mmMasuk}{$yyLahir} {$mmLahir}{$ddLahir}{$noUrut}";
+        
+        // =========================================================================
+
         // 1. QUERY DASAR (Filter Cabang)
         $attendanceQuery = Attendance::query();
         $userQuery = User::query();

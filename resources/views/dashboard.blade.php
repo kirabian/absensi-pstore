@@ -165,7 +165,6 @@
 
     {{-- ======================================================================= --}}
     {{-- BAGIAN 2: DASHBOARD PERSONAL (ID CARD & ABSEN MANDIRI) --}}
-    {{-- DITAMPILKAN UNTUK SEMUA ROLE (KECUALI ADMIN JIKA TIDAK PERLU) --}}
     {{-- ======================================================================= --}}
     
     <div class="row">
@@ -191,12 +190,22 @@
                         <h3 class="card-id-name">{{ strtoupper(Auth::user()->name) }}</h3>
                         <p class="card-id-label">DIVISI</p>
                         <h4 class="card-id-division">
-                            {{ strtoupper(Auth::user()->division->name ?? 'BELUM ADA DIVISI') }}</h4>
+                            {{ strtoupper(Auth::user()->division->name ?? 'BELUM ADA DIVISI') }}
+                        </h4>
                     </div>
-                    <div class="card-id-footer">
-                        <p class="card-id-valid">VALID THRU 12/28</p>
-                        <p class="card-id-card-number">**** **** **** {{ substr(Auth::user()->phone ?? '1234', -4) }}</p>
+                    
+                    {{-- BAGIAN FOOTER ID CARD YANG DIUBAH --}}
+                    <div class="card-id-footer d-flex justify-content-end align-items-end mt-4">
+                        {{-- VALID THRU DIHAPUS, GANTI DENGAN NOMOR ID --}}
+                        <div class="text-end">
+                            <p class="mb-0 text-white-50" style="font-size: 10px; letter-spacing: 1px;">NOMOR ID</p>
+                            <p class="card-id-card-number mb-0" style="font-size: 22px; letter-spacing: 2px; font-weight: 700;">
+                                {{ $idCardNumber }}
+                            </p>
+                        </div>
                     </div>
+                    {{-- AKHIR BAGIAN FOOTER --}}
+
                 </div>
             </div>
         </div>
@@ -278,7 +287,7 @@
                                     </div>
                                 </div>
 
-                                {{-- TOMBOL PULANG (MUNCUL UNTUK SEMUA ROLE JIKA MEREKA ABSEN MANDIRI) --}}
+                                {{-- TOMBOL PULANG --}}
                                 @if ($myAttendanceToday->attendance_type == 'self')
                                     <div class="mt-3 pt-3 border-top text-center">
                                         <a href="{{ route('self.attend.create') }}" class="btn btn-danger btn-sm w-100">
@@ -314,7 +323,6 @@
                                     </div>
                                 </div>
                             </div>
-                            {{-- Tombol Batal/Absen jika Telat --}}
                             @if ($myLeaveToday->type == 'telat' && $myLeaveToday->status == 'approved')
                                 <div class="mt-3 pt-3 border-top text-center">
                                     <form action="{{ route('leave-requests.cancel', $myLeaveToday->id) }}" method="POST" class="d-inline">
@@ -367,9 +375,7 @@
                                 <canvas id="attendancePieChart"></canvas>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            {{-- Keterangan Statistik Text (Opsional, bisa ditambahkan lagi jika mau) --}}
-                        </div>
+                        <div class="col-md-6"></div>
                     </div>
                 </div>
             </div>
@@ -380,7 +386,7 @@
 
 @push('styles')
     <style>
-        /* Copy paste style lama Anda disini, tidak ada perubahan pada CSS */
+        /* CSS Card Bank & ID Card */
         .card-bank { position: relative; min-height: 200px; border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); transition: all 0.3s ease; }
         .card-bank:hover { transform: translateY(-8px); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); }
         .card-bank .card-body { position: relative; z-index: 2; padding: 24px; color: white; display: flex; flex-direction: column; justify-content: space-between; }
@@ -410,8 +416,8 @@
         .card-id-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; opacity: 0.7; margin-bottom: 4px; font-weight: 500; }
         .card-id-name { font-size: 24px; font-weight: 700; margin-bottom: 12px; line-height: 1.2; word-break: break-word; font-family: 'Consolas', 'Courier New', monospace; }
         .card-id-division { font-size: 16px; font-weight: 500; opacity: 0.9; word-break: break-word; font-family: 'Consolas', 'Courier New', monospace; }
-        .card-id-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; }
-        .card-id-valid, .card-id-card-number { font-size: 12px; font-weight: 500; opacity: 0.8; font-family: 'Consolas', 'Courier New', monospace; letter-spacing: 0.5px; }
+        .card-id-footer { margin-top: auto; }
+        .card-id-valid, .card-id-card-number { font-family: 'Consolas', 'Courier New', monospace; }
 
         .card-action { border-radius: 16px; border: none; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); transition: all 0.3s ease; height: 100%; }
         .card-action:hover { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); transform: translateY(-4px); }
@@ -441,7 +447,7 @@
             .card-id-name { font-size: 20px; }
             .card-id-division { font-size: 14px; }
             .card-id-logo i { font-size: 32px; }
-            .card-id-valid, .card-id-card-number { font-size: 10px; }
+            .card-id-card-number { font-size: 18px !important; }
         }
     </style>
 @endpush
