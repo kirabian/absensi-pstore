@@ -45,9 +45,8 @@
             </div>
         </div>
 
-        {{-- RINGKASAN BULANAN (DIPERBAIKI AGAR TEKS TERLIHAT) --}}
+        {{-- RINGKASAN BULANAN --}}
         <div class="row mb-3">
-            {{-- Card Total Hadir (Hijau Solid - Teks Putih) --}}
             <div class="col-md-3 mb-2">
                 <div class="card bg-success text-white border-0 shadow-sm">
                     <div class="card-body py-3 text-center">
@@ -56,8 +55,6 @@
                     </div>
                 </div>
             </div>
-
-            {{-- Card Total Telat (Kuning/Oranye Solid - Teks Putih) --}}
             <div class="col-md-3 mb-2">
                 <div class="card bg-warning text-white border-0 shadow-sm">
                     <div class="card-body py-3 text-center">
@@ -66,8 +63,6 @@
                     </div>
                 </div>
             </div>
-
-            {{-- Card Pulang Cepat (Merah/Pink Solid - Teks Putih) --}}
             <div class="col-md-3 mb-2">
                 <div class="card bg-danger text-white border-0 shadow-sm">
                     <div class="card-body py-3 text-center">
@@ -76,8 +71,6 @@
                     </div>
                 </div>
             </div>
-
-            {{-- Card Menunggu Verif (Biru Solid - Teks Putih) --}}
             <div class="col-md-3 mb-2">
                 <div class="card bg-info text-white border-0 shadow-sm">
                     <div class="card-body py-3 text-center">
@@ -100,7 +93,9 @@
                                 <tr>
                                     <th>Tanggal</th>
                                     <th>Jam Masuk</th>
+                                    <th>Foto Masuk</th> {{-- KOLOM BARU --}}
                                     <th>Jam Pulang</th>
+                                    <th>Foto Pulang</th> {{-- KOLOM BARU --}}
                                     <th>Status</th>
                                     <th>Metode</th>
                                 </tr>
@@ -108,10 +103,13 @@
                             <tbody>
                                 @foreach($history as $att)
                                     <tr>
+                                        {{-- TANGGAL --}}
                                         <td>
                                             <div class="fw-bold">{{ $att->check_in_time->format('d M Y') }}</div>
                                             <small class="text-muted">{{ $att->check_in_time->format('l') }}</small>
                                         </td>
+
+                                        {{-- JAM MASUK --}}
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <i class="mdi mdi-login text-success me-2"></i>
@@ -123,6 +121,22 @@
                                                 @endif
                                             </div>
                                         </td>
+
+                                        {{-- FOTO MASUK --}}
+                                        <td>
+                                            @if($att->photo_path)
+                                                <a href="{{ asset('storage/' . $att->photo_path) }}" target="_blank">
+                                                    <img src="{{ asset('storage/' . $att->photo_path) }}" 
+                                                         alt="Masuk" 
+                                                         class="rounded shadow-sm" 
+                                                         style="width: 50px; height: 50px; object-fit: cover; border: 2px solid #e2e8f0;">
+                                                </a>
+                                            @else
+                                                <span class="text-muted small">-</span>
+                                            @endif
+                                        </td>
+
+                                        {{-- JAM PULANG --}}
                                         <td>
                                             @if($att->check_out_time)
                                                 <div class="d-flex align-items-center">
@@ -135,6 +149,22 @@
                                                 <span class="badge bg-secondary">Belum Pulang</span>
                                             @endif
                                         </td>
+
+                                        {{-- FOTO PULANG --}}
+                                        <td>
+                                            @if($att->photo_out_path)
+                                                <a href="{{ asset('storage/' . $att->photo_out_path) }}" target="_blank">
+                                                    <img src="{{ asset('storage/' . $att->photo_out_path) }}" 
+                                                         alt="Pulang" 
+                                                         class="rounded shadow-sm" 
+                                                         style="width: 50px; height: 50px; object-fit: cover; border: 2px solid #e2e8f0;">
+                                                </a>
+                                            @else
+                                                <span class="text-muted small">-</span>
+                                            @endif
+                                        </td>
+
+                                        {{-- STATUS --}}
                                         <td>
                                             @if($att->status == 'verified' || $att->status == 'present' || $att->status == 'late')
                                                 <span class="badge bg-success">Verified</span>
@@ -144,6 +174,8 @@
                                                 <span class="badge bg-danger">{{ ucfirst($att->status) }}</span>
                                             @endif
                                         </td>
+
+                                        {{-- METODE --}}
                                         <td>
                                             @if($att->attendance_type == 'scan')
                                                 <span class="badge badge-outline-primary"><i class="mdi mdi-qrcode-scan me-1"></i> Scan</span>
