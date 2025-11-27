@@ -375,7 +375,7 @@
                                     </button>
                                 </div>
 
-                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                {{-- <div class="d-flex justify-content-between align-items-center mb-4">
                                     <div class="form-check">
                                         <label class="form-check-label text-muted">
                                             <input type="checkbox" class="form-check-input" name="remember"
@@ -386,7 +386,7 @@
                                     <a href="{{ route('password.request') }}" class="auth-link">
                                         Lupa password?
                                     </a>
-                                </div>
+                                </div> --}}
 
                                 <div class="text-center mt-4 pt-3 border-top">
                                     <p class="text-muted small mb-0">
