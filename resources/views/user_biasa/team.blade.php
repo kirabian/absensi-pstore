@@ -417,7 +417,7 @@
         </div>
     </div>
 
-    {{-- SECTION 2: CABANG SAYA (BARU) --}}
+    SECTION 2: CABANG SAYA (BARU)
     <div class="row">
         <div class="col-12">
             <h4 class="branch-section-title">Cabang Saya ({{ count($controlledBranches) }})</h4>
