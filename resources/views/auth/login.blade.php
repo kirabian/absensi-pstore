@@ -318,7 +318,7 @@
                                 </div>
                             @enderror
 
-                            @if(session('status'))
+                            @if (session('status'))
                                 <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
                                     <i class="mdi mdi-check-circle-outline me-2"></i>
                                     {{ session('status') }}
@@ -327,7 +327,7 @@
                                 </div>
                             @endif
 
-                            @if(session('error'))
+                            @if (session('error'))
                                 <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
                                     <i class="mdi mdi-alert-circle-outline me-2"></i>
                                     {{ session('error') }}
@@ -344,8 +344,8 @@
                                             <i class="mdi mdi-account-outline"></i>
                                         </span>
                                         <input type="text" class="form-control" id="login_id" name="login_id"
-                                            placeholder="Masukkan ID Login Anda" 
-                                            value="{{ old('login_id') }}" required autofocus>
+                                            placeholder="Masukkan ID Login Anda" value="{{ old('login_id') }}" required
+                                            autofocus>
                                     </div>
                                     @error('login_id')
                                         <small class="text-danger mt-1">{{ $message }}</small>
@@ -378,11 +378,12 @@
                                 <div class="d-flex justify-content-between align-items-center mb-4">
                                     <div class="form-check">
                                         <label class="form-check-label text-muted">
-                                            <input type="checkbox" class="form-check-input" name="remember" {{ old('remember') ? 'checked' : '' }}>
+                                            <input type="checkbox" class="form-check-input" name="remember"
+                                                {{ old('remember') ? 'checked' : '' }}>
                                             Ingat saya
                                         </label>
                                     </div>
-                                    <a href="#" class="auth-link">
+                                    <a href="{{ route('password.request') }}" class="auth-link">
                                         Lupa password?
                                     </a>
                                 </div>
@@ -451,7 +452,7 @@
                 if (errorElement) {
                     errorElement.remove();
                 }
-                
+
                 const alertElement = document.querySelector('.alert');
                 if (alertElement) {
                     alertElement.remove();
