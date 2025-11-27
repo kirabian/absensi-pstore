@@ -18,37 +18,39 @@ class AuditController extends Controller
     {
         $user = Auth::user();
         
+        // Query dasar: ambil yang status pending
         $query = Attendance::where('status', 'pending_verification')
             ->with('user.division');
 
-        // --- LOGIKA FILTER CABANG ---
-        $pivotBranchIds = $user->branches->pluck('id')->toArray();
-        $homebaseBranchId = $user->branch_id ? [$user->branch_id] : [];
-        $myBranchIds = array_unique(array_merge($pivotBranchIds, $homebaseBranchId));
+        // --- LOGIKA REVISI ---
+        // Cek apakah user adalah 'admin' atau 'audit'
+        $isUniversalAccess = in_array($user->role, ['admin', 'audit']);
 
-        // PERBAIKAN DISINI: 
-        // Izinkan 'admin' ATAU 'audit' menjadi Global Viewer jika mereka tidak terikat cabang spesifik
-        $isGlobalViewer = (in_array($user->role, ['admin', 'audit']) && empty($myBranchIds));
+        // Jika BUKAN admin/audit, baru kita filter berdasarkan cabang dia
+        if (!$isUniversalAccess) {
+            
+            // Ambil data cabang user (untuk role selain admin/audit, misal: supervisor/manager)
+            $pivotBranchIds = $user->branches->pluck('id')->toArray();
+            $homebaseBranchId = $user->branch_id ? [$user->branch_id] : [];
+            $myBranchIds = array_unique(array_merge($pivotBranchIds, $homebaseBranchId));
 
-        if (!$isGlobalViewer) {
             if (!empty($myBranchIds)) {
                 $query->whereHas('user', function ($q) use ($myBranchIds) {
                     $q->whereIn('users.branch_id', $myBranchIds);
                 });
             } else {
-                // Jika user BUKAN admin/audit, dan TIDAK punya cabang, maka tidak lihat apa-apa.
-                // Tapi karena logika $isGlobalViewer di atas sudah mencakup audit, 
-                // maka audit tanpa cabang tidak akan masuk ke sini (mereka akan lihat semua).
+                // User biasa tanpa cabang tidak boleh lihat apa-apa
                 $query->where('id', 0);
             }
         }
+        // Jika admin/audit, kode di atas dilewati (SKIP), jadi dia melihat SEMUA data.
 
         $pendingAttendances = $query->latest()->get();
 
         return view('audit.verification_list', compact('pendingAttendances'));
     }
 
-    // ... (Method approve & reject tidak perlu diubah) ...
+    // ... Method approve tidak berubah ...
     public function approve(Attendance $attendance)
     {
         $attendance->update([
@@ -63,6 +65,7 @@ class AuditController extends Controller
         return back()->with('success', 'Absensi disetujui.');
     }
 
+    // ... Method reject tidak berubah ...
     public function reject(Attendance $attendance)
     {
         $user = $attendance->user;
@@ -87,15 +90,14 @@ class AuditController extends Controller
         $query = LateNotification::where('is_active', true)
             ->with(['user', 'user.division']); 
 
-        // --- LOGIKA FILTER CABANG (Terapkan logika yang sama untuk Izin Telat) ---
-        $pivotBranchIds = $user->branches->pluck('id')->toArray();
-        $homebaseBranchId = $user->branch_id ? [$user->branch_id] : [];
-        $myBranchIds = array_unique(array_merge($pivotBranchIds, $homebaseBranchId));
+        // --- LOGIKA REVISI (Sama seperti di atas) ---
+        $isUniversalAccess = in_array($user->role, ['admin', 'audit']);
 
-        // PERBAIKAN DISINI JUGA:
-        $isGlobalViewer = (in_array($user->role, ['admin', 'audit']) && empty($myBranchIds));
+        if (!$isUniversalAccess) {
+            $pivotBranchIds = $user->branches->pluck('id')->toArray();
+            $homebaseBranchId = $user->branch_id ? [$user->branch_id] : [];
+            $myBranchIds = array_unique(array_merge($pivotBranchIds, $homebaseBranchId));
 
-        if (!$isGlobalViewer) {
             if (!empty($myBranchIds)) {
                 $query->whereHas('user', function ($q) use ($myBranchIds) {
                     $q->whereIn('users.branch_id', $myBranchIds);
