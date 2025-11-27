@@ -45,37 +45,44 @@
             </div>
         </div>
 
-        {{-- RINGKASAN BULANAN --}}
+        {{-- RINGKASAN BULANAN (DIPERBAIKI AGAR TEKS TERLIHAT) --}}
         <div class="row mb-3">
+            {{-- Card Total Hadir (Hijau Solid - Teks Putih) --}}
             <div class="col-md-3 mb-2">
-                <div class="card bg-success bg-opacity-10 border-0">
+                <div class="card bg-success text-white border-0 shadow-sm">
                     <div class="card-body py-3 text-center">
-                        <h6 class="text-success mb-0 fw-bold">Total Hadir</h6>
-                        <h3 class="fw-bold text-success mb-0">{{ $summary['hadir'] }}</h3>
+                        <h6 class="text-white mb-1 fw-bold">Total Hadir</h6>
+                        <h2 class="fw-bold text-white mb-0">{{ $summary['hadir'] }}</h2>
                     </div>
                 </div>
             </div>
+
+            {{-- Card Total Telat (Kuning/Oranye Solid - Teks Putih) --}}
             <div class="col-md-3 mb-2">
-                <div class="card bg-warning bg-opacity-10 border-0">
+                <div class="card bg-warning text-white border-0 shadow-sm">
                     <div class="card-body py-3 text-center">
-                        <h6 class="text-warning mb-0 fw-bold">Total Telat</h6>
-                        <h3 class="fw-bold text-warning mb-0">{{ $summary['telat'] }}</h3>
+                        <h6 class="text-white mb-1 fw-bold">Total Telat</h6>
+                        <h2 class="fw-bold text-white mb-0">{{ $summary['telat'] }}</h2>
                     </div>
                 </div>
             </div>
+
+            {{-- Card Pulang Cepat (Merah/Pink Solid - Teks Putih) --}}
             <div class="col-md-3 mb-2">
-                <div class="card bg-info bg-opacity-10 border-0">
+                <div class="card bg-danger text-white border-0 shadow-sm">
                     <div class="card-body py-3 text-center">
-                        <h6 class="text-info mb-0 fw-bold">Pulang Cepat</h6>
-                        <h3 class="fw-bold text-info mb-0">{{ $summary['pulang_cepat'] }}</h3>
+                        <h6 class="text-white mb-1 fw-bold">Pulang Cepat</h6>
+                        <h2 class="fw-bold text-white mb-0">{{ $summary['pulang_cepat'] }}</h2>
                     </div>
                 </div>
             </div>
+
+            {{-- Card Menunggu Verif (Biru Solid - Teks Putih) --}}
             <div class="col-md-3 mb-2">
-                <div class="card bg-secondary bg-opacity-10 border-0">
+                <div class="card bg-info text-white border-0 shadow-sm">
                     <div class="card-body py-3 text-center">
-                        <h6 class="text-secondary mb-0 fw-bold">Menunggu Verif</h6>
-                        <h3 class="fw-bold text-secondary mb-0">{{ $summary['pending'] }}</h3>
+                        <h6 class="text-white mb-1 fw-bold">Menunggu Verif</h6>
+                        <h2 class="fw-bold text-white mb-0">{{ $summary['pending'] }}</h2>
                     </div>
                 </div>
             </div>
@@ -112,7 +119,7 @@
                                                     {{ $att->check_in_time->format('H:i') }}
                                                 </span>
                                                 @if($att->is_late_checkin)
-                                                    <span class="badge bg-danger ms-2" style="font-size: 8px;">Telat</span>
+                                                    <span class="badge bg-danger ms-2" style="font-size: 10px;">Telat</span>
                                                 @endif
                                             </div>
                                         </td>
