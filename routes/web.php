@@ -133,10 +133,13 @@ Route::middleware(['auth'])->group(function () {
 
     // === RUTE TEAM MANAGEMENT ===
     Route::middleware(['role:user_biasa,leader,audit'])->group(function () {
-        Route::get('/tim-saya', [TeamController::class, 'index'])->name('team.index'); 
+        Route::get('/tim-saya', [TeamController::class, 'index'])->name('team.index');
         Route::get('/tim-saya/{user}', [TeamController::class, 'show'])->name('my.team.show');
         Route::get('/tim-saya/attendance/{user}', [TeamController::class, 'attendance'])->name('my.team.attendance');
         Route::get('/team/branch/{id}', [TeamController::class, 'showBranch'])->name('team.branch.detail');
+    });
+    Route::middleware(['role:audit'])->group(function () {
+        Route::get('/cabang-saya', [TeamController::class, 'myBranches'])->name('team.my-branches');
     });
 
     // === RUTE SELF ATTENDANCE (UPDATED: ALL ROLES CAN ACCESS) ===

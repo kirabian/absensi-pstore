@@ -89,4 +89,35 @@ class TeamController extends Controller
 
         return view('user_biasa.branch_detail', compact('branch', 'employees'));
     }
+
+    public function myBranches()
+{
+    $user = Auth::user();
+
+    // Pastikan hanya audit yang bisa akses (Double protection selain route)
+    if ($user->role !== 'audit') {
+        abort(403, 'Unauthorized action.');
+    }
+
+    $myId = $user->id;
+
+    // 1. KUMPULKAN ID CABANG MILIK USER (Sama seperti logika sebelumnya)
+    $myBranchIds = $user->branches()->pluck('branches.id')->toArray();
+
+    if ($user->branch_id) {
+        $myBranchIds[] = $user->branch_id;
+    }
+
+    $myBranchIds = array_filter(array_unique($myBranchIds));
+
+    // 2. AMBIL DATA CABANG YANG DIKONTROL
+    $controlledBranches = Branch::whereIn('id', $myBranchIds)
+        ->withCount(['users' => function ($q) {
+            $q->where('is_active', true);
+        }])
+        ->orderBy('name', 'asc')
+        ->get();
+
+    return view('user_biasa.my_branches', compact('controlledBranches'));
+}
 }
