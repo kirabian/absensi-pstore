@@ -417,8 +417,8 @@
         </div>
     </div>
 
-    SECTION 2: CABANG SAYA (BARU)
-    <div class="row">
+    {{-- SECTION 2: CABANG SAYA (BARU) --}}
+    {{-- <div class="row">
         <div class="col-12">
             <h4 class="branch-section-title">Cabang Saya ({{ count($controlledBranches) }})</h4>
         </div>
@@ -449,7 +449,7 @@
                             Karyawan
                         </div>
 
-                        {{-- UBAH BAGIAN INI: Dari Button menjadi A Href --}}
+                        UBAH BAGIAN INI: Dari Button menjadi A Href
                         <a href="{{ route('team.branch.detail', $branch->id) }}"
                             class="btn btn-sm btn-outline-primary rounded-pill px-3">
                             Detail <i class="mdi mdi-arrow-right ms-1"></i>
@@ -467,7 +467,7 @@
                 </div>
             </div>
         @endforelse
-    </div>
+    </div> --}}
 
     {{-- Modal Image --}}
     <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
