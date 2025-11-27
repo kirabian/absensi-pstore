@@ -63,9 +63,9 @@
                                             </button>
 
                                             {{-- Tombol Upload File (untuk desktop) --}}
-                                            {{-- <button type="button" id="upload-btn" class="btn btn-outline-dark">
+                                            <button type="button" id="upload-btn" class="btn btn-outline-dark">
                                                 <i class="mdi mdi-upload me-1"></i>Upload Foto
-                                            </button> --}}
+                                            </button>
                                         </div>
 
                                         <small class="text-muted d-block mt-2">
