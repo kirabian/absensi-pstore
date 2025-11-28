@@ -96,43 +96,43 @@ class AuditController extends Controller
      * =========================================================================
      */
     public function verifyAttendance(Request $request, Attendance $attendance)
-    {
-        $request->validate([
-            'presence_status' => 'required|string|in:hadir,sakit,cuti,izin,dinas_luar',
-            'audit_photo' => 'nullable|image|max:5120',
-            'audit_note' => 'nullable|string|max:500'
-        ]);
+{
+    $request->validate([
+        'presence_status' => 'required|string|in:Masuk,WFH / Dinas Luar,Izin Telat,Sakit,Cuti,Alpha',
+        'audit_photo' => 'nullable|image|max:5120', // Max 5MB
+        'audit_note' => 'nullable|string|max:500'
+    ]);
 
-        $user = Auth::user();
+    $user = Auth::user();
 
-        // Upload foto bukti audit jika ada
-        $auditPhotoPath = $attendance->audit_photo_path;
-
-        if ($request->hasFile('audit_photo')) {
-            // Hapus foto lama jika ada
-            if ($auditPhotoPath && Storage::disk('public')->exists($auditPhotoPath)) {
-                Storage::disk('public')->delete($auditPhotoPath);
-            }
-            // Simpan foto baru
-            $auditPhotoPath = $request->file('audit_photo')->store('audit-evidence', 'public');
+    // Upload foto bukti audit jika ada
+    $auditPhotoPath = $attendance->audit_photo_path;
+    
+    if ($request->hasFile('audit_photo')) {
+        // Hapus foto lama jika ada
+        if ($auditPhotoPath && Storage::disk('public')->exists($auditPhotoPath)) {
+            Storage::disk('public')->delete($auditPhotoPath);
         }
-
-        // Update data attendance
-        $attendance->update([
-            'status' => 'verified',
-            'presence_status' => $request->presence_status,
-            'audit_photo_path' => $auditPhotoPath,
-            'audit_note' => $request->audit_note,
-            'verified_by_user_id' => $user->id,
-        ]);
-
-        // Kirim notifikasi ke karyawan
-        $title = "Absensi Diverifikasi";
-        $body = "Absensi Anda tanggal " . $attendance->check_in_time->format('d/m/Y') . " telah diverifikasi sebagai: " . $request->presence_status;
-        $this->sendNotificationToUser($attendance->user, $title, $body);
-
-        return back()->with('success', 'Absensi berhasil diverifikasi.');
+        // Simpan foto baru
+        $auditPhotoPath = $request->file('audit_photo')->store('audit-evidence', 'public');
     }
+
+    // Update data attendance
+    $attendance->update([
+        'status' => 'verified',
+        'presence_status' => $request->presence_status,
+        'audit_photo_path' => $auditPhotoPath,
+        'audit_note' => $request->audit_note,
+        'verified_by_user_id' => $user->id,
+    ]);
+
+    // Kirim notifikasi ke karyawan
+    $title = "Absensi Diverifikasi";
+    $body = "Absensi Anda tanggal " . $attendance->check_in_time->format('d/m/Y') . " telah diverifikasi sebagai: " . $request->presence_status;
+    $this->sendNotificationToUser($attendance->user, $title, $body);
+
+    return back()->with('success', 'Absensi berhasil diverifikasi.');
+}
 
     /**
      * Menampilkan daftar izin telat
