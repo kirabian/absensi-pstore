@@ -1,11 +1,30 @@
 @extends('layout.master')
 
 @section('title')
-    Riwayat Absensi
+    @if(isset($employee))
+        Riwayat Absensi - {{ $employee->name }}
+    @else
+        Riwayat Absensi Saya
+    @endif
 @endsection
 
 @section('heading')
-    Riwayat Absensi Saya
+    @if(isset($employee))
+        <div class="d-flex align-items-center">
+            <a href="{{ route('team.branch.detail', $employee->branch_id) }}" class="text-decoration-none text-muted me-3">
+                <i class="mdi mdi-arrow-left"></i>
+            </a>
+            <div>
+                Riwayat Absensi: {{ $employee->name }}
+                <br>
+                <small class="text-muted">
+                    {{ $employee->division->name ?? '-' }} - {{ $employee->branch->name ?? '-' }}
+                </small>
+            </div>
+        </div>
+    @else
+        Riwayat Absensi Saya
+    @endif
 @endsection
 
 @section('content')
@@ -14,7 +33,7 @@
         {{-- FILTER BULAN & TAHUN --}}
         <div class="card mb-4">
             <div class="card-body py-3">
-                <form action="{{ route('attendance.history') }}" method="GET" class="row align-items-center gx-2">
+                <form action="{{ isset($employee) ? route('team.branch.employee.history', ['branchId' => $employee->branch_id, 'employeeId' => $employee->id]) : route('attendance.history') }}" method="GET" class="row align-items-center gx-2">
                     <div class="col-auto">
                         <label class="fw-bold mb-0 me-2"><i class="mdi mdi-filter-outline"></i> Filter Periode:</label>
                     </div>
@@ -84,7 +103,12 @@
         {{-- TABEL DATA --}}
         <div class="card">
             <div class="card-body">
-                <h4 class="card-title mb-4">Detail Absensi - {{ date('F Y', mktime(0, 0, 0, $selectedMonth, 1, $selectedYear)) }}</h4>
+                <h4 class="card-title mb-4">
+                    Detail Absensi - {{ date('F Y', mktime(0, 0, 0, $selectedMonth, 1, $selectedYear)) }}
+                    @if(isset($employee))
+                        <br><small class="text-muted">Karyawan: {{ $employee->name }}</small>
+                    @endif
+                </h4>
                 
                 @if($history->count() > 0)
                     <div class="table-responsive">
@@ -93,9 +117,9 @@
                                 <tr>
                                     <th>Tanggal</th>
                                     <th>Jam Masuk</th>
-                                    <th>Foto Masuk</th> {{-- KOLOM BARU --}}
+                                    <th>Foto Masuk</th>
                                     <th>Jam Pulang</th>
-                                    <th>Foto Pulang</th> {{-- KOLOM BARU --}}
+                                    <th>Foto Pulang</th>
                                     <th>Status</th>
                                     <th>Metode</th>
                                 </tr>
@@ -178,27 +202,4 @@
                                         {{-- METODE --}}
                                         <td>
                                             @if($att->attendance_type == 'scan')
-                                                <span class="badge badge-outline-primary"><i class="mdi mdi-qrcode-scan me-1"></i> Scan</span>
-                                            @elseif($att->attendance_type == 'self')
-                                                <span class="badge badge-outline-info"><i class="mdi mdi-camera-front-variant me-1"></i> Selfie</span>
-                                            @else
-                                                <span class="badge badge-outline-secondary">System</span>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @else
-                    <div class="text-center py-5">
-                        <i class="mdi mdi-calendar-remove display-4 text-muted"></i>
-                        <h5 class="mt-3 text-muted">Tidak ada data absensi</h5>
-                        <p class="text-muted">Tidak ada riwayat pada periode {{ date('F Y', mktime(0, 0, 0, $selectedMonth, 1, $selectedYear)) }}</p>
-                    </div>
-                @endif
-            </div>
-        </div>
-    </div>
-</div>
-@endsection
+                                                <span class="badge badge-outline-primary"><i class="mdi mdi-qrcode

@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\Branch; // Tambahkan ini
+use App\Models\Branch;
+use App\Models\Attendance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class TeamController extends Controller
 {
@@ -70,9 +72,16 @@ class TeamController extends Controller
         // 1. Ambil Data Cabang
         $branch = Branch::findOrFail($id);
 
-        // Opsional: Cek hak akses (apakah user audit/leader ini boleh lihat cabang ini?)
-        // $user = Auth::user();
-        // if(!$user->branches->contains($id) && $user->branch_id != $id) { abort(403); }
+        // Opsional: Cek hak akses
+        $user = Auth::user();
+        $myBranchIds = $user->branches()->pluck('branches.id')->toArray();
+        if ($user->branch_id) {
+            $myBranchIds[] = $user->branch_id;
+        }
+        
+        if (!in_array($id, $myBranchIds) && $user->role !== 'admin') {
+            abort(403, 'Unauthorized action.');
+        }
 
         // 2. Ambil Karyawan di Cabang Tersebut
         $employees = User::where('branch_id', $id)
@@ -82,7 +91,7 @@ class TeamController extends Controller
                     $q->whereDate('check_in_time', today());
                 },
                 'activeLateStatus',
-                'division' // Pastikan relasi division (singular/plural) sesuai model User
+                'division'
             ])
             ->orderBy('name', 'asc')
             ->get();
@@ -91,33 +100,85 @@ class TeamController extends Controller
     }
 
     public function myBranches()
-{
-    $user = Auth::user();
+    {
+        $user = Auth::user();
 
-    // Pastikan hanya audit yang bisa akses (Double protection selain route)
-    if ($user->role !== 'audit') {
-        abort(403, 'Unauthorized action.');
+        // Pastikan hanya audit yang bisa akses
+        if ($user->role !== 'audit') {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $myId = $user->id;
+
+        // 1. KUMPULKAN ID CABANG MILIK USER
+        $myBranchIds = $user->branches()->pluck('branches.id')->toArray();
+
+        if ($user->branch_id) {
+            $myBranchIds[] = $user->branch_id;
+        }
+
+        $myBranchIds = array_filter(array_unique($myBranchIds));
+
+        // 2. AMBIL DATA CABANG YANG DIKONTROL
+        $controlledBranches = Branch::whereIn('id', $myBranchIds)
+            ->withCount(['users' => function ($q) {
+                $q->where('is_active', true);
+            }])
+            ->orderBy('name', 'asc')
+            ->get();
+
+        return view('user_biasa.my_branches', compact('controlledBranches'));
     }
 
-    $myId = $user->id;
+    /**
+     * Menampilkan riwayat absensi karyawan
+     */
+    public function showEmployeeHistory(Request $request, $branchId, $employeeId)
+    {
+        // Authorization check
+        $user = Auth::user();
+        $myBranchIds = $user->branches()->pluck('branches.id')->toArray();
+        if ($user->branch_id) {
+            $myBranchIds[] = $user->branch_id;
+        }
+        
+        if (!in_array($branchId, $myBranchIds) && $user->role !== 'admin') {
+            abort(403, 'Unauthorized action.');
+        }
 
-    // 1. KUMPULKAN ID CABANG MILIK USER (Sama seperti logika sebelumnya)
-    $myBranchIds = $user->branches()->pluck('branches.id')->toArray();
+        // Get employee data
+        $employee = User::findOrFail($employeeId);
+        
+        // Validate that employee belongs to the branch
+        if ($employee->branch_id != $branchId) {
+            abort(404, 'Employee not found in this branch.');
+        }
 
-    if ($user->branch_id) {
-        $myBranchIds[] = $user->branch_id;
+        // Get filter parameters
+        $selectedMonth = $request->get('month', date('m'));
+        $selectedYear = $request->get('year', date('Y'));
+
+        // Query attendance history
+        $history = Attendance::where('user_id', $employeeId)
+            ->whereYear('check_in_time', $selectedYear)
+            ->whereMonth('check_in_time', $selectedMonth)
+            ->orderBy('check_in_time', 'desc')
+            ->get();
+
+        // Calculate summary
+        $summary = [
+            'hadir' => $history->where('status', 'verified')->count(),
+            'telat' => $history->where('is_late_checkin', true)->count(),
+            'pulang_cepat' => $history->where('is_early_checkout', true)->count(),
+            'pending' => $history->where('status', 'pending_verification')->count(),
+        ];
+
+        return view('attendance.history', compact(
+            'history', 
+            'summary', 
+            'selectedMonth', 
+            'selectedYear',
+            'employee'
+        ));
     }
-
-    $myBranchIds = array_filter(array_unique($myBranchIds));
-
-    // 2. AMBIL DATA CABANG YANG DIKONTROL
-    $controlledBranches = Branch::whereIn('id', $myBranchIds)
-        ->withCount(['users' => function ($q) {
-            $q->where('is_active', true);
-        }])
-        ->orderBy('name', 'asc')
-        ->get();
-
-    return view('user_biasa.my_branches', compact('controlledBranches'));
-}
 }

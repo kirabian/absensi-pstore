@@ -1,12 +1,12 @@
-    @extends('layout.master')
+@extends('layout.master')
 
 @section('title')
     Detail Cabang - {{ $branch->name }}
 @endsection
 
 @section('heading')
-    <a href="{{ route('team.index') }}" class="text-decoration-none text-muted me-2">
-        <i class="mdi mdi-arrow-left"></i> Kembali
+    <a href="{{ route('team.my-branches') }}" class="text-decoration-none text-muted me-2">
+        <i class="mdi mdi-arrow-left"></i> Kembali ke Cabang Saya
     </a>
 @endsection
 
@@ -45,6 +45,7 @@
                                 <th>Status Hari Ini</th>
                                 <th>Jam Masuk</th>
                                 <th>Jam Pulang</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -92,10 +93,16 @@
                                     <td class="text-primary fw-bold">
                                         {{ ($att && $att->check_out_time) ? \Carbon\Carbon::parse($att->check_out_time)->format('H:i') : '-' }}
                                     </td>
+                                    <td>
+                                        <a href="{{ route('team.branch.employee.history', ['branchId' => $branch->id, 'employeeId' => $emp->id]) }}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="mdi mdi-history me-1"></i> Riwayat
+                                        </a>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-5 text-muted">
+                                    <td colspan="6" class="text-center py-5 text-muted">
                                         <i class="mdi mdi-account-off fs-1 d-block mb-2"></i>
                                         Tidak ada karyawan aktif di cabang ini.
                                     </td>

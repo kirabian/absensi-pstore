@@ -18,7 +18,7 @@ use App\Http\Controllers\WorkScheduleController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\InventoryController;
-use App\Http\Controllers\AttendanceHistoryController; // Pastikan ini di-import
+use App\Http\Controllers\AttendanceHistoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,7 +40,6 @@ Route::post('/reset-password', [ForgotPasswordController::class, 'reset'])->name
 | Rute Aplikasi (WAJIB LOGIN)
 |--------------------------------------------------------------------------
 */
-// PERBAIKAN: Tambahkan 'active.user' disini agar user nonaktif langsung logout
 Route::middleware(['auth', 'active.user'])->group(function () {
 
     // --- Rute Utama ---
@@ -68,7 +67,6 @@ Route::middleware(['auth', 'active.user'])->group(function () {
             Route::get('/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('edit');
             Route::put('/{broadcast}', [BroadcastController::class, 'update'])->name('update');
             Route::delete('/{broadcast}', [BroadcastController::class, 'destroy'])->name('destroy');
-            // PERBAIKAN: Route toggle user dihapus dari sini karena salah tempat (sudah ada di bawah)
         });
 
         Route::get('/{broadcast}', [BroadcastController::class, 'show'])->name('show');
@@ -122,7 +120,6 @@ Route::middleware(['auth', 'active.user'])->group(function () {
 
         // --- MANAJEMEN USER ---
         Route::resource('users', UserController::class);
-        // PERBAIKAN: Route ini yang benar untuk toggle status user
         Route::post('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
         Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
 
@@ -157,7 +154,10 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::get('/tim-saya/{user}', [TeamController::class, 'show'])->name('my.team.show');
         Route::get('/tim-saya/attendance/{user}', [TeamController::class, 'attendance'])->name('my.team.attendance');
         Route::get('/team/branch/{id}', [TeamController::class, 'showBranch'])->name('team.branch.detail');
+        // Rute baru untuk riwayat absensi karyawan
+        Route::get('/team/branch/{branchId}/employee/{employeeId}/history', [TeamController::class, 'showEmployeeHistory'])->name('team.branch.employee.history');
     });
+    
     Route::middleware(['role:audit'])->group(function () {
         Route::get('/cabang-saya', [TeamController::class, 'myBranches'])->name('team.my-branches');
     });
