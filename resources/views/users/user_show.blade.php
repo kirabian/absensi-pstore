@@ -68,6 +68,14 @@
                     <a href="{{ route('users.edit', $user->id) }}" class="btn btn-warning btn-sm text-white">
                         <i class="mdi mdi-pencil"></i> Edit Profil
                     </a>
+                    <form action="{{ route('users.toggle-status', $user->id) }}" method="POST" class="d-inline">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="btn btn-sm w-100 {{ $user->is_active ? 'btn-danger' : 'btn-success' }}">
+                            <i class="mdi {{ $user->is_active ? 'mdi-account-off' : 'mdi-account-check' }}"></i>
+                            {{ $user->is_active ? 'Nonaktifkan Akun' : 'Aktifkan Akun' }}
+                        </button>
+                    </form>
                     <a href="{{ route('users.index') }}" class="btn btn-light btn-sm">
                         <i class="mdi mdi-arrow-left"></i> Kembali
                     </a>
@@ -88,20 +96,33 @@
                 {{-- GRID STATISTIK --}}
                 <div class="row mt-4">
                     {{-- Total Hadir --}}
-                    <div class="col-md-4 mb-4">
+                    <div class="col-md-6 mb-4">
                         <div class="card bg-primary text-white h-100">
                             <div class="card-body d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h2 class="mb-0 fw-bold">{{ $stats['total'] }}</h2>
-                                    <small>Total Kehadiran</small>
+                                    <h2 class="mb-0 fw-bold">{{ $stats['present'] }}</h2>
+                                    <small>Total Kehadiran (Masuk)</small>
                                 </div>
                                 <i class="mdi mdi-calendar-check mdi-36px" style="opacity: 0.5"></i>
                             </div>
                         </div>
                     </div>
 
+                    {{-- Tidak Hadir / Alpha --}}
+                    <div class="col-md-6 mb-4">
+                        <div class="card bg-secondary text-white h-100">
+                            <div class="card-body d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h2 class="mb-0 fw-bold">{{ $stats['alpha'] }}</h2>
+                                    <small>Tidak Hadir / Alpha</small>
+                                </div>
+                                <i class="mdi mdi-account-off mdi-36px" style="opacity: 0.5"></i>
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- Tepat Waktu --}}
-                    <div class="col-md-4 mb-4">
+                    <div class="col-md-6 mb-4">
                         <div class="card bg-success text-white h-100">
                             <div class="card-body d-flex justify-content-between align-items-center">
                                 <div>
@@ -114,7 +135,7 @@
                     </div>
 
                     {{-- Terlambat --}}
-                    <div class="col-md-4 mb-4">
+                    <div class="col-md-6 mb-4">
                         <div class="card bg-danger text-white h-100">
                             <div class="card-body d-flex justify-content-between align-items-center">
                                 <div>
@@ -183,7 +204,7 @@
                                             {{ \Carbon\Carbon::parse($log->check_in_time)->format('H:i') }}
                                         </span>
                                         @if($log->is_late_checkin)
-                                            <i class="mdi mdi-alert-circle text-danger" title="Terlambat"></i>
+                                            <i class="mdi mdi-alert-circle text-danger ms-1" title="Terlambat"></i>
                                         @endif
                                     </td>
                                     
@@ -194,7 +215,7 @@
                                                 {{ \Carbon\Carbon::parse($log->check_out_time)->format('H:i') }}
                                             </span>
                                             @if($log->is_early_checkout)
-                                                <i class="mdi mdi-run text-warning" title="Pulang Cepat"></i>
+                                                <i class="mdi mdi-run text-warning ms-1" title="Pulang Cepat"></i>
                                             @endif
                                         @else
                                             <span class="text-muted small">Belum Checkout</span>
@@ -207,19 +228,35 @@
                                             <span class="badge badge-outline-primary">Security Scan</span>
                                         @elseif($log->attendance_type == 'self')
                                             <span class="badge badge-outline-info">Mandiri (Selfie)</span>
+                                        @elseif($log->attendance_type == 'system' || $log->presence_status == 'Alpha')
+                                            <span class="badge badge-outline-danger">System Auto</span>
                                         @else
                                             <span class="badge badge-outline-secondary">System</span>
                                         @endif
                                     </td>
 
-                                    {{-- Status Verifikasi --}}
+                                    {{-- Status Verifikasi (Include Logic Alpha) --}}
                                     <td>
-                                        @if($log->status == 'approved' || $log->status == 'present' || $log->status == 'late')
-                                            <span class="badge badge-success">Valid</span>
+                                        @if($log->presence_status == 'Alpha')
+                                            <div class="d-flex align-items-center">
+                                                <i class="mdi mdi-robot text-danger me-1"></i>
+                                                <span class="badge badge-danger">Alpha</span>
+                                            </div>
+                                        @elseif($log->status == 'verified' || $log->status == 'present' || $log->status == 'late')
+                                            <div class="d-flex align-items-center">
+                                                <i class="mdi mdi-check-circle text-success me-1"></i>
+                                                <span class="badge badge-success">Valid</span>
+                                            </div>
                                         @elseif($log->status == 'rejected')
-                                            <span class="badge badge-danger">Ditolak</span>
+                                            <div class="d-flex align-items-center">
+                                                <i class="mdi mdi-close-circle text-danger me-1"></i>
+                                                <span class="badge badge-danger">Ditolak</span>
+                                            </div>
                                         @elseif($log->status == 'pending_verification')
-                                            <span class="badge badge-warning">Pending</span>
+                                            <div class="d-flex align-items-center">
+                                                <i class="mdi mdi-clock text-warning me-1"></i>
+                                                <span class="badge badge-warning">Pending</span>
+                                            </div>
                                         @else
                                             <span class="badge badge-secondary">{{ $log->status }}</span>
                                         @endif

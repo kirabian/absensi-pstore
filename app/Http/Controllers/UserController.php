@@ -287,6 +287,7 @@ class UserController extends Controller
     }
 
     // Helper Statistik User
+    // Helper Statistik User
     private function getSpecificUserStats($user_id)
     {
         // Pastikan 'Attendance' sudah di-use di paling atas
@@ -295,17 +296,39 @@ class UserController extends Controller
             ->whereYear('check_in_time', Carbon::now()->year);
 
         $totalAttendances = (clone $query)->count();
+
+        // --- PERBAIKAN LOGIKA DISINI ---
+
+        // Hitung Hadir: Status Verified TAPI BUKAN Alpha
+        $presentCount = (clone $query)
+            ->where('status', 'verified')
+            ->where('presence_status', '!=', 'Alpha')
+            ->count();
+
+        // Hitung Alpha / Tidak Hadir (Otomatis + Manual)
+        $alphaCount = (clone $query)
+            ->where('presence_status', 'Alpha')
+            ->count();
+
+        // -------------------------------
+
         $late = (clone $query)->where('is_late_checkin', true)->count();
         $early = (clone $query)->where('is_early_checkout', true)->count();
         $pending = (clone $query)->where('status', 'pending_verification')->count();
-        $onTime = max($totalAttendances - $late, 0);
 
-        $onTimePercentage = $totalAttendances > 0 ? round(($onTime / $totalAttendances) * 100) : 0;
-        $latePercentage = $totalAttendances > 0 ? round(($late / $totalAttendances) * 100) : 0;
+        // On Time (Tepat Waktu) = Hadir (Bukan Alpha) - Terlambat
+        $onTime = max($presentCount - $late, 0);
+
+        // Persentase dihitung dari Total Absen Masuk (Hadir + Telat), BUKAN total record (karena record bisa berisi Alpha)
+        $totalPresentRecords = $presentCount; // Hanya hitung hari dia benar-benar datang
+
+        $onTimePercentage = $totalPresentRecords > 0 ? round(($onTime / $totalPresentRecords) * 100) : 0;
+        $latePercentage = $totalPresentRecords > 0 ? round(($late / $totalPresentRecords) * 100) : 0;
 
         return [
-            'total' => $totalAttendances,
-            'present' => $totalAttendances,
+            'total' => $presentCount, // Total Kehadiran (Hanya yg hadir)
+            'present' => $presentCount,
+            'alpha' => $alphaCount, // Tambahkan key baru untuk Alpha
             'late' => $late,
             'early' => $early,
             'pending' => $pending,
