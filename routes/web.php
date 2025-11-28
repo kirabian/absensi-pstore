@@ -52,7 +52,7 @@ Route::middleware(['auth', 'active.user'])->group(function () {
 
     // --- Rute Search Global (Hanya untuk Admin) ---
     Route::get('/search', [GlobalSearchController::class, 'search'])->name('search');
-    
+
     // === RUTE RIWAYAT ABSENSI ===
     Route::get('/riwayat-absensi', [AttendanceHistoryController::class, 'index'])->name('attendance.history');
 
@@ -113,12 +113,13 @@ Route::middleware(['auth', 'active.user'])->group(function () {
 
     // === RUTE ADMIN & AUDIT MANAGEMENT ===
     Route::middleware(['role:admin,audit'])->group(function () {
+        Route::put('/audit/verify-attendance/{attendance}', [AuditController::class, 'verifyAttendance'])->name('audit.verify.attendance');
         Route::resource('branches', BranchController::class);
         Route::post('/branches/{branch}/toggle-status', [BranchController::class, 'toggleStatus'])->name('branches.toggle-status');
-        
+
         Route::resource('divisions', DivisionController::class);
         Route::post('/divisions/{division}/toggle-status', [DivisionController::class, 'toggleStatus'])->name('divisions.toggle-status');
-        
+
         // --- MANAJEMEN USER ---
         Route::resource('users', UserController::class);
         // PERBAIKAN: Route ini yang benar untuk toggle status user

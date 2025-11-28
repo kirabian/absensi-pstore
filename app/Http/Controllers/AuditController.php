@@ -54,7 +54,7 @@ class AuditController extends Controller
     }
 
     /**
-     * Menyetujui Absensi Mandiri
+     * Menyetujui Absensi Mandiri (Cara Lama / Quick Approve)
      */
     public function approve(Attendance $attendance)
     {
@@ -91,6 +91,51 @@ class AuditController extends Controller
     }
 
     /**
+     * =========================================================================
+     * FITUR BARU: VERIFIKASI DETAIL DENGAN BUKTI & STATUS KHUSUS
+     * =========================================================================
+     */
+    public function verifyAttendance(Request $request, Attendance $attendance)
+    {
+        // 1. Validasi Input
+        $request->validate([
+            'presence_status' => 'required|string',
+            'audit_photo' => 'nullable|image|max:5120', // Max 5MB
+            'audit_note' => 'nullable|string'
+        ]);
+
+        $user = Auth::user();
+
+        // 2. Logic Upload Foto Bukti (Jika ada)
+        $auditPhotoPath = $attendance->audit_photo_path; // Default pakai yg lama jika tidak upload baru
+        
+        if ($request->hasFile('audit_photo')) {
+            // Hapus foto lama jika ada
+            if ($auditPhotoPath && Storage::disk('public')->exists($auditPhotoPath)) {
+                Storage::disk('public')->delete($auditPhotoPath);
+            }
+            // Simpan foto baru
+            $auditPhotoPath = $request->file('audit_photo')->store('audit-evidence', 'public');
+        }
+
+        // 3. Update Data Attendance
+        $attendance->update([
+            'status' => 'verified', // Status sistem jadi verified
+            'presence_status' => $request->presence_status, // Status kehadiran spesifik (Masuk, Sakit, dll)
+            'audit_photo_path' => $auditPhotoPath,
+            'audit_note' => $request->audit_note,
+            'verified_by_user_id' => $user->id, // Audit yang login
+        ]);
+
+        // Opsional: Kirim Notifikasi
+        $title = "Absensi Diverifikasi Audit";
+        $body = "Status kehadiran Anda tanggal " . $attendance->check_in_time->format('d/m/Y') . " telah diverifikasi menjadi: " . $request->presence_status;
+        $this->sendNotificationToUser($attendance->user, $title, $body);
+
+        return back()->with('success', 'Data absensi berhasil diverifikasi dan status diperbarui.');
+    }
+
+    /**
      * Menampilkan daftar izin telat
      */
     public function showLatePermissions()
@@ -123,7 +168,7 @@ class AuditController extends Controller
     }
 
     // =========================================================================
-    // FITUR BARU: MISSED CHECKOUT (LUPA ABSEN PULANG)
+    // FITUR: MISSED CHECKOUT (LUPA ABSEN PULANG)
     // =========================================================================
 
     /**
@@ -193,7 +238,8 @@ class AuditController extends Controller
             'check_out_time' => $checkOutDateTime,
             'status' => 'verified', // Karena diinput manual oleh Audit, anggap verified
             'verified_by_user_id' => Auth::id(),
-            'notes' => 'Manual checkout by Audit: ' . $request->notes // Simpan catatan
+            // Simpan catatan (Gabung dengan notes lama jika ada, atau buat baru)
+            'audit_note' => 'Manual checkout by Audit: ' . $request->notes 
         ]);
 
         // 5. Kirim Notifikasi ke Karyawan

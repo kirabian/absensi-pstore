@@ -15,17 +15,20 @@ class Attendance extends Model
         'branch_id',
         'check_in_time',
         'check_out_time',
-        'status',
+        'status', // Berfungsi sebagai Verification Status (pending, verified, rejected, late, present, dll)
+        'presence_status', // KOLOM BARU: Status Kehadiran Spesifik (Masuk, Sakit, Cuti, dll)
         'photo_path',
         'photo_out_path',
+        'audit_photo_path', // KOLOM BARU: Bukti foto audit
+        'audit_note',       // KOLOM BARU: Catatan audit
         'scanned_by_user_id',
         'verified_by_user_id',
         'latitude',
         'longitude',
-        'work_schedule_id', // KOLOM BARU
-        'is_late_checkin',  // KOLOM BARU
-        'is_early_checkout', // KOLOM BARU
-        'attendance_type', // KOLOM BARU
+        'work_schedule_id',
+        'is_late_checkin',
+        'is_early_checkout',
+        'attendance_type',
     ];
 
     protected $casts = [
@@ -34,6 +37,10 @@ class Attendance extends Model
         'is_late_checkin' => 'boolean',
         'is_early_checkout' => 'boolean',
     ];
+
+    // ==========================================
+    // RELATIONS
+    // ==========================================
 
     /**
      * Relasi many-to-one: Absensi ini milik satu User.
@@ -68,12 +75,16 @@ class Attendance extends Model
     }
 
     /**
-     * Relasi ke Work Schedule - RELASI BARU
+     * Relasi ke Work Schedule
      */
     public function workSchedule()
     {
         return $this->belongsTo(WorkSchedule::class, 'work_schedule_id');
     }
+
+    // ==========================================
+    // SCOPES
+    // ==========================================
 
     /**
      * Scope untuk absensi hari ini
@@ -123,6 +134,10 @@ class Attendance extends Model
         return $query->where('is_early_checkout', true);
     }
 
+    // ==========================================
+    // STATIC HELPERS
+    // ==========================================
+
     /**
      * Cek apakah sudah absen hari ini
      */
@@ -138,6 +153,10 @@ class Attendance extends Model
     {
         return static::forUser($userId)->today()->first();
     }
+
+    // ==========================================
+    // INSTANCE METHODS
+    // ==========================================
 
     /**
      * Verifikasi absensi oleh audit
@@ -181,21 +200,6 @@ class Attendance extends Model
     }
 
     /**
-     * Hitung durasi kerja
-     */
-    public function getWorkDurationAttribute()
-    {
-        if (!$this->check_out_time) {
-            return null;
-        }
-
-        $checkIn = Carbon::parse($this->check_in_time);
-        $checkOut = Carbon::parse($this->check_out_time);
-
-        return $checkOut->diff($checkIn)->format('%H:%I:%S');
-    }
-
-    /**
      * Tandai sebagai terlambat
      */
     public function markAsLate()
@@ -214,53 +218,7 @@ class Attendance extends Model
     }
 
     /**
-     * Get formatted check in time
-     */
-    public function getFormattedCheckInTimeAttribute()
-    {
-        return $this->check_in_time->format('H:i:s');
-    }
-
-    /**
-     * Get formatted check out time
-     */
-    public function getFormattedCheckOutTimeAttribute()
-    {
-        return $this->check_out_time ? $this->check_out_time->format('H:i:s') : null;
-    }
-
-    /**
-     * Get formatted check in date
-     */
-    public function getFormattedCheckInDateAttribute()
-    {
-        return $this->check_in_time->format('d-m-Y');
-    }
-
-    /**
-     * Get status label
-     */
-    public function getStatusLabelAttribute()
-    {
-        $labels = [
-            'present' => 'Hadir',
-            'late' => 'Terlambat',
-            'absent' => 'Tidak Hadir'
-        ];
-
-        return $labels[$this->status] ?? $this->status;
-    }
-
-    /**
-     * Cek apakah sudah pulang
-     */
-    public function getHasCheckedOutAttribute()
-    {
-        return !is_null($this->check_out_time);
-    }
-
-    /**
-     * Apply work schedule validation
+     * Apply work schedule validation logic
      */
     public function applyWorkScheduleValidation()
     {
@@ -284,9 +242,59 @@ class Attendance extends Model
         return $this;
     }
 
+    // ==========================================
+    // ACCESSORS
+    // ==========================================
+
     /**
-     * Get attendance type label
+     * Hitung durasi kerja
      */
+    public function getWorkDurationAttribute()
+    {
+        if (!$this->check_out_time) {
+            return null;
+        }
+
+        $checkIn = Carbon::parse($this->check_in_time);
+        $checkOut = Carbon::parse($this->check_out_time);
+
+        return $checkOut->diff($checkIn)->format('%H:%I:%S');
+    }
+
+    public function getFormattedCheckInTimeAttribute()
+    {
+        return $this->check_in_time->format('H:i:s');
+    }
+
+    public function getFormattedCheckOutTimeAttribute()
+    {
+        return $this->check_out_time ? $this->check_out_time->format('H:i:s') : null;
+    }
+
+    public function getFormattedCheckInDateAttribute()
+    {
+        return $this->check_in_time->format('d-m-Y');
+    }
+
+    public function getStatusLabelAttribute()
+    {
+        $labels = [
+            'present' => 'Hadir',
+            'late' => 'Terlambat',
+            'absent' => 'Tidak Hadir',
+            'verified' => 'Terverifikasi',
+            'rejected' => 'Ditolak',
+            'pending_verification' => 'Menunggu Verifikasi',
+        ];
+
+        return $labels[$this->status] ?? $this->status;
+    }
+
+    public function getHasCheckedOutAttribute()
+    {
+        return !is_null($this->check_out_time);
+    }
+
     public function getAttendanceTypeLabelAttribute()
     {
         $labels = [
@@ -296,5 +304,24 @@ class Attendance extends Model
         ];
 
         return $labels[$this->attendance_type] ?? $this->attendance_type;
+    }
+
+    // --- ACCESSOR BARU UNTUK FITUR AUDIT ---
+    
+    /**
+     * Helper untuk warna badge status kehadiran (presence_status)
+     */
+    public function getPresenceStatusBadgeAttribute()
+    {
+        return match ($this->presence_status) {
+            'Masuk' => 'success',
+            'WFH / Dinas Luar' => 'info',
+            'Izin Telat' => 'warning',
+            'Sakit' => 'primary',
+            'Cuti' => 'secondary',
+            'Alpha' => 'danger',
+            'Telat' => 'danger',
+            default => 'dark',
+        };
     }
 }
