@@ -53,6 +53,14 @@
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
     }
+    
+    .audit-photo-thumb {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+    }
 </style>
 @endpush
 
@@ -188,6 +196,7 @@
                                     <th>Foto Pulang</th>
                                     <th>Status</th>
                                     <th>Verifikasi</th>
+                                    <th>Bukti Audit</th> {{-- KOLOM BARU --}}
                                     <th>Metode</th>
                                     @if(isset($employee) && (auth()->user()->role == 'audit' || auth()->user()->role == 'admin'))
                                         <th width="120">Aksi Audit</th>
@@ -282,7 +291,7 @@
                                                     {{ $att->presence_status }}
                                                 </span>
                                             @else
-                                                <span class="badge bg-secondary">-</span>
+                                                <span class="badge bg-secondary">Belum Diatur</span>
                                             @endif
                                         </td>
 
@@ -311,6 +320,20 @@
                                                 <span class="badge bg-secondary verification-badge">
                                                     Belum Diverifikasi
                                                 </span>
+                                            @endif
+                                        </td>
+
+                                        {{-- BUKTI AUDIT --}}
+                                        <td>
+                                            @if($att->audit_photo_path)
+                                                <a href="{{ asset('storage/' . $att->audit_photo_path) }}" target="_blank" class="d-inline-block">
+                                                    <img src="{{ asset('storage/' . $att->audit_photo_path) }}" 
+                                                         alt="Bukti Audit" 
+                                                         class="audit-photo-thumb shadow-sm">
+                                                    <small class="d-block text-center text-muted mt-1">Audit</small>
+                                                </a>
+                                            @else
+                                                <span class="text-muted small">-</span>
                                             @endif
                                         </td>
 
@@ -388,12 +411,12 @@
                                                                             <label class="form-label fw-bold">Status Kehadiran <span class="text-danger">*</span></label>
                                                                             <select name="presence_status" class="form-select" required>
                                                                                 <option value="">Pilih Status Kehadiran</option>
-                                                                                <option value="Masuk" {{ $att->presence_status == 'Masuk' ? 'selected' : '' }}>Masuk</option>
-                                                                                <option value="WFH / Dinas Luar" {{ $att->presence_status == 'WFH / Dinas Luar' ? 'selected' : '' }}>WFH / Dinas Luar</option>
-                                                                                <option value="Izin Telat" {{ $att->presence_status == 'Izin Telat' ? 'selected' : '' }}>Izin Telat</option>
-                                                                                <option value="Sakit" {{ $att->presence_status == 'Sakit' ? 'selected' : '' }}>Sakit</option>
-                                                                                <option value="Cuti" {{ $att->presence_status == 'Cuti' ? 'selected' : '' }}>Cuti</option>
-                                                                                <option value="Alpha" {{ $att->presence_status == 'Alpha' ? 'selected' : '' }}>Alpha</option>
+                                                                                <option value="Masuk" {{ $att->presence_status == 'Masuk' ? 'selected' : '' }}>✅ Masuk</option>
+                                                                                <option value="WFH / Dinas Luar" {{ $att->presence_status == 'WFH / Dinas Luar' ? 'selected' : '' }}>🏠 WFH / Dinas Luar</option>
+                                                                                <option value="Izin Telat" {{ $att->presence_status == 'Izin Telat' ? 'selected' : '' }}>⏰ Izin Telat</option>
+                                                                                <option value="Sakit" {{ $att->presence_status == 'Sakit' ? 'selected' : '' }}>🤒 Sakit</option>
+                                                                                <option value="Cuti" {{ $att->presence_status == 'Cuti' ? 'selected' : '' }}>🏖️ Cuti</option>
+                                                                                <option value="Alpha" {{ $att->presence_status == 'Alpha' ? 'selected' : '' }}>❌ Alpha</option>
                                                                             </select>
                                                                             <small class="text-muted">Pilih status kehadiran yang sesuai</small>
                                                                         </div>
@@ -404,11 +427,11 @@
                                                                             <input type="file" name="audit_photo" class="form-control" accept="image/*">
                                                                             <small class="text-muted">Opsional: Upload foto bukti verifikasi</small>
                                                                             @if($att->audit_photo_path)
-                                                                                <div class="mt-1">
+                                                                                <div class="mt-2">
                                                                                     <small class="text-success">
                                                                                         <i class="mdi mdi-check me-1"></i>
                                                                                         Bukti sudah ada: 
-                                                                                        <a href="{{ asset('storage/' . $att->audit_photo_path) }}" target="_blank">Lihat</a>
+                                                                                        <a href="{{ asset('storage/' . $att->audit_photo_path) }}" target="_blank" class="text-decoration-none">Lihat Bukti</a>
                                                                                     </small>
                                                                                 </div>
                                                                             @endif
