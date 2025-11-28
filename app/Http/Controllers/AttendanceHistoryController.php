@@ -47,7 +47,7 @@ class AttendanceHistoryController extends Controller
     // --- METODE BARU UNTUK AUDIT EDIT DATA ---
     public function updateByAudit(Request $request, $id)
     {
-        // 1. Validasi Role (Double Check selain Middleware)
+        // 1. Validasi Role
         if (Auth::user()->role !== 'audit') {
             abort(403, 'Akses Ditolak. Hanya Audit yang boleh mengedit data.');
         }
@@ -57,27 +57,36 @@ class AttendanceHistoryController extends Controller
             'check_in_time'   => 'required', // Format H:i
             'check_out_time'  => 'nullable', // Format H:i
             'status'          => 'required|in:verified,pending_verification,rejected',
-            'audit_note'      => 'nullable|string'
+            'audit_note'      => 'nullable|string',
+            'audit_photo'     => 'nullable|image|max:2048' // Validasi Foto (Max 2MB)
         ]);
 
         $attendance = Attendance::findOrFail($id);
 
-        // 2. Olah Waktu (Gabungkan Tanggal Asli dengan Jam Baru)
+        // 2. Olah Waktu
         $originalDate = $attendance->check_in_time->format('Y-m-d');
-        
         $newCheckIn = Carbon::parse($originalDate . ' ' . $request->check_in_time);
         $newCheckOut = $request->check_out_time ? Carbon::parse($originalDate . ' ' . $request->check_out_time) : null;
 
-        // 3. Cek Keterlambatan Ulang (Opsional, jika ingin hitung ulang status telat)
+        // 3. Cek Keterlambatan Ulang
         $workSchedule = WorkSchedule::getScheduleForUser($attendance->user_id);
-        $isLate = $attendance->is_late_checkin; // Default pakai nilai lama
+        $isLate = $attendance->is_late_checkin;
         
         if ($workSchedule && $request->presence_status == 'Masuk') {
             $scheduleStart = Carbon::parse($originalDate . ' ' . $workSchedule->check_in_end);
             $isLate = $newCheckIn->gt($scheduleStart);
         }
 
-        // 4. Update Data
+        // 4. Proses Upload Foto Audit (Jika Ada)
+        $auditPhotoPath = $attendance->audit_photo_path; // Default pakai yg lama
+        if ($request->hasFile('audit_photo')) {
+            // Hapus file lama jika ada (opsional, biar hemat storage)
+            // if ($auditPhotoPath && Storage::exists($auditPhotoPath)) Storage::delete($auditPhotoPath);
+            
+            $auditPhotoPath = $request->file('audit_photo')->store('audit-proofs', 'public');
+        }
+
+        // 5. Update Data
         $attendance->update([
             'presence_status'     => $request->presence_status,
             'check_in_time'       => $newCheckIn,
@@ -85,8 +94,8 @@ class AttendanceHistoryController extends Controller
             'status'              => $request->status,
             'is_late_checkin'     => $isLate,
             'audit_note'          => $request->audit_note,
+            'audit_photo_path'    => $auditPhotoPath, // Simpan path foto baru
             'verified_by_user_id' => ($request->status == 'verified') ? Auth::id() : null,
-            // Jika diubah dari Alpha ke Masuk, ubah tipe jadi manual adjustment
             'attendance_type'     => ($attendance->presence_status == 'Alpha' && $request->presence_status != 'Alpha') ? 'manual' : $attendance->attendance_type,
         ]);
 

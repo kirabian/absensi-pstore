@@ -32,6 +32,7 @@
         .verification-badge { font-size: 0.75rem; padding: 0.35rem 0.7rem; }
         .action-buttons .btn { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
         .verified-check { color: #28a745; font-size: 1.1rem; }
+        .edited-info { color: #0dcaf0; font-size: 1.1rem; }
         .pending-clock { color: #ffc107; font-size: 1.1rem; }
         .audit-mode-badge { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
         .audit-photo-thumb { width: 40px; height: 40px; object-fit: cover; border: 2px solid #e2e8f0; border-radius: 8px; }
@@ -48,9 +49,7 @@
                         <i class="mdi mdi-shield-account display-6 me-3"></i>
                         <div>
                             <h5 class="alert-heading mb-1">Mode Cross-Check Audit</h5>
-                            <p class="mb-0">Anda dapat memverifikasi dan mengubah status kehadiran karyawan. Setelah
-                                verifikasi lengkap, status akan berubah menjadi <span
-                                    class="badge bg-success">Terverifikasi</span>.</p>
+                            <p class="mb-0">Anda dapat memverifikasi, mengoreksi, dan mengubah status kehadiran karyawan.</p>
                         </div>
                     </div>
                 </div>
@@ -195,13 +194,11 @@
                                             <td>
                                                 <div class="d-flex align-items-center">
                                                     <i class="mdi mdi-login text-success me-2"></i>
-                                                    <span
-                                                        class="{{ $att->is_late_checkin ? 'text-danger fw-bold' : '' }}">
+                                                    <span class="{{ $att->is_late_checkin ? 'text-danger fw-bold' : '' }}">
                                                         {{ $att->check_in_time->format('H:i') }}
                                                     </span>
                                                     @if ($att->is_late_checkin)
-                                                        <span class="badge bg-danger ms-1"
-                                                            style="font-size: 9px;">Telat</span>
+                                                        <span class="badge bg-danger ms-1" style="font-size: 9px;">Telat</span>
                                                     @endif
                                                 </div>
                                             </td>
@@ -226,13 +223,11 @@
                                                 @if ($att->check_out_time)
                                                     <div class="d-flex align-items-center">
                                                         <i class="mdi mdi-logout text-primary me-2"></i>
-                                                        <span
-                                                            class="{{ $att->is_early_checkout ? 'text-warning fw-bold' : '' }}">
+                                                        <span class="{{ $att->is_early_checkout ? 'text-warning fw-bold' : '' }}">
                                                             {{ $att->check_out_time->format('H:i') }}
                                                         </span>
                                                         @if ($att->is_early_checkout)
-                                                            <span class="badge bg-warning ms-1"
-                                                                style="font-size: 9px;">Cepat</span>
+                                                            <span class="badge bg-warning ms-1" style="font-size: 9px;">Cepat</span>
                                                         @endif
                                                     </div>
                                                 @else
@@ -278,33 +273,57 @@
                                                 @endif
                                             </td>
 
-                                            {{-- STATUS VERIFIKASI --}}
+                                            {{-- ========================================================= --}}
+                                            {{-- KOLOM VERIFIKASI (LOGIKA UTAMA YANG DIMINTA) --}}
+                                            {{-- ========================================================= --}}
                                             <td>
                                                 @if ($att->status == 'verified')
+                                                    
+                                                    {{-- KASUS 1: ALPHA (System Auto) --}}
                                                     @if ($att->presence_status == 'Alpha')
                                                         <div class="d-flex align-items-center">
                                                             <i class="mdi mdi-robot text-danger me-1"></i>
                                                             <span class="badge bg-danger verification-badge">System Auto</span>
                                                         </div>
                                                         <small class="text-muted d-block fst-italic" style="font-size: 10px;">Tidak Absen</small>
+                                                    
+                                                    {{-- KASUS 2: DIKOREKSI/EDIT OLEH AUDIT (Manual Type) --}}
+                                                    @elseif($att->attendance_type == 'manual')
+                                                        <div class="d-flex align-items-center">
+                                                            <i class="mdi mdi-pencil-box-outline text-info me-1"></i>
+                                                            <span class="badge bg-info text-white verification-badge">Dikoreksi</span>
+                                                        </div>
+                                                        @if ($att->verifiedBy)
+                                                            <small class="text-muted d-block" style="font-size: 11px;">
+                                                                Edit: {{ $att->verifiedBy->name }}
+                                                            </small>
+                                                        @endif
+
+                                                    {{-- KASUS 3: TERVERIFIKASI NORMAL --}}
                                                     @else
                                                         <div class="d-flex align-items-center">
                                                             <i class="mdi mdi-check-circle verified-check me-1"></i>
                                                             <span class="badge bg-success verification-badge">Terverifikasi</span>
                                                         </div>
                                                         @if ($att->verifiedBy)
-                                                            <small class="text-muted d-block">oleh: {{ $att->verifiedBy->name }}</small>
+                                                            <small class="text-muted d-block">
+                                                                oleh: {{ $att->verifiedBy->name }}
+                                                            </small>
                                                         @endif
                                                     @endif
+
                                                 @elseif($att->status == 'pending_verification')
                                                     <div class="d-flex align-items-center">
                                                         <i class="mdi mdi-clock-outline pending-clock me-1"></i>
                                                         <span class="badge bg-warning text-dark verification-badge">Menunggu</span>
                                                     </div>
+                                                @elseif($att->status == 'rejected')
+                                                    <span class="badge bg-danger verification-badge">Ditolak</span>
                                                 @else
                                                     <span class="badge bg-secondary verification-badge">Belum Diverifikasi</span>
                                                 @endif
                                             </td>
+                                            {{-- ========================================================= --}}
 
                                             {{-- BUKTI AUDIT --}}
                                             <td>
@@ -371,7 +390,7 @@
 
                                                 {{-- INCLUDE MODAL-MODAL --}}
                                                 
-                                                {{-- 1. Modal Verifikasi (Code Existing) --}}
+                                                {{-- 1. Modal Verifikasi --}}
                                                 <div class="modal fade" id="verifyModal{{ $att->id }}" tabindex="-1">
                                                     <div class="modal-dialog modal-lg">
                                                         <div class="modal-content">
@@ -382,7 +401,6 @@
                                                             <form action="{{ route('audit.verify.attendance', $att->id) }}" method="POST" enctype="multipart/form-data">
                                                                 @csrf @method('PUT')
                                                                 <div class="modal-body">
-                                                                    {{-- Isi Modal Verifikasi (Sama seperti sebelumnya) --}}
                                                                     <div class="alert alert-info">
                                                                         <strong>Karyawan:</strong> {{ $employee->name }}<br>
                                                                         <strong>Tanggal:</strong> {{ $att->check_in_time->format('d M Y') }}
@@ -417,7 +435,7 @@
                                                     </div>
                                                 </div>
 
-                                                {{-- 2. MODAL EDIT KHUSUS AUDIT (BARU) --}}
+                                                {{-- 2. MODAL EDIT KHUSUS AUDIT (DENGAN UPLOAD FOTO) --}}
                                                 @if (auth()->user()->role == 'audit')
                                                 <div class="modal fade" id="editAuditModal{{ $att->id }}" tabindex="-1">
                                                     <div class="modal-dialog modal-lg">
@@ -428,7 +446,8 @@
                                                                 </h5>
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                             </div>
-                                                            <form action="{{ route('audit.update.attendance', $att->id) }}" method="POST">
+                                                            {{-- FORM DENGAN ENCTYPE MULTIPART --}}
+                                                            <form action="{{ route('audit.update.attendance', $att->id) }}" method="POST" enctype="multipart/form-data">
                                                                 @csrf @method('PUT')
                                                                 <div class="modal-body">
                                                                     <div class="alert alert-warning">
@@ -469,6 +488,18 @@
                                                                         </div>
                                                                     </div>
 
+                                                                    {{-- INPUT FILE BUKTI AUDIT (File Manager) --}}
+                                                                    <div class="mb-3">
+                                                                        <label class="form-label fw-bold">Upload Bukti Koreksi</label>
+                                                                        <input type="file" name="audit_photo" class="form-control" accept="image/*">
+                                                                        <small class="text-muted">Upload bukti screenshot/foto jika diperlukan.</small>
+                                                                        @if($att->audit_photo_path)
+                                                                            <div class="mt-2">
+                                                                                <small class="text-success"><i class="mdi mdi-check"></i> Bukti saat ini tersedia.</small>
+                                                                            </div>
+                                                                        @endif
+                                                                    </div>
+
                                                                     <div class="mb-3">
                                                                         <label class="form-label fw-bold">Catatan Koreksi</label>
                                                                         <textarea name="audit_note" class="form-control" rows="2" placeholder="Alasan perubahan data...">{{ $att->audit_note }}</textarea>
@@ -484,7 +515,7 @@
                                                 </div>
                                                 @endif
 
-                                                {{-- 3. Modal Tolak (Code Existing) --}}
+                                                {{-- 3. Modal Tolak --}}
                                                 <div class="modal fade" id="rejectModal{{ $att->id }}" tabindex="-1">
                                                     <div class="modal-dialog">
                                                         <div class="modal-content">
