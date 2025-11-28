@@ -67,11 +67,14 @@
                                         <td class="text-muted">{{ $key + 1 }}</td>
                                         <td>
                                             <div class="d-flex align-items-center">
-                                                <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
-                                                    <i class="mdi mdi-store text-primary fs-5"></i>
+                                                <div class="me-3">
+                                                    <span class="badge bg-primary bg-gradient fs-6 px-3 py-2">
+                                                        {{ strtoupper(substr($branch->name, 0, 2)) }}
+                                                    </span>
                                                 </div>
                                                 <div>
                                                     <div class="fw-bold text-dark">{{ $branch->name }}</div>
+                                                    <small class="text-muted">ID: {{ $branch->id }}</small>
                                                 </div>
                                             </div>
                                         </td>
@@ -139,11 +142,16 @@
                             <div class="card mb-3 shadow-sm border-0">
                                 <div class="card-body">
                                     <div class="d-flex align-items-start mb-3">
-                                        <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0">
-                                            <i class="mdi mdi-store text-primary fs-5"></i>
+                                        <div class="me-3">
+                                            <span class="badge bg-primary bg-gradient fs-6 px-3 py-2">
+                                                {{ strtoupper(substr($branch->name, 0, 2)) }}
+                                            </span>
                                         </div>
                                         <div class="flex-grow-1">
                                             <h6 class="mb-1 fw-bold text-dark">{{ $branch->name }}</h6>
+                                            <div class="text-muted small mb-1">
+                                                <i class="mdi mdi-identifier"></i> ID: {{ $branch->id }}
+                                            </div>
                                             <div class="text-muted small">
                                                 <i class="mdi mdi-map-marker text-danger"></i>
                                                 {{ Str::limit($branch->address ?? 'Alamat belum diisi', 50) }}
@@ -197,11 +205,6 @@
 
     {{-- Optional: Tambahkan CSS Custom --}}
     <style>
-        .avatar-sm {
-            width: 45px;
-            height: 45px;
-        }
-        
         .table tbody tr {
             transition: all 0.2s ease;
         }
@@ -221,6 +224,11 @@
         
         .btn:hover {
             transform: translateY(-2px);
+        }
+
+        .badge {
+            font-weight: 600;
+            letter-spacing: 1px;
         }
     </style>
 @endsection
