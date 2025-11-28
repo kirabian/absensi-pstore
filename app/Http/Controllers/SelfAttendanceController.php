@@ -72,7 +72,7 @@ class SelfAttendanceController extends Controller
     {
         // Validasi Input
         $request->validate([
-            'photo' => 'required|image|max:5120', // Max 5MB
+            'photo' => 'required|image|max:51200', // Max 5MB
             'latitude' => 'required',
             'longitude' => 'required',
         ]);

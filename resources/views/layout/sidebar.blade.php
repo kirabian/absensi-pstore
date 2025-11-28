@@ -125,14 +125,14 @@
                 </a>
             </li> --}}
         @endif
-        @if (auth()->user()->role == 'audit' || auth()->user()->role == 'admin')
+        {{-- @if (auth()->user()->role == 'audit' || auth()->user()->role == 'admin')
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('audit.missed-checkout.list') }}">
                     <i class="mdi mdi-clock-alert menu-icon"></i>
                     <span class="menu-title">Lupa Absen Pulang</span>
                 </a>
             </li>
-        @endif
+        @endif --}}
     </ul>
 </nav>
 
