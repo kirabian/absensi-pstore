@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
+use App\Models\WorkSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class AttendanceHistoryController extends Controller
 {
@@ -26,14 +28,9 @@ class AttendanceHistoryController extends Controller
         // Calculate summary
         $summary = [
             'total' => $history->count(),
-            
-            // --- PERBAIKAN DI SINI ---
-            // Hitung Hadir: Status Verified TAPI BUKAN Alpha
             'hadir' => $history->where('status', 'verified')
                                ->where('presence_status', '!=', 'Alpha') 
                                ->count(),
-            // --------------------------
-
             'telat' => $history->where('is_late_checkin', true)->count(),
             'pulang_cepat' => $history->where('is_early_checkout', true)->count(),
             'pending' => $history->where('status', 'pending_verification')->count(),
@@ -45,5 +42,54 @@ class AttendanceHistoryController extends Controller
             'selectedMonth', 
             'selectedYear'
         ));
+    }
+
+    // --- METODE BARU UNTUK AUDIT EDIT DATA ---
+    public function updateByAudit(Request $request, $id)
+    {
+        // 1. Validasi Role (Double Check selain Middleware)
+        if (Auth::user()->role !== 'audit') {
+            abort(403, 'Akses Ditolak. Hanya Audit yang boleh mengedit data.');
+        }
+
+        $request->validate([
+            'presence_status' => 'required|string',
+            'check_in_time'   => 'required', // Format H:i
+            'check_out_time'  => 'nullable', // Format H:i
+            'status'          => 'required|in:verified,pending_verification,rejected',
+            'audit_note'      => 'nullable|string'
+        ]);
+
+        $attendance = Attendance::findOrFail($id);
+
+        // 2. Olah Waktu (Gabungkan Tanggal Asli dengan Jam Baru)
+        $originalDate = $attendance->check_in_time->format('Y-m-d');
+        
+        $newCheckIn = Carbon::parse($originalDate . ' ' . $request->check_in_time);
+        $newCheckOut = $request->check_out_time ? Carbon::parse($originalDate . ' ' . $request->check_out_time) : null;
+
+        // 3. Cek Keterlambatan Ulang (Opsional, jika ingin hitung ulang status telat)
+        $workSchedule = WorkSchedule::getScheduleForUser($attendance->user_id);
+        $isLate = $attendance->is_late_checkin; // Default pakai nilai lama
+        
+        if ($workSchedule && $request->presence_status == 'Masuk') {
+            $scheduleStart = Carbon::parse($originalDate . ' ' . $workSchedule->check_in_end);
+            $isLate = $newCheckIn->gt($scheduleStart);
+        }
+
+        // 4. Update Data
+        $attendance->update([
+            'presence_status'     => $request->presence_status,
+            'check_in_time'       => $newCheckIn,
+            'check_out_time'      => $newCheckOut,
+            'status'              => $request->status,
+            'is_late_checkin'     => $isLate,
+            'audit_note'          => $request->audit_note,
+            'verified_by_user_id' => ($request->status == 'verified') ? Auth::id() : null,
+            // Jika diubah dari Alpha ke Masuk, ubah tipe jadi manual adjustment
+            'attendance_type'     => ($attendance->presence_status == 'Alpha' && $request->presence_status != 'Alpha') ? 'manual' : $attendance->attendance_type,
+        ]);
+
+        return back()->with('success', 'Data absensi berhasil diperbarui oleh Audit.');
     }
 }

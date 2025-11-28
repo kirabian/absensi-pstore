@@ -29,38 +29,12 @@
 
 @push('styles')
     <style>
-        .verification-badge {
-            font-size: 0.75rem;
-            padding: 0.35rem 0.7rem;
-        }
-
-        .action-buttons .btn {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.8rem;
-        }
-
-        .verified-check {
-            color: #28a745;
-            font-size: 1.1rem;
-        }
-
-        .pending-clock {
-            color: #ffc107;
-            font-size: 1.1rem;
-        }
-
-        .audit-mode-badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .audit-photo-thumb {
-            width: 40px;
-            height: 40px;
-            object-fit: cover;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-        }
+        .verification-badge { font-size: 0.75rem; padding: 0.35rem 0.7rem; }
+        .action-buttons .btn { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
+        .verified-check { color: #28a745; font-size: 1.1rem; }
+        .pending-clock { color: #ffc107; font-size: 1.1rem; }
+        .audit-mode-badge { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .audit-photo-thumb { width: 40px; height: 40px; object-fit: cover; border: 2px solid #e2e8f0; border-radius: 8px; }
     </style>
 @endpush
 
@@ -201,7 +175,7 @@
                                         <th>Foto Pulang</th>
                                         <th>Status</th>
                                         <th>Verifikasi</th>
-                                        <th>Bukti Audit</th> {{-- KOLOM BARU --}}
+                                        <th>Bukti Audit</th>
                                         <th>Metode</th>
                                         @if (isset($employee) && (auth()->user()->role == 'audit' || auth()->user()->role == 'admin'))
                                             <th width="120">Aksi Audit</th>
@@ -221,7 +195,8 @@
                                             <td>
                                                 <div class="d-flex align-items-center">
                                                     <i class="mdi mdi-login text-success me-2"></i>
-                                                    <span class="{{ $att->is_late_checkin ? 'text-danger fw-bold' : '' }}">
+                                                    <span
+                                                        class="{{ $att->is_late_checkin ? 'text-danger fw-bold' : '' }}">
                                                         {{ $att->check_in_time->format('H:i') }}
                                                     </span>
                                                     @if ($att->is_late_checkin)
@@ -306,44 +281,28 @@
                                             {{-- STATUS VERIFIKASI --}}
                                             <td>
                                                 @if ($att->status == 'verified')
-                                                    {{-- LOGIKA BARU: Cek apakah ini Alpha (System) atau Hadir (Verifikasi Manual) --}}
                                                     @if ($att->presence_status == 'Alpha')
                                                         <div class="d-flex align-items-center">
                                                             <i class="mdi mdi-robot text-danger me-1"></i>
-                                                            {{-- Ikon Robot/System --}}
-                                                            <span class="badge bg-danger verification-badge">
-                                                                System Auto
-                                                            </span>
+                                                            <span class="badge bg-danger verification-badge">System Auto</span>
                                                         </div>
-                                                        <small class="text-muted d-block fst-italic"
-                                                            style="font-size: 10px;">
-                                                            Tidak Absen
-                                                        </small>
+                                                        <small class="text-muted d-block fst-italic" style="font-size: 10px;">Tidak Absen</small>
                                                     @else
-                                                        {{-- Tampilan Normal untuk yang Hadir --}}
                                                         <div class="d-flex align-items-center">
                                                             <i class="mdi mdi-check-circle verified-check me-1"></i>
-                                                            <span class="badge bg-success verification-badge">
-                                                                Terverifikasi
-                                                            </span>
+                                                            <span class="badge bg-success verification-badge">Terverifikasi</span>
                                                         </div>
                                                         @if ($att->verifiedBy)
-                                                            <small class="text-muted d-block">
-                                                                oleh: {{ $att->verifiedBy->name }}
-                                                            </small>
+                                                            <small class="text-muted d-block">oleh: {{ $att->verifiedBy->name }}</small>
                                                         @endif
                                                     @endif
                                                 @elseif($att->status == 'pending_verification')
                                                     <div class="d-flex align-items-center">
                                                         <i class="mdi mdi-clock-outline pending-clock me-1"></i>
-                                                        <span class="badge bg-warning text-dark verification-badge">
-                                                            Menunggu
-                                                        </span>
+                                                        <span class="badge bg-warning text-dark verification-badge">Menunggu</span>
                                                     </div>
                                                 @else
-                                                    <span class="badge bg-secondary verification-badge">
-                                                        Belum Diverifikasi
-                                                    </span>
+                                                    <span class="badge bg-secondary verification-badge">Belum Diverifikasi</span>
                                                 @endif
                                             </td>
 
@@ -364,219 +323,190 @@
                                             {{-- METODE --}}
                                             <td>
                                                 @if ($att->attendance_type == 'scan')
-                                                    <span class="badge badge-outline-primary">
-                                                        <i class="mdi mdi-qrcode-scan me-1"></i> Scan
-                                                    </span>
+                                                    <span class="badge badge-outline-primary"><i class="mdi mdi-qrcode-scan me-1"></i> Scan</span>
                                                 @elseif($att->attendance_type == 'self')
-                                                    <span class="badge badge-outline-info">
-                                                        <i class="mdi mdi-camera-front-variant me-1"></i> Selfie
-                                                    </span>
-                                                @else
-                                                    <span class="badge badge-outline-secondary">System</span>
+                                                    <span class="badge badge-outline-info"><i class="mdi mdi-camera-front-variant me-1"></i> Selfie</span>
+                                                @elseif($att->attendance_type == 'system')
+                                                    <span class="badge badge-outline-danger">System</span>
+                                                @elseif($att->attendance_type == 'manual')
+                                                    <span class="badge badge-outline-warning">Audit Edit</span>
                                                 @endif
                                             </td>
 
                                             {{-- AKSI AUDIT --}}
                                             @if (isset($employee) && (auth()->user()->role == 'audit' || auth()->user()->role == 'admin'))
                                                 <td class="action-buttons">
-                                                    @if ($att->status != 'verified')
-                                                        <div class="btn-group btn-group-sm" role="group">
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        {{-- TOMBOL VERIFIKASI (Hijau) --}}
+                                                        @if ($att->status != 'verified')
                                                             <button type="button" class="btn btn-success"
                                                                 data-bs-toggle="modal"
                                                                 data-bs-target="#verifyModal{{ $att->id }}"
                                                                 title="Verifikasi Absensi">
                                                                 <i class="mdi mdi-check"></i>
                                                             </button>
+                                                        @endif
+
+                                                        {{-- TOMBOL EDIT KHUSUS AUDIT (Biru/Info) --}}
+                                                        @if (auth()->user()->role == 'audit')
+                                                            <button type="button" class="btn btn-info text-white"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#editAuditModal{{ $att->id }}"
+                                                                title="Edit Data (Koreksi)">
+                                                                <i class="mdi mdi-pencil"></i>
+                                                            </button>
+                                                        @endif
+
+                                                        {{-- TOMBOL TOLAK (Merah) --}}
+                                                        @if ($att->status != 'verified')
                                                             <button type="button" class="btn btn-danger"
                                                                 data-bs-toggle="modal"
                                                                 data-bs-target="#rejectModal{{ $att->id }}"
                                                                 title="Tolak Absensi">
                                                                 <i class="mdi mdi-close"></i>
                                                             </button>
-                                                        </div>
-                                                    @else
-                                                        <span class="text-success">
-                                                            <i class="mdi mdi-check-all me-1"></i>
-                                                            Sudah Diverifikasi
-                                                        </span>
-                                                    @endif
+                                                        @endif
+                                                    </div>
                                                 </td>
 
-                                                <!-- Modal Verifikasi -->
-                                                <div class="modal fade" id="verifyModal{{ $att->id }}"
-                                                    tabindex="-1">
+                                                {{-- INCLUDE MODAL-MODAL --}}
+                                                
+                                                {{-- 1. Modal Verifikasi (Code Existing) --}}
+                                                <div class="modal fade" id="verifyModal{{ $att->id }}" tabindex="-1">
                                                     <div class="modal-dialog modal-lg">
                                                         <div class="modal-content">
                                                             <div class="modal-header">
-                                                                <h5 class="modal-title">
-                                                                    <i class="mdi mdi-check-circle text-success me-2"></i>
-                                                                    Verifikasi Absensi
-                                                                </h5>
-                                                                <button type="button" class="btn-close"
-                                                                    data-bs-dismiss="modal"></button>
+                                                                <h5 class="modal-title"><i class="mdi mdi-check-circle text-success me-2"></i> Verifikasi Absensi</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                             </div>
-                                                            <form
-                                                                action="{{ route('audit.verify.attendance', $att->id) }}"
-                                                                method="POST" enctype="multipart/form-data">
-                                                                @csrf
-                                                                @method('PUT')
+                                                            <form action="{{ route('audit.verify.attendance', $att->id) }}" method="POST" enctype="multipart/form-data">
+                                                                @csrf @method('PUT')
                                                                 <div class="modal-body">
+                                                                    {{-- Isi Modal Verifikasi (Sama seperti sebelumnya) --}}
                                                                     <div class="alert alert-info">
-                                                                        <strong>Informasi Absensi:</strong><br>
-                                                                        Karyawan:
-                                                                        <strong>{{ $employee->name }}</strong><br>
-                                                                        Tanggal:
-                                                                        <strong>{{ $att->check_in_time->format('d M Y') }}</strong><br>
-                                                                        Jam Masuk:
-                                                                        <strong>{{ $att->check_in_time->format('H:i') }}</strong>
-                                                                        @if ($att->check_out_time)
-                                                                            <br>Jam Pulang:
-                                                                            <strong>{{ $att->check_out_time->format('H:i') }}</strong>
-                                                                        @endif
+                                                                        <strong>Karyawan:</strong> {{ $employee->name }}<br>
+                                                                        <strong>Tanggal:</strong> {{ $att->check_in_time->format('d M Y') }}
                                                                     </div>
-
                                                                     <div class="row">
                                                                         <div class="col-md-6">
-                                                                            <div class="mb-3">
-                                                                                <label class="form-label fw-bold">Status
-                                                                                    Kehadiran <span
-                                                                                        class="text-danger">*</span></label>
-                                                                                <select name="presence_status"
-                                                                                    class="form-select" required>
-                                                                                    <option value="">Pilih Status
-                                                                                        Kehadiran</option>
-                                                                                    <option value="Masuk"
-                                                                                        {{ $att->presence_status == 'Masuk' ? 'selected' : '' }}>
-                                                                                        ✅ Masuk</option>
-                                                                                    <option value="WFH / Dinas Luar"
-                                                                                        {{ $att->presence_status == 'WFH / Dinas Luar' ? 'selected' : '' }}>
-                                                                                        🏠 WFH / Dinas Luar</option>
-                                                                                    <option value="Izin Telat"
-                                                                                        {{ $att->presence_status == 'Izin Telat' ? 'selected' : '' }}>
-                                                                                        ⏰ Izin Telat</option>
-                                                                                    <option value="Sakit"
-                                                                                        {{ $att->presence_status == 'Sakit' ? 'selected' : '' }}>
-                                                                                        🤒 Sakit</option>
-                                                                                    <option value="Cuti"
-                                                                                        {{ $att->presence_status == 'Cuti' ? 'selected' : '' }}>
-                                                                                        🏖️ Cuti</option>
-                                                                                    <option value="Alpha"
-                                                                                        {{ $att->presence_status == 'Alpha' ? 'selected' : '' }}>
-                                                                                        ❌ Alpha</option>
-                                                                                </select>
-                                                                                <small class="text-muted">Pilih status
-                                                                                    kehadiran yang sesuai</small>
-                                                                            </div>
+                                                                            <label>Status Kehadiran</label>
+                                                                            <select name="presence_status" class="form-select" required>
+                                                                                <option value="Masuk" {{ $att->presence_status == 'Masuk' ? 'selected' : '' }}>✅ Masuk</option>
+                                                                                <option value="Sakit" {{ $att->presence_status == 'Sakit' ? 'selected' : '' }}>🤒 Sakit</option>
+                                                                                <option value="Cuti" {{ $att->presence_status == 'Cuti' ? 'selected' : '' }}>🏖️ Cuti</option>
+                                                                                <option value="Alpha" {{ $att->presence_status == 'Alpha' ? 'selected' : '' }}>❌ Alpha</option>
+                                                                                <option value="Telat" {{ $att->presence_status == 'Telat' ? 'selected' : '' }}>⏰ Telat</option>
+                                                                            </select>
                                                                         </div>
                                                                         <div class="col-md-6">
-                                                                            <div class="mb-3">
-                                                                                <label class="form-label fw-bold">Upload
-                                                                                    Bukti Audit</label>
-                                                                                <input type="file" name="audit_photo"
-                                                                                    class="form-control" accept="image/*">
-                                                                                <small class="text-muted">Opsional: Upload
-                                                                                    foto bukti verifikasi</small>
-                                                                                @if ($att->audit_photo_path)
-                                                                                    <div class="mt-2">
-                                                                                        <small class="text-success">
-                                                                                            <i
-                                                                                                class="mdi mdi-check me-1"></i>
-                                                                                            Bukti sudah ada:
-                                                                                            <a href="{{ asset('storage/' . $att->audit_photo_path) }}"
-                                                                                                target="_blank"
-                                                                                                class="text-decoration-none">Lihat
-                                                                                                Bukti</a>
-                                                                                        </small>
-                                                                                    </div>
-                                                                                @endif
-                                                                            </div>
+                                                                            <label>Bukti Audit</label>
+                                                                            <input type="file" name="audit_photo" class="form-control">
                                                                         </div>
                                                                     </div>
-
-                                                                    <div class="mb-3">
-                                                                        <label class="form-label fw-bold">Catatan
-                                                                            Audit</label>
-                                                                        <textarea name="audit_note" class="form-control" rows="3"
-                                                                            placeholder="Tambahkan catatan verifikasi jika diperlukan...">{{ $att->audit_note ?? '' }}</textarea>
-                                                                        <small class="text-muted">Opsional: Catatan untuk
-                                                                            dokumentasi</small>
-                                                                    </div>
-
-                                                                    <div class="alert alert-warning">
-                                                                        <small>
-                                                                            <i
-                                                                                class="mdi mdi-information-outline me-1"></i>
-                                                                            Setelah diverifikasi, status akan berubah
-                                                                            menjadi <strong>Terverifikasi</strong> dan tidak
-                                                                            dapat diubah kembali.
-                                                                        </small>
+                                                                    <div class="mt-3">
+                                                                        <label>Catatan</label>
+                                                                        <textarea name="audit_note" class="form-control">{{ $att->audit_note }}</textarea>
                                                                     </div>
                                                                 </div>
                                                                 <div class="modal-footer">
-                                                                    <button type="button" class="btn btn-secondary"
-                                                                        data-bs-dismiss="modal">Batal</button>
-                                                                    <button type="submit" class="btn btn-success">
-                                                                        <i class="mdi mdi-check-circle me-1"></i>
-                                                                        Verifikasi Absensi
-                                                                    </button>
+                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                                                    <button type="submit" class="btn btn-success">Simpan Verifikasi</button>
                                                                 </div>
                                                             </form>
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                <!-- Modal Tolak -->
-                                                <div class="modal fade" id="rejectModal{{ $att->id }}"
-                                                    tabindex="-1">
+                                                {{-- 2. MODAL EDIT KHUSUS AUDIT (BARU) --}}
+                                                @if (auth()->user()->role == 'audit')
+                                                <div class="modal fade" id="editAuditModal{{ $att->id }}" tabindex="-1">
+                                                    <div class="modal-dialog modal-lg">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header bg-info text-white">
+                                                                <h5 class="modal-title text-white">
+                                                                    <i class="mdi mdi-pencil-box me-2"></i> Koreksi Data Absensi (Audit)
+                                                                </h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                            </div>
+                                                            <form action="{{ route('audit.update.attendance', $att->id) }}" method="POST">
+                                                                @csrf @method('PUT')
+                                                                <div class="modal-body">
+                                                                    <div class="alert alert-warning">
+                                                                        <small><i class="mdi mdi-alert me-1"></i> Anda sedang mengoreksi data absensi. Perubahan ini akan tercatat.</small>
+                                                                    </div>
+
+                                                                    <div class="row mb-3">
+                                                                        <div class="col-md-6">
+                                                                            <label class="form-label fw-bold">Jam Masuk (Format H:i)</label>
+                                                                            <input type="time" name="check_in_time" class="form-control" 
+                                                                                value="{{ $att->check_in_time->format('H:i') }}" required>
+                                                                        </div>
+                                                                        <div class="col-md-6">
+                                                                            <label class="form-label fw-bold">Jam Pulang (Format H:i)</label>
+                                                                            <input type="time" name="check_out_time" class="form-control" 
+                                                                                value="{{ $att->check_out_time ? $att->check_out_time->format('H:i') : '' }}">
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div class="row mb-3">
+                                                                        <div class="col-md-6">
+                                                                            <label class="form-label fw-bold">Status Kehadiran</label>
+                                                                            <select name="presence_status" class="form-select" required>
+                                                                                <option value="Masuk" {{ $att->presence_status == 'Masuk' ? 'selected' : '' }}>✅ Masuk</option>
+                                                                                <option value="Sakit" {{ $att->presence_status == 'Sakit' ? 'selected' : '' }}>🤒 Sakit</option>
+                                                                                <option value="Cuti" {{ $att->presence_status == 'Cuti' ? 'selected' : '' }}>🏖️ Cuti</option>
+                                                                                <option value="Izin Telat" {{ $att->presence_status == 'Izin Telat' ? 'selected' : '' }}>⏰ Izin Telat</option>
+                                                                                <option value="Alpha" {{ $att->presence_status == 'Alpha' ? 'selected' : '' }}>❌ Alpha</option>
+                                                                            </select>
+                                                                        </div>
+                                                                        <div class="col-md-6">
+                                                                            <label class="form-label fw-bold">Status Verifikasi</label>
+                                                                            <select name="status" class="form-select" required>
+                                                                                <option value="verified" {{ $att->status == 'verified' ? 'selected' : '' }}>Disetujui (Verified)</option>
+                                                                                <option value="pending_verification" {{ $att->status == 'pending_verification' ? 'selected' : '' }}>Menunggu (Pending)</option>
+                                                                                <option value="rejected" {{ $att->status == 'rejected' ? 'selected' : '' }}>Ditolak</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div class="mb-3">
+                                                                        <label class="form-label fw-bold">Catatan Koreksi</label>
+                                                                        <textarea name="audit_note" class="form-control" rows="2" placeholder="Alasan perubahan data...">{{ $att->audit_note }}</textarea>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                                                    <button type="submit" class="btn btn-info text-white">Simpan Perubahan</button>
+                                                                </div>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                @endif
+
+                                                {{-- 3. Modal Tolak (Code Existing) --}}
+                                                <div class="modal fade" id="rejectModal{{ $att->id }}" tabindex="-1">
                                                     <div class="modal-dialog">
                                                         <div class="modal-content">
                                                             <div class="modal-header">
-                                                                <h5 class="modal-title text-danger">
-                                                                    <i class="mdi mdi-close-circle text-danger me-2"></i>
-                                                                    Tolak Absensi
-                                                                </h5>
-                                                                <button type="button" class="btn-close"
-                                                                    data-bs-dismiss="modal"></button>
+                                                                <h5 class="modal-title text-danger"><i class="mdi mdi-close-circle me-2"></i> Tolak Absensi</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                             </div>
-                                                            <form action="{{ route('audit.reject', $att->id) }}"
-                                                                method="POST">
-                                                                @csrf
-                                                                @method('DELETE')
+                                                            <form action="{{ route('audit.reject', $att->id) }}" method="POST">
+                                                                @csrf @method('DELETE')
                                                                 <div class="modal-body">
-                                                                    <div class="alert alert-danger">
-                                                                        <strong>Peringatan!</strong> Absensi yang ditolak
-                                                                        akan dihapus dari sistem.
-                                                                    </div>
-
-                                                                    <p>Apakah Anda yakin ingin menolak absensi berikut?</p>
-                                                                    <ul>
-                                                                        <li><strong>Karyawan:</strong>
-                                                                            {{ $employee->name }}</li>
-                                                                        <li><strong>Tanggal:</strong>
-                                                                            {{ $att->check_in_time->format('d M Y') }}</li>
-                                                                        <li><strong>Jam Masuk:</strong>
-                                                                            {{ $att->check_in_time->format('H:i') }}</li>
-                                                                    </ul>
-
-                                                                    <div class="mb-3">
-                                                                        <label class="form-label fw-bold">Alasan Penolakan
-                                                                            <span class="text-danger">*</span></label>
-                                                                        <textarea name="rejection_reason" class="form-control" rows="3" placeholder="Berikan alasan penolakan..."
-                                                                            required></textarea>
-                                                                    </div>
+                                                                    <p>Yakin ingin menolak absensi <strong>{{ $employee->name }}</strong> tanggal {{ $att->check_in_time->format('d M Y') }}?</p>
+                                                                    <textarea name="rejection_reason" class="form-control" rows="3" placeholder="Alasan penolakan..." required></textarea>
                                                                 </div>
                                                                 <div class="modal-footer">
-                                                                    <button type="button" class="btn btn-secondary"
-                                                                        data-bs-dismiss="modal">Batal</button>
-                                                                    <button type="submit" class="btn btn-danger">
-                                                                        <i class="mdi mdi-close-circle me-1"></i> Tolak
-                                                                        Absensi
-                                                                    </button>
+                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                                                    <button type="submit" class="btn btn-danger">Tolak Absensi</button>
                                                                 </div>
                                                             </form>
                                                         </div>
                                                     </div>
                                                 </div>
+
                                             @endif
                                         </tr>
                                     @endforeach

@@ -113,7 +113,9 @@ Route::middleware(['auth', 'active.user'])->group(function () {
     Route::middleware(['role:admin,audit'])->group(function () {
         // Rute verifikasi attendance dengan detail
         Route::put('/audit/verify-attendance/{attendance}', [AuditController::class, 'verifyAttendance'])->name('audit.verify.attendance');
-        
+        Route::put('/attendance/{id}/audit-update', [AttendanceHistoryController::class, 'updateByAudit'])
+            ->name('audit.update.attendance');
+
         Route::resource('branches', BranchController::class);
         Route::post('/branches/{branch}/toggle-status', [BranchController::class, 'toggleStatus'])->name('branches.toggle-status');
 
@@ -159,7 +161,7 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         // Rute baru untuk riwayat absensi karyawan
         Route::get('/team/branch/{branchId}/employee/{employeeId}/history', [TeamController::class, 'showEmployeeHistory'])->name('team.branch.employee.history');
     });
-    
+
     Route::middleware(['role:audit'])->group(function () {
         Route::get('/cabang-saya', [TeamController::class, 'myBranches'])->name('team.my-branches');
     });
