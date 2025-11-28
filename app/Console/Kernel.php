@@ -18,7 +18,7 @@ class Kernel extends ConsoleKernel
         
         // Menjalankan command 'attendance:mark-absent' setiap hari jam 01:00 pagi
         $schedule->command('attendance:mark-absent')
-                 ->dailyAt('00:00')
+                 ->dailyAt('01:00')
                  ->timezone('Asia/Jakarta'); // Pastikan zona waktu sesuai WIB
     }
 
