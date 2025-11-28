@@ -23,10 +23,17 @@ class AttendanceHistoryController extends Controller
             ->orderBy('check_in_time', 'desc')
             ->get();
 
-        // Calculate summary - TAMBAHKAN KEY 'total'
+        // Calculate summary
         $summary = [
-            'total' => $history->count(), // INI YANG DITAMBAHKAN
-            'hadir' => $history->where('status', 'verified')->count(),
+            'total' => $history->count(),
+            
+            // --- PERBAIKAN DI SINI ---
+            // Hitung Hadir: Status Verified TAPI BUKAN Alpha
+            'hadir' => $history->where('status', 'verified')
+                               ->where('presence_status', '!=', 'Alpha') 
+                               ->count(),
+            // --------------------------
+
             'telat' => $history->where('is_late_checkin', true)->count(),
             'pulang_cepat' => $history->where('is_early_checkout', true)->count(),
             'pending' => $history->where('status', 'pending_verification')->count(),
