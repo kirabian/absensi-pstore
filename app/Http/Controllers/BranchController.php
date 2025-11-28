@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Branch;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -44,8 +45,36 @@ class BranchController extends Controller
 
         $branches = $query->latest()->get();
         
-        // Pastikan nama view sesuai folder Anda (branch/branch_index)
         return view('branch.branch_index', compact('branches'));
+    }
+
+    /**
+     * Menampilkan Detail Cabang & Daftar Karyawannya (Fungsi Baru)
+     */
+    public function show(Branch $branch)
+    {
+        $user = Auth::user();
+
+        // 1. Validasi Akses Melihat
+        if ($user->role == 'admin' && $user->branch_id != null) {
+            if ($branch->id != $user->branch_id) abort(403, 'Akses Ditolak.');
+        }
+        elseif ($user->role == 'audit') {
+            $auditBranchIds = $user->branches->pluck('id')->toArray();
+            if (!in_array($branch->id, $auditBranchIds)) abort(403, 'Akses Ditolak.');
+        }
+
+        // 2. Ambil User di Cabang Ini (Eager Loading Division)
+        $users = User::with('division')
+            ->where('branch_id', $branch->id)
+            ->where('role', '!=', 'admin') // Opsional: Sembunyikan super admin jika ada
+            ->latest()
+            ->paginate(10); 
+
+        // 3. Hitung Statistik Ringan
+        $totalEmployees = User::where('branch_id', $branch->id)->count();
+
+        return view('branch.branch_show', compact('branch', 'users', 'totalEmployees'));
     }
 
     /**
@@ -53,7 +82,7 @@ class BranchController extends Controller
      */
     public function create()
     {
-        // Proteksi: Hanya Super Admin yang boleh tambah cabang
+        // Proteksi: Hanya Super Admin
         if (Auth::user()->role != 'admin' || Auth::user()->branch_id != null) {
             abort(403, 'Anda tidak memiliki akses untuk menambah cabang.');
         }
@@ -66,10 +95,7 @@ class BranchController extends Controller
      */
     public function store(Request $request)
     {
-        // Proteksi Back-end
-        if (Auth::user()->role != 'admin' || Auth::user()->branch_id != null) {
-            abort(403);
-        }
+        if (Auth::user()->role != 'admin' || Auth::user()->branch_id != null) abort(403);
 
         $request->validate([
             'name' => 'required|string|max:255|unique:branches',
@@ -89,16 +115,12 @@ class BranchController extends Controller
     {
         $user = Auth::user();
 
-        // Proteksi: Audit tidak boleh edit data master cabang
-        if ($user->role == 'audit') {
-            abort(403, 'Anda tidak memiliki akses untuk mengedit data cabang.');
-        }
+        // Proteksi: Audit tidak boleh edit
+        if ($user->role == 'audit') abort(403, 'Anda tidak memiliki akses edit.');
 
         // Proteksi: Admin Cabang hanya boleh edit cabangnya sendiri
         if ($user->role == 'admin' && $user->branch_id != null) {
-            if ($branch->id != $user->branch_id) {
-                abort(403, 'Anda tidak bisa mengedit cabang lain.');
-            }
+            if ($branch->id != $user->branch_id) abort(403);
         }
 
         return view('branch.branch_edit', compact('branch'));
@@ -111,7 +133,6 @@ class BranchController extends Controller
     {
         $user = Auth::user();
 
-        // Proteksi Back-end Update
         if ($user->role == 'audit') abort(403);
         if ($user->role == 'admin' && $user->branch_id != null && $branch->id != $user->branch_id) abort(403);
 
@@ -131,10 +152,7 @@ class BranchController extends Controller
      */
     public function destroy(Branch $branch)
     {
-        // Proteksi: Hanya Super Admin
-        if (Auth::user()->role != 'admin' || Auth::user()->branch_id != null) {
-            abort(403, 'Akses Ditolak.');
-        }
+        if (Auth::user()->role != 'admin' || Auth::user()->branch_id != null) abort(403);
 
         try {
             $branch->delete();
@@ -142,13 +160,7 @@ class BranchController extends Controller
                 ->with('success', 'Cabang berhasil dihapus.');
         } catch (\Illuminate\Database\QueryException $e) {
             return redirect()->route('branches.index')
-                ->with('error', 'Gagal menghapus cabang. Pastikan tidak ada user/divisi yang terhubung ke cabang ini.');
+                ->with('error', 'Gagal menghapus cabang. Pastikan tidak ada user yang terhubung.');
         }
-    }
-
-    // Redirect show ke edit (sesuai request)
-    public function show(Branch $branch)
-    {
-        return redirect()->route('branches.edit', $branch->id);
     }
 }
