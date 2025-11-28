@@ -48,8 +48,8 @@ class UserController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('login_id', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('login_id', 'like', "%{$search}%");
             });
         }
 
@@ -107,7 +107,7 @@ class UserController extends Controller
 
         // Assign Division & Branch
         $data['division_id'] = ($request->has('multi_divisions') && count($request->multi_divisions) > 0) ? $request->multi_divisions[0] : null;
-        
+
         if ($user->role == 'admin' && $user->branch_id != null) {
             $data['branch_id'] = $user->branch_id;
         }
@@ -239,7 +239,7 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         if ($user->id == auth()->id()) return back()->with('error', 'Tidak bisa hapus akun sendiri.');
-        
+
         try {
             if ($user->profile_photo_path) Storage::disk('public')->delete($user->profile_photo_path);
             $user->branches()->detach();
@@ -268,8 +268,8 @@ class UserController extends Controller
         }
 
         // Eager load relasi
-        $user->load(['branch', 'division', 'branches', 'divisions']); 
-        
+        $user->load(['branch', 'division', 'branches', 'divisions']);
+
         // Jika ada relasi workHistories, tambahkan di load. Jika belum ada modelnya, hapus dari load.
         // $user->load('workHistories'); 
 
@@ -279,9 +279,9 @@ class UserController extends Controller
         // Ambil 5 riwayat terakhir
         // Pastikan 'Attendance' sudah di-use di paling atas
         $recentAttendance = Attendance::where('user_id', $user->id)
-                                    ->latest('check_in_time')
-                                    ->take(5)
-                                    ->get();
+            ->latest('check_in_time')
+            ->take(5)
+            ->get();
 
         return view('users.user_show', compact('user', 'stats', 'recentAttendance'));
     }
@@ -293,7 +293,7 @@ class UserController extends Controller
         $query = Attendance::where('user_id', $user_id)
             ->whereMonth('check_in_time', Carbon::now()->month)
             ->whereYear('check_in_time', Carbon::now()->year);
-        
+
         $totalAttendances = (clone $query)->count();
         $late = (clone $query)->where('is_late_checkin', true)->count();
         $early = (clone $query)->where('is_early_checkout', true)->count();
@@ -318,9 +318,32 @@ class UserController extends Controller
 
     public function toggleStatus(User $user)
     {
-        if ($user->id == auth()->id()) return back();
-        $user->update(['is_active' => !$user->is_active]);
-        return redirect()->route('users.index')->with('success', 'Status user diubah.');
+        // 1. Cek apakah user mencoba menonaktifkan diri sendiri
+        if ($user->id == auth()->id()) {
+            return back()->with('error', 'Anda tidak dapat menonaktifkan akun sendiri saat sedang login.');
+        }
+
+        // 2. Validasi Hak Akses (Opsional: Admin Cabang tidak boleh matikan Admin Pusat)
+        $currentUser = auth()->user();
+        if ($currentUser->role == 'admin' && $currentUser->branch_id != null) {
+            // Jika admin cabang mencoba edit user beda cabang
+            if ($user->branch_id != $currentUser->branch_id) {
+                return back()->with('error', 'Anda tidak memiliki akses ke user ini.');
+            }
+            // Jika admin cabang mencoba mematikan Super Admin
+            if ($user->role == 'admin' && $user->branch_id == null) {
+                return back()->with('error', 'Anda tidak dapat menonaktifkan Super Admin.');
+            }
+        }
+
+        // 3. Lakukan Perubahan Status
+        // Jika 1 jadi 0, jika 0 jadi 1
+        $user->is_active = !$user->is_active;
+        $user->save();
+
+        $statusText = $user->is_active ? 'diaktifkan' : 'dinonaktifkan';
+
+        return back()->with('success', "User {$user->name} berhasil {$statusText}.");
     }
 
     public function resetPassword(User $user)

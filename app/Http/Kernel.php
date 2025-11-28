@@ -69,5 +69,6 @@ class Kernel extends HttpKernel
 
         // --- TAMBAHKAN DI SINI ---
         'role' => \App\Http\Middleware\CheckRole::class,
+        'active.user' => \App\Http\Middleware\EnsureUserIsActive::class, // Pindahkan kesini
     ];
 }

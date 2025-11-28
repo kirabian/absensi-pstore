@@ -18,6 +18,7 @@ use App\Http\Controllers\WorkScheduleController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\AttendanceHistoryController; // Pastikan ini di-import
 
 /*
 |--------------------------------------------------------------------------
@@ -39,7 +40,8 @@ Route::post('/reset-password', [ForgotPasswordController::class, 'reset'])->name
 | Rute Aplikasi (WAJIB LOGIN)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth'])->group(function () {
+// PERBAIKAN: Tambahkan 'active.user' disini agar user nonaktif langsung logout
+Route::middleware(['auth', 'active.user'])->group(function () {
 
     // --- Rute Utama ---
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -50,8 +52,9 @@ Route::middleware(['auth'])->group(function () {
 
     // --- Rute Search Global (Hanya untuk Admin) ---
     Route::get('/search', [GlobalSearchController::class, 'search'])->name('search');
+    
     // === RUTE RIWAYAT ABSENSI ===
-    Route::get('/riwayat-absensi', [App\Http\Controllers\AttendanceHistoryController::class, 'index'])->name('attendance.history');
+    Route::get('/riwayat-absensi', [AttendanceHistoryController::class, 'index'])->name('attendance.history');
 
     // === RUTE BROADCAST ===
     Route::prefix('broadcast')->name('broadcast.')->group(function () {
@@ -65,6 +68,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{broadcast}/edit', [BroadcastController::class, 'edit'])->name('edit');
             Route::put('/{broadcast}', [BroadcastController::class, 'update'])->name('update');
             Route::delete('/{broadcast}', [BroadcastController::class, 'destroy'])->name('destroy');
+            // PERBAIKAN: Route toggle user dihapus dari sini karena salah tempat (sudah ada di bawah)
         });
 
         Route::get('/{broadcast}', [BroadcastController::class, 'show'])->name('show');
@@ -111,9 +115,13 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:admin,audit'])->group(function () {
         Route::resource('branches', BranchController::class);
         Route::post('/branches/{branch}/toggle-status', [BranchController::class, 'toggleStatus'])->name('branches.toggle-status');
+        
         Route::resource('divisions', DivisionController::class);
         Route::post('/divisions/{division}/toggle-status', [DivisionController::class, 'toggleStatus'])->name('divisions.toggle-status');
+        
+        // --- MANAJEMEN USER ---
         Route::resource('users', UserController::class);
+        // PERBAIKAN: Route ini yang benar untuk toggle status user
         Route::post('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
         Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
 
@@ -128,8 +136,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/izin-telat/{lateNotification}/approve', [AuditController::class, 'approveLatePermission'])->name('late.approve');
         Route::post('/izin-telat/{lateNotification}/reject', [AuditController::class, 'rejectLatePermission'])->name('late.reject');
 
-        Route::get('/audit/missed-checkouts', [App\Http\Controllers\AuditController::class, 'showMissedCheckouts'])->name('audit.missed-checkout.list');
-        Route::put('/audit/missed-checkouts/{id}', [App\Http\Controllers\AuditController::class, 'updateMissedCheckout'])->name('audit.missed-checkout.update');
+        Route::get('/audit/missed-checkouts', [AuditController::class, 'showMissedCheckouts'])->name('audit.missed-checkout.list');
+        Route::put('/audit/missed-checkouts/{id}', [AuditController::class, 'updateMissedCheckout'])->name('audit.missed-checkout.update');
     });
 
     // === RUTE SECURITY ===
@@ -153,7 +161,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/cabang-saya', [TeamController::class, 'myBranches'])->name('team.my-branches');
     });
 
-    // === RUTE SELF ATTENDANCE (UPDATED: ALL ROLES CAN ACCESS) ===
+    // === RUTE SELF ATTENDANCE ===
     Route::middleware(['role:user_biasa,leader,audit,security'])->prefix('absen-mandiri')->name('self.attend.')->group(function () {
         Route::get('/', [SelfAttendanceController::class, 'create'])->name('create');
         Route::post('/', [SelfAttendanceController::class, 'store'])->name('store');
@@ -161,18 +169,18 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/hapus-telat', [SelfAttendanceController::class, 'deleteLateStatus'])->name('late.status.delete');
     });
 
-    // === RUTE LEAVE REQUESTS (UPDATED: ALL ROLES CAN ACCESS) ===
+    // === RUTE LEAVE REQUESTS ===
     Route::prefix('leave-requests')->name('leave-requests.')->group(function () {
         Route::get('/', [LeaveRequestController::class, 'index'])->name('index');
 
-        // Create & Store (Sekarang Audit & Security juga bisa)
+        // Create & Store
         Route::middleware(['role:user_biasa,leader,audit,security'])->group(function () {
             Route::get('/create', [LeaveRequestController::class, 'create'])->name('create');
             Route::post('/store', [LeaveRequestController::class, 'store'])->name('store');
             Route::patch('/{leaveRequest}/cancel', [LeaveRequestController::class, 'cancel'])->name('cancel');
         });
 
-        // Approval (Hanya Admin & Audit)
+        // Approval
         Route::middleware(['role:admin,audit'])->group(function () {
             Route::patch('/{leaveRequest}/approve', [LeaveRequestController::class, 'approve'])->name('approve');
             Route::patch('/{leaveRequest}/reject', [LeaveRequestController::class, 'reject'])->name('reject');
@@ -187,7 +195,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/export/attendance', [AuditController::class, 'exportAttendance'])->name('export.attendance');
     });
 
-    // === RUTE API UNTUK DASHBOARD ===
+    // === RUTE API DASHBOARD ===
     Route::prefix('api')->name('api.')->group(function () {
         Route::get('/dashboard-stats', [DashboardController::class, 'getStats'])->name('dashboard.stats');
         Route::get('/recent-activities', [DashboardController::class, 'getRecentActivities'])->name('recent.activities');
@@ -202,7 +210,7 @@ Route::middleware(['auth'])->group(function () {
             'user_role' => $user->role,
             'message' => 'Middleware test berhasil!'
         ]);
-    })->middleware(['auth', 'role:admin,audit,security,leader,user_biasa']);
+    })->middleware(['role:admin,audit,security,leader,user_biasa']);
 
     Route::fallback(function () {
         return response()->view('errors.404', [], 404);

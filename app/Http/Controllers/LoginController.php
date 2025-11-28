@@ -22,42 +22,38 @@ class LoginController extends Controller
             'password' => 'required|string',
         ]);
 
-        $loginId = $request->login_id;
-        $password = $request->password;
+        // 1. Cari user
+        $user = User::where('login_id', $request->login_id)->first();
 
-        // Cari user berdasarkan login_id
-        $user = User::where('login_id', $loginId)->first();
+        // 2. Cek User Ditemukan & Password Benar
+        if ($user && (Hash::check($request->password, $user->password))) {
 
-        if (!$user) {
-            return back()->withErrors([
-                'login_id' => 'ID Login tidak ditemukan.',
-            ])->withInput();
-        }
+            // 3. CEK STATUS AKTIF (LOGIKA BARU)
+            if ($user->is_active == 0) {
+                return back()->withErrors([
+                    'login_id' => 'Akun Anda telah dinonaktifkan. Silakan hubungi Admin.',
+                ])->withInput();
+            }
 
-        // Check password (case insensitive)
-        if (Hash::check(strtolower($password), $user->password) || 
-            Hash::check(strtoupper($password), $user->password) ||
-            Hash::check($password, $user->password)) {
-            
+            // Jika lolos semua, login
             Auth::login($user, $request->remember);
-            
             $request->session()->regenerate();
-            
             return redirect()->intended('/dashboard');
         }
 
+        // Jika gagal
         return back()->withErrors([
-            'password' => 'Password yang dimasukkan salah.',
+            'login_id' => 'ID Login atau Password salah.',
         ])->withInput();
     }
 
     public function logout(Request $request)
     {
         Auth::logout();
-        
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        
+
         return redirect('/');
     }
 }

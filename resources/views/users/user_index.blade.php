@@ -17,7 +17,7 @@
 
                     {{-- CONTAINER: TOMBOL TAMBAH & SEARCH FORM --}}
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                        
+
                         {{-- Tombol Tambah --}}
                         <a href="{{ route('users.create') }}" class="btn btn-primary btn-sm">
                             <i class="mdi mdi-plus"></i> Tambah User Baru
@@ -26,14 +26,13 @@
                         {{-- Form Pencarian --}}
                         <form action="{{ route('users.index') }}" method="GET" class="d-flex">
                             <div class="input-group input-group-sm" style="width: 250px;">
-                                <input type="text" name="search" class="form-control" 
-                                       placeholder="Cari Nama / ID / Email..." 
-                                       value="{{ request('search') }}">
+                                <input type="text" name="search" class="form-control"
+                                    placeholder="Cari Nama / ID / Email..." value="{{ request('search') }}">
                                 <button class="btn btn-primary" type="submit">
                                     <i class="mdi mdi-magnify"></i>
                                 </button>
                                 {{-- Tombol Reset (Hanya muncul jika ada search) --}}
-                                @if(request('search'))
+                                @if (request('search'))
                                     <a href="{{ route('users.index') }}" class="btn btn-secondary" title="Reset Pencarian">
                                         <i class="mdi mdi-refresh"></i>
                                     </a>
@@ -160,15 +159,19 @@
 
                                         {{-- AKSI --}}
                                         <td>
+                                            {{-- Detail --}}
                                             <a href="{{ route('users.show', $user->id) }}"
                                                 class="btn btn-inverse-info btn-icon btn-sm" title="Lihat Detail">
                                                 <i class="mdi mdi-eye"></i>
                                             </a>
+                                            
+                                            {{-- Edit --}}
                                             <a href="{{ route('users.edit', $user->id) }}"
                                                 class="btn btn-inverse-warning btn-icon btn-sm" title="Edit">
                                                 <i class="mdi mdi-pencil"></i>
                                             </a>
 
+                                            {{-- Hapus (Kecuali diri sendiri) --}}
                                             @if ($user->id != auth()->id())
                                                 <form action="{{ route('users.destroy', $user->id) }}" method="POST"
                                                     class="d-inline"
@@ -178,6 +181,24 @@
                                                     <button type="submit" class="btn btn-inverse-danger btn-icon btn-sm"
                                                         title="Hapus">
                                                         <i class="mdi mdi-delete"></i>
+                                                    </button>
+                                                </form>
+
+                                                {{-- TOMBOL TOGGLE STATUS (Nonaktifkan/Aktifkan) --}}
+                                                {{-- PERBAIKAN: Menggunakan route users.toggle-status --}}
+                                                <form action="{{ route('users.toggle-status', $user->id) }}" method="POST"
+                                                    class="d-inline">
+                                                    @csrf
+                                                    <button type="submit"
+                                                        class="btn btn-icon btn-sm {{ $user->is_active ? 'btn-inverse-danger' : 'btn-inverse-success' }}"
+                                                        title="{{ $user->is_active ? 'Nonaktifkan User' : 'Aktifkan User' }}"
+                                                        onclick="return confirm('Apakah Anda yakin ingin mengubah status aktif user ini?')">
+
+                                                        @if ($user->is_active)
+                                                            <i class="mdi mdi-power-off"></i> {{-- Ikon Power Off (Merah) --}}
+                                                        @else
+                                                            <i class="mdi mdi-power"></i> {{-- Ikon Power On (Hijau) --}}
+                                                        @endif
                                                     </button>
                                                 </form>
                                             @endif
@@ -197,7 +218,7 @@
                     <div class="mt-4 d-flex justify-content-end">
                         {{ $users->links('pagination::bootstrap-5') }}
                     </div>
-                    
+
                 </div>
             </div>
         </div>
