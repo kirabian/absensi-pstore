@@ -134,53 +134,59 @@ class TeamController extends Controller
      * Menampilkan riwayat absensi karyawan
      */
     public function showEmployeeHistory(Request $request, $branchId, $employeeId)
-    {
-        // Authorization check
-        $user = Auth::user();
-        $myBranchIds = $user->branches()->pluck('branches.id')->toArray();
-        if ($user->branch_id) {
-            $myBranchIds[] = $user->branch_id;
-        }
-
-        if (!in_array($branchId, $myBranchIds) && $user->role !== 'admin') {
-            abort(403, 'Unauthorized action.');
-        }
-
-        // Get employee data
-        $employee = User::findOrFail($employeeId);
-
-        // Validate that employee belongs to the branch
-        if ($employee->branch_id != $branchId) {
-            abort(404, 'Employee not found in this branch.');
-        }
-
-        // Get filter parameters
-        $selectedMonth = $request->get('month', date('m'));
-        $selectedYear = $request->get('year', date('Y'));
-
-        // Query attendance history dengan relasi verifiedBy
-        $history = Attendance::where('user_id', $employeeId)
-            ->whereYear('check_in_time', $selectedYear)
-            ->whereMonth('check_in_time', $selectedMonth)
-            ->with(['verifiedBy', 'workSchedule'])
-            ->orderBy('check_in_time', 'desc')
-            ->get();
-
-        // Calculate summary
-        $summary = [
-            'hadir' => $history->where('status', 'verified')->count(),
-            'telat' => $history->where('is_late_checkin', true)->count(),
-            'pulang_cepat' => $history->where('is_early_checkout', true)->count(),
-            'pending' => $history->where('status', 'pending_verification')->count(),
-            'total' => $history->count(),
-        ];
-
-        return view('attendance.history', compact(
-            'history',
-            'summary',
-            'selectedMonth',
-            'selectedYear',
-            'employee'
-        ));
+{
+    // Authorization check - HANYA AUDIT
+    $user = Auth::user();
+    
+    // Pastikan hanya audit yang bisa akses fitur cross-check
+    if ($user->role !== 'audit' && $user->role !== 'admin') {
+        abort(403, 'Hanya role audit yang dapat melakukan cross-check absensi.');
     }
+
+    $myBranchIds = $user->branches()->pluck('branches.id')->toArray();
+    if ($user->branch_id) {
+        $myBranchIds[] = $user->branch_id;
+    }
+    
+    if (!in_array($branchId, $myBranchIds) && $user->role !== 'admin') {
+        abort(403, 'Unauthorized action.');
+    }
+
+    // Get employee data
+    $employee = User::findOrFail($employeeId);
+    
+    // Validate that employee belongs to the branch
+    if ($employee->branch_id != $branchId) {
+        abort(404, 'Employee not found in this branch.');
+    }
+
+    // Get filter parameters
+    $selectedMonth = $request->get('month', date('m'));
+    $selectedYear = $request->get('year', date('Y'));
+
+    // Query attendance history dengan relasi
+    $history = Attendance::where('user_id', $employeeId)
+        ->whereYear('check_in_time', $selectedYear)
+        ->whereMonth('check_in_time', $selectedMonth)
+        ->with(['verifiedBy', 'workSchedule', 'user'])
+        ->orderBy('check_in_time', 'desc')
+        ->get();
+
+    // Calculate summary
+    $summary = [
+        'total' => $history->count(),
+        'hadir' => $history->where('status', 'verified')->count(),
+        'telat' => $history->where('is_late_checkin', true)->count(),
+        'pulang_cepat' => $history->where('is_early_checkout', true)->count(),
+        'pending' => $history->where('status', 'pending_verification')->count(),
+    ];
+
+    return view('attendance.history', compact(
+        'history', 
+        'summary', 
+        'selectedMonth', 
+        'selectedYear',
+        'employee'
+    ));
+}
 }
