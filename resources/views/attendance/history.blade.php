@@ -202,4 +202,27 @@
                                         {{-- METODE --}}
                                         <td>
                                             @if($att->attendance_type == 'scan')
-                                                <span class="badge badge-outline-primary"><i class="mdi mdi-qrcode
+                                                <span class="badge badge-outline-primary"><i class="mdi mdi-qrcode-scan me-1"></i> Scan</span>
+                                            @elseif($att->attendance_type == 'self')
+                                                <span class="badge badge-outline-info"><i class="mdi mdi-camera-front-variant me-1"></i> Selfie</span>
+                                            @else
+                                                <span class="badge badge-outline-secondary">System</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="text-center py-5">
+                        <i class="mdi mdi-calendar-remove display-4 text-muted"></i>
+                        <h5 class="mt-3 text-muted">Tidak ada data absensi</h5>
+                        <p class="text-muted">Tidak ada riwayat pada periode {{ date('F Y', mktime(0, 0, 0, $selectedMonth, 1, $selectedYear)) }}</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
