@@ -172,6 +172,7 @@
                                             </a>
 
                                             {{-- Hapus (Kecuali diri sendiri) --}}
+                                            @if (auth()->user()->role == 'admin')
                                             @if ($user->id != auth()->id())
                                                 <form action="{{ route('users.destroy', $user->id) }}" method="POST"
                                                     class="d-inline"
@@ -183,6 +184,7 @@
                                                         <i class="mdi mdi-delete"></i>
                                                     </button>
                                                 </form>
+                                            @endif
 
                                                 {{-- TOMBOL TOGGLE STATUS (Nonaktifkan/Aktifkan) --}}
                                                 {{-- PERBAIKAN: Menggunakan route users.toggle-status --}}
