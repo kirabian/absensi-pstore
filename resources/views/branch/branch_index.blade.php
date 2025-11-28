@@ -10,79 +10,93 @@
 
 @section('content')
     <div class="row">
-        <div class="col-12 grid-margin">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h4 class="card-title mb-0">Daftar Cabang PStore</h4>
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    {{-- Header Section --}}
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                        <div>
+                            <h4 class="card-title mb-1 fw-bold text-primary">
+                                <i class="mdi mdi-office-building-outline me-2"></i>Daftar Cabang PStore
+                            </h4>
+                            <p class="text-muted small mb-0">Kelola semua cabang toko Anda</p>
+                        </div>
                         
                         {{-- Tombol Tambah: Hanya muncul untuk Super Admin --}}
                         @if(auth()->user()->role == 'admin' && auth()->user()->branch_id == null)
-                            <a href="{{ route('branches.create') }}" class="btn btn-primary btn-sm">
-                                <i class="mdi mdi-plus me-1"></i> Tambah Baru
+                            <a href="{{ route('branches.create') }}" class="btn btn-primary btn-sm px-3 shadow-sm">
+                                <i class="mdi mdi-plus-circle me-1"></i> Tambah Cabang
                             </a>
                         @endif
                     </div>
 
                     {{-- Notifikasi --}}
                     @if (session('success'))
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            <i class="mdi mdi-check-circle me-2"></i> {{ session('success') }}
+                        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="mdi mdi-check-circle fs-4 me-2"></i>
+                                <div>{{ session('success') }}</div>
+                            </div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     @endif
                     @if (session('error'))
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <i class="mdi mdi-alert-circle me-2"></i> {{ session('error') }}
+                        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="mdi mdi-alert-circle fs-4 me-2"></i>
+                                <div>{{ session('error') }}</div>
+                            </div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     @endif
 
-                    {{-- Tabel Responsive --}}
-                    <div class="table-responsive">
-                        <table class="table table-hover table-striped align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th width="5%"> # </th>
-                                    <th> Nama Cabang </th>
-                                    {{-- Sembunyikan Alamat di layar HP kecil (d-none d-md-table-cell) --}}
-                                    <th class="d-none d-md-table-cell"> Alamat </th>
-                                    <th width="15%" class="text-center"> Aksi </th>
+                    {{-- Tabel Desktop --}}
+                    <div class="table-responsive d-none d-md-block">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr class="border-bottom">
+                                    <th width="5%" class="text-muted fw-semibold">#</th>
+                                    <th class="text-muted fw-semibold">Nama Cabang</th>
+                                    <th class="text-muted fw-semibold">Alamat</th>
+                                    <th width="15%" class="text-center text-muted fw-semibold">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse ($branches as $key => $branch)
-                                    <tr>
-                                        <td> {{ $key + 1 }} </td>
-                                        <td> 
-                                            <span class="fw-bold text-dark">{{ $branch->name }}</span>
-                                            {{-- Tampilkan alamat di bawah nama khusus layar HP --}}
-                                            <div class="d-md-none text-muted small mt-1">
-                                                <i class="mdi mdi-map-marker"></i> {{ Str::limit($branch->address, 30) }}
+                                    <tr class="border-bottom">
+                                        <td class="text-muted">{{ $key + 1 }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
+                                                    <i class="mdi mdi-store text-primary fs-5"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold text-dark">{{ $branch->name }}</div>
+                                                </div>
                                             </div>
                                         </td>
-                                        
-                                        {{-- Kolom Alamat (Desktop Only) --}}
-                                        <td class="d-none d-md-table-cell"> 
-                                            {{ Str::limit($branch->address ?? 'N/A', 50) }} 
+                                        <td>
+                                            <span class="text-muted">
+                                                <i class="mdi mdi-map-marker text-danger me-1"></i>
+                                                {{ Str::limit($branch->address ?? 'Alamat belum diisi', 60) }}
+                                            </span>
                                         </td>
-                                        
-                                        <td class="text-center">
-                                            <div class="btn-group btn-group-sm" role="group">
-                                                
-                                                {{-- Tombol LIHAT (Mata) - Muncul untuk Semua Role --}}
+                                        <td>
+                                            <div class="d-flex justify-content-center gap-1">
+                                                {{-- Tombol LIHAT --}}
                                                 <a href="{{ route('branches.show', $branch->id) }}"
-                                                    class="btn btn-info text-white" 
-                                                    title="Lihat Detail & Karyawan">
+                                                    class="btn btn-sm btn-info text-white" 
+                                                    title="Lihat Detail" 
+                                                    data-bs-toggle="tooltip">
                                                     <i class="mdi mdi-eye"></i>
                                                 </a>
 
                                                 {{-- Tombol EDIT & DELETE: Tidak muncul untuk Audit --}}
                                                 @if(auth()->user()->role != 'audit')
-                                                    
                                                     <a href="{{ route('branches.edit', $branch->id) }}"
-                                                        class="btn btn-warning text-white" 
-                                                        title="Edit Data">
+                                                        class="btn btn-sm btn-warning text-white" 
+                                                        title="Edit Data"
+                                                        data-bs-toggle="tooltip">
                                                         <i class="mdi mdi-pencil"></i>
                                                     </a>
 
@@ -90,25 +104,27 @@
                                                     @if(auth()->user()->role == 'admin' && auth()->user()->branch_id == null)
                                                         <form action="{{ route('branches.destroy', $branch->id) }}" method="POST"
                                                             class="d-inline"
-                                                            onsubmit="return confirm('Yakin ingin menghapus cabang ini? Data user terkait mungkin akan error.');">
+                                                            onsubmit="return confirm('Yakin ingin menghapus cabang ini? Data terkait mungkin akan terpengaruh.');">
                                                             @csrf
                                                             @method('DELETE')
-                                                            <button type="submit" class="btn btn-danger" title="Hapus">
+                                                            <button type="submit" class="btn btn-sm btn-danger" 
+                                                                title="Hapus"
+                                                                data-bs-toggle="tooltip">
                                                                 <i class="mdi mdi-delete"></i>
                                                             </button>
                                                         </form>
                                                     @endif
-
                                                 @endif
                                             </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-center py-4">
+                                        <td colspan="4" class="text-center py-5">
                                             <div class="text-muted">
-                                                <i class="mdi mdi-office-building-marker-outline display-4 mb-2 d-block"></i>
-                                                Belum ada data cabang.
+                                                <i class="mdi mdi-office-building-marker-outline" style="font-size: 4rem; opacity: 0.3;"></i>
+                                                <p class="mt-3 mb-0">Belum ada data cabang</p>
+                                                <small>Klik tombol "Tambah Cabang" untuk menambahkan cabang baru</small>
                                             </div>
                                         </td>
                                     </tr>
@@ -116,10 +132,95 @@
                             </tbody>
                         </table>
                     </div>
-                    {{-- End Table Responsive --}}
+
+                    {{-- Card Mobile View --}}
+                    <div class="d-md-none">
+                        @forelse ($branches as $key => $branch)
+                            <div class="card mb-3 shadow-sm border-0">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start mb-3">
+                                        <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0">
+                                            <i class="mdi mdi-store text-primary fs-5"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1 fw-bold text-dark">{{ $branch->name }}</h6>
+                                            <div class="text-muted small">
+                                                <i class="mdi mdi-map-marker text-danger"></i>
+                                                {{ Str::limit($branch->address ?? 'Alamat belum diisi', 50) }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2 mt-3 pt-3 border-top">
+                                        {{-- Tombol LIHAT --}}
+                                        <a href="{{ route('branches.show', $branch->id) }}"
+                                            class="btn btn-sm btn-info text-white flex-fill">
+                                            <i class="mdi mdi-eye me-1"></i> Lihat
+                                        </a>
+
+                                        {{-- Tombol EDIT & DELETE: Tidak muncul untuk Audit --}}
+                                        @if(auth()->user()->role != 'audit')
+                                            <a href="{{ route('branches.edit', $branch->id) }}"
+                                                class="btn btn-sm btn-warning text-white flex-fill">
+                                                <i class="mdi mdi-pencil me-1"></i> Edit
+                                            </a>
+
+                                            {{-- Tombol HAPUS: Hanya Super Admin --}}
+                                            @if(auth()->user()->role == 'admin' && auth()->user()->branch_id == null)
+                                                <form action="{{ route('branches.destroy', $branch->id) }}" method="POST"
+                                                    class="flex-fill"
+                                                    onsubmit="return confirm('Yakin ingin menghapus cabang ini?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-danger w-100">
+                                                        <i class="mdi mdi-delete me-1"></i> Hapus
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-5">
+                                <i class="mdi mdi-office-building-marker-outline text-muted" style="font-size: 4rem; opacity: 0.3;"></i>
+                                <p class="text-muted mt-3 mb-0">Belum ada data cabang</p>
+                                <small class="text-muted">Klik tombol "Tambah Cabang" untuk menambahkan</small>
+                            </div>
+                        @endforelse
+                    </div>
                     
                 </div>
             </div>
         </div>
     </div>
+
+    {{-- Optional: Tambahkan CSS Custom --}}
+    <style>
+        .avatar-sm {
+            width: 45px;
+            height: 45px;
+        }
+        
+        .table tbody tr {
+            transition: all 0.2s ease;
+        }
+        
+        .table tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.03);
+            transform: translateY(-1px);
+        }
+        
+        .card {
+            transition: all 0.3s ease;
+        }
+        
+        .btn {
+            transition: all 0.2s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+    </style>
 @endsection
