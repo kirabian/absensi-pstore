@@ -21,7 +21,7 @@ class AuditController extends Controller
     public function showVerificationList()
     {
         $user = Auth::user();
-        
+
         // Query dasar: ambil yang status pending
         $query = Attendance::where('status', 'pending_verification')
             ->with('user.division');
@@ -32,7 +32,7 @@ class AuditController extends Controller
 
         // Jika BUKAN admin/audit, baru kita filter berdasarkan cabang dia (misal Supervisor)
         if (!$isUniversalAccess) {
-            
+
             $pivotBranchIds = $user->branches->pluck('id')->toArray();
             $homebaseBranchId = $user->branch_id ? [$user->branch_id] : [];
             $myBranchIds = array_unique(array_merge($pivotBranchIds, $homebaseBranchId));
@@ -97,18 +97,17 @@ class AuditController extends Controller
      */
     public function verifyAttendance(Request $request, Attendance $attendance)
     {
-        // 1. Validasi Input
         $request->validate([
-            'presence_status' => 'required|string',
-            'audit_photo' => 'nullable|image|max:5120', // Max 5MB
-            'audit_note' => 'nullable|string'
+            'presence_status' => 'required|string|in:hadir,sakit,cuti,izin,dinas_luar',
+            'audit_photo' => 'nullable|image|max:5120',
+            'audit_note' => 'nullable|string|max:500'
         ]);
 
         $user = Auth::user();
 
-        // 2. Logic Upload Foto Bukti (Jika ada)
-        $auditPhotoPath = $attendance->audit_photo_path; // Default pakai yg lama jika tidak upload baru
-        
+        // Upload foto bukti audit jika ada
+        $auditPhotoPath = $attendance->audit_photo_path;
+
         if ($request->hasFile('audit_photo')) {
             // Hapus foto lama jika ada
             if ($auditPhotoPath && Storage::disk('public')->exists($auditPhotoPath)) {
@@ -118,21 +117,21 @@ class AuditController extends Controller
             $auditPhotoPath = $request->file('audit_photo')->store('audit-evidence', 'public');
         }
 
-        // 3. Update Data Attendance
+        // Update data attendance
         $attendance->update([
-            'status' => 'verified', // Status sistem jadi verified
-            'presence_status' => $request->presence_status, // Status kehadiran spesifik (Masuk, Sakit, dll)
+            'status' => 'verified',
+            'presence_status' => $request->presence_status,
             'audit_photo_path' => $auditPhotoPath,
             'audit_note' => $request->audit_note,
-            'verified_by_user_id' => $user->id, // Audit yang login
+            'verified_by_user_id' => $user->id,
         ]);
 
-        // Opsional: Kirim Notifikasi
-        $title = "Absensi Diverifikasi Audit";
-        $body = "Status kehadiran Anda tanggal " . $attendance->check_in_time->format('d/m/Y') . " telah diverifikasi menjadi: " . $request->presence_status;
+        // Kirim notifikasi ke karyawan
+        $title = "Absensi Diverifikasi";
+        $body = "Absensi Anda tanggal " . $attendance->check_in_time->format('d/m/Y') . " telah diverifikasi sebagai: " . $request->presence_status;
         $this->sendNotificationToUser($attendance->user, $title, $body);
 
-        return back()->with('success', 'Data absensi berhasil diverifikasi dan status diperbarui.');
+        return back()->with('success', 'Absensi berhasil diverifikasi.');
     }
 
     /**
@@ -143,7 +142,7 @@ class AuditController extends Controller
         $user = Auth::user();
 
         $query = LateNotification::where('is_active', true)
-            ->with(['user', 'user.division']); 
+            ->with(['user', 'user.division']);
 
         // --- LOGIKA HAK AKSES (Sama seperti Verification List) ---
         $isUniversalAccess = in_array($user->role, ['admin', 'audit']);
@@ -178,10 +177,10 @@ class AuditController extends Controller
     public function showMissedCheckouts()
     {
         $user = Auth::user();
-        
+
         // Ambil data yang check_out-nya NULL DAN tanggal check_in-nya SEBELUM hari ini
         $query = Attendance::whereNull('check_out_time')
-            ->whereDate('check_in_time', '<', today()) 
+            ->whereDate('check_in_time', '<', today())
             ->with('user.division');
 
         // --- LOGIKA HAK AKSES (Konsisten: Admin/Audit lihat semua) ---
@@ -200,7 +199,7 @@ class AuditController extends Controller
                 $query->where('id', 0);
             }
         }
-        
+
         // Urutkan dari yang terlama gantungnya
         $missedCheckouts = $query->orderBy('check_in_time', 'asc')->get();
 
@@ -218,10 +217,10 @@ class AuditController extends Controller
         ]);
 
         $attendance = Attendance::findOrFail($id);
-        
+
         // 1. Ambil tanggal dari Check In
         $checkInDate = Carbon::parse($attendance->check_in_time);
-        
+
         // 2. Gabungkan tanggal Check In dengan Jam yang diinput Audit
         // Contoh: Check In tgl 20, Input 17:00 -> Hasil: 2023-11-20 17:00:00
         $checkOutDateTime = Carbon::parse($checkInDate->format('Y-m-d') . ' ' . $request->checkout_time);
@@ -239,7 +238,7 @@ class AuditController extends Controller
             'status' => 'verified', // Karena diinput manual oleh Audit, anggap verified
             'verified_by_user_id' => Auth::id(),
             // Simpan catatan (Gabung dengan notes lama jika ada, atau buat baru)
-            'audit_note' => 'Manual checkout by Audit: ' . $request->notes 
+            'audit_note' => 'Manual checkout by Audit: ' . $request->notes
         ]);
 
         // 5. Kirim Notifikasi ke Karyawan

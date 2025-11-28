@@ -78,7 +78,7 @@ class TeamController extends Controller
         if ($user->branch_id) {
             $myBranchIds[] = $user->branch_id;
         }
-        
+
         if (!in_array($id, $myBranchIds) && $user->role !== 'admin') {
             abort(403, 'Unauthorized action.');
         }
@@ -141,14 +141,14 @@ class TeamController extends Controller
         if ($user->branch_id) {
             $myBranchIds[] = $user->branch_id;
         }
-        
+
         if (!in_array($branchId, $myBranchIds) && $user->role !== 'admin') {
             abort(403, 'Unauthorized action.');
         }
 
         // Get employee data
         $employee = User::findOrFail($employeeId);
-        
+
         // Validate that employee belongs to the branch
         if ($employee->branch_id != $branchId) {
             abort(404, 'Employee not found in this branch.');
@@ -158,10 +158,11 @@ class TeamController extends Controller
         $selectedMonth = $request->get('month', date('m'));
         $selectedYear = $request->get('year', date('Y'));
 
-        // Query attendance history
+        // Query attendance history dengan relasi verifiedBy
         $history = Attendance::where('user_id', $employeeId)
             ->whereYear('check_in_time', $selectedYear)
             ->whereMonth('check_in_time', $selectedMonth)
+            ->with(['verifiedBy', 'workSchedule'])
             ->orderBy('check_in_time', 'desc')
             ->get();
 
@@ -171,12 +172,13 @@ class TeamController extends Controller
             'telat' => $history->where('is_late_checkin', true)->count(),
             'pulang_cepat' => $history->where('is_early_checkout', true)->count(),
             'pending' => $history->where('status', 'pending_verification')->count(),
+            'total' => $history->count(),
         ];
 
         return view('attendance.history', compact(
-            'history', 
-            'summary', 
-            'selectedMonth', 
+            'history',
+            'summary',
+            'selectedMonth',
             'selectedYear',
             'employee'
         ));

@@ -111,7 +111,9 @@ Route::middleware(['auth', 'active.user'])->group(function () {
 
     // === RUTE ADMIN & AUDIT MANAGEMENT ===
     Route::middleware(['role:admin,audit'])->group(function () {
+        // Rute verifikasi attendance dengan detail
         Route::put('/audit/verify-attendance/{attendance}', [AuditController::class, 'verifyAttendance'])->name('audit.verify.attendance');
+        
         Route::resource('branches', BranchController::class);
         Route::post('/branches/{branch}/toggle-status', [BranchController::class, 'toggleStatus'])->name('branches.toggle-status');
 
