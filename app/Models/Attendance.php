@@ -83,6 +83,28 @@ class Attendance extends Model
     }
 
     // ==========================================
+    // RELASI TAMBAHAN UNTUK FITUR CROSS-CHECK AUDIT
+    // ==========================================
+
+    /**
+     * Relasi many-to-one: Absensi ini diverifikasi oleh satu Audit (User).
+     * Nama alternatif untuk verifiedBy (untuk kompatibilitas)
+     */
+    public function verifiedBy()
+    {
+        return $this->belongsTo(User::class, 'verified_by_user_id');
+    }
+
+    /**
+     * Relasi many-to-one: Absensi ini di-scan oleh satu Security (User).
+     * Nama alternatif untuk scannedBy (untuk kompatibilitas)
+     */
+    public function scannedBy()
+    {
+        return $this->belongsTo(User::class, 'scanned_by_user_id');
+    }
+
+    // ==========================================
     // SCOPES
     // ==========================================
 
@@ -323,5 +345,71 @@ class Attendance extends Model
             'Telat' => 'danger',
             default => 'dark',
         };
+    }
+
+    // ==========================================
+    // ACCESSOR BARU UNTUK FITUR CROSS-CHECK AUDIT
+    // ==========================================
+
+    /**
+     * Accessor untuk status verifikasi
+     */
+    public function getVerificationStatusAttribute()
+    {
+        if ($this->status === 'verified') {
+            return 'verified';
+        } elseif ($this->status === 'pending_verification') {
+            return 'pending';
+        } else {
+            return 'not_verified';
+        }
+    }
+
+    /**
+     * Accessor untuk badge color verifikasi
+     */
+    public function getVerificationBadgeColorAttribute()
+    {
+        return match($this->verification_status) {
+            'verified' => 'success',
+            'pending' => 'warning',
+            default => 'secondary'
+        };
+    }
+
+    /**
+     * Accessor untuk verification icon
+     */
+    public function getVerificationIconAttribute()
+    {
+        return match($this->verification_status) {
+            'verified' => 'mdi-check-circle',
+            'pending' => 'mdi-clock-outline',
+            default => 'mdi-alert-circle'
+        };
+    }
+
+    /**
+     * Cek apakah absensi sudah diverifikasi
+     */
+    public function getIsVerifiedAttribute()
+    {
+        return $this->status === 'verified' && !is_null($this->verified_by_user_id);
+    }
+
+    /**
+     * Cek apakah absensi menunggu verifikasi
+     */
+    public function getIsPendingVerificationAttribute()
+    {
+        return $this->status === 'pending_verification';
+    }
+
+    /**
+     * Get nama verifikator
+     */
+    public function getVerifierNameAttribute()
+    {
+        return $this->verifiedBy ? $this->verifiedBy->name : null;
     }
 }
