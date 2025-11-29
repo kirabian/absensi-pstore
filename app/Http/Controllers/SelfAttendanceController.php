@@ -91,57 +91,51 @@ class SelfAttendanceController extends Controller
             ->first();
 
         // ==========================================================
-        // PROSES UPLOAD KE CLOUDINARY (DEBUG MODE)
+        // PROSES UPLOAD KE CLOUDINARY + EFEK MASKER WAJAH
         // ==========================================================
         try {
-            // Pastikan nama ini SAMA PERSIS dengan di Cloudinary
+            // --- SETTING PUBLIC ID GAMBAR TOPENG ---
+            // Pastikan nama ini sesuai dengan yang ada di Media Library Cloudinary Anda
             $overlayPublicId = 'topeng_vader'; 
             
+            // Format Waktu untuk Watermark
             $timestampText = $currentTime->locale('id')->translatedFormat('d M Y H:i');
 
-            // Kita gunakan Array Syntax standar Cloudinary Laravel
             $uploadedFile = Cloudinary::upload($request->file('photo')->getRealPath(), [
-                'folder' => 'absensi_pstore_effects',
+                'folder' => 'absensi_pstore_effects', // Folder penyimpanan di Cloudinary
                 'transformation' => [
-                    // LAYER 1: MASKER
+                    // LAYER 1: MASKER WAJAH
                     [
-                        'overlay' => $overlayPublicId,
-                        'gravity' => 'faces',           // Deteksi wajah
-                        'width'   => 1.3,               // Lebar 1.3x wajah
-                        'flags'   => 'region_relative', // Agar ikut ukuran wajah
-                        'crop'    => 'scale'
+                        'overlay' => $overlayPublicId,      // ID Gambar Topeng
+                        'gravity' => 'faces',               // Deteksi Wajah Otomatis
+                        'flags'   => 'region_relative',     // Agar ukuran topeng menyesuaikan ukuran wajah
+                        'width'   => '1.2',                 // Skala topeng (1.2x lebar wajah)
+                        'crop'    => 'scale',               // Mode resize
+                        'y'       => -0.05                  // Geser sedikit ke atas (offset vertikal)
                     ],
-                    // LAYER 1.5: APPLY LAYER (Penting: Flag layer_apply dipisah agar aman)
-                    [
-                        'flags' => 'layer_apply'
-                    ],
-                    
-                    // LAYER 2: WATERMARK TEXT
+                    // LAYER 2: WATERMARK JAM (Opsional, agar tetap profesional)
                     [
                         'overlay' => [
                             'font_family' => 'Arial',
-                            'font_size'   => 28,
+                            'font_size'   => 24,
                             'font_weight' => 'bold',
                             'text'        => $timestampText
                         ],
-                        'gravity'    => 'south',
-                        'y'          => 20,
-                        'color'      => '#FFFFFF',
-                        'background' => '#00000090'
-                    ],
-                    // LAYER 2.5: APPLY LAYER TEXT
-                    [
-                        'flags' => 'layer_apply'
+                        'gravity'    => 'south_east', // Pojok Kanan Bawah
+                        'color'      => '#FFFFFF',    // Teks Putih
+                        'background' => '#00000080',  // Background Hitam Transparan
+                        'x'          => 20,
+                        'y'          => 20
                     ]
                 ]
             ]);
 
+            // Ambil URL hasil yang sudah ada efeknya
             $path = $uploadedFile->getSecurePath();
 
         } catch (\Exception $e) {
-            // --- BAGIAN INI UNTUK MELIHAT ERRORNYA ---
-            dd("STOP! Error terjadi:", $e->getMessage()); 
-            // Nanti kalau sudah benar, kembalikan ke: return back()->with('error', ...);
+            Log::error('Cloudinary Upload Error: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memproses efek wajah. Coba lagi atau cek koneksi internet.');
         }
 
         // ==============================================================
