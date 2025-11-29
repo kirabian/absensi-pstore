@@ -49,7 +49,7 @@
             <div class="card-body">
                 <h4 class="card-title mb-1">Daftar Karyawan</h4>
                 <p class="text-muted mb-4">Karyawan yang terdaftar di cabang ini.</p>
-
+                
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>

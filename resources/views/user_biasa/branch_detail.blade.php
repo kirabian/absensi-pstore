@@ -54,6 +54,7 @@
                                     $att = $emp->attendances->first();
                                 @endphp
                                 <tr>
+                                    {{-- NAMA & FOTO --}}
                                     <td>
                                         <div class="d-flex align-items-center">
                                             @if($emp->profile_photo_path)
@@ -69,30 +70,62 @@
                                             </div>
                                         </div>
                                     </td>
+
+                                    {{-- POSISI --}}
                                     <td>
                                         <span class="badge bg-light text-dark border">
                                             {{ $emp->division->name ?? '-' }}
                                         </span>
                                     </td>
+
+                                    {{-- STATUS HARI INI (LOGIKA BARU) --}}
                                     <td>
+                                        {{-- Prioritas 1: Cek Absensi Real (Scan/Selfie) --}}
                                         @if($att)
                                             @if($att->check_out_time)
                                                 <span class="badge bg-primary">Pulang</span>
                                             @else
                                                 <span class="badge bg-success">Hadir (Online)</span>
                                             @endif
-                                        @elseif($emp->activeLateStatus)
-                                            <span class="badge bg-warning text-dark">Izin/Sakit</span>
+                                        
+                                        {{-- Prioritas 2: Cek Izin/Sakit/Cuti/WFH (Dari Controller) --}}
+                                        @elseif($emp->today_leave)
+                                            @php
+                                                $leaveType = $emp->today_leave->type;
+                                                $badgeClass = match($leaveType) {
+                                                    'sakit' => 'bg-info', // Biru muda
+                                                    'izin' => 'bg-warning text-dark', // Kuning
+                                                    'cuti' => 'bg-secondary', // Abu-abu
+                                                    'wfh' => 'bg-success', // Hijau (Anggap kerja)
+                                                    'telat' => 'bg-warning text-dark',
+                                                    default => 'bg-secondary'
+                                                };
+                                                
+                                                $label = ucfirst($leaveType);
+                                                if($leaveType == 'wfh') $label = 'WFH / Dinas';
+                                                if($leaveType == 'telat') $label = 'Izin Telat';
+                                            @endphp
+                                            <span class="badge {{ $badgeClass }}">
+                                                {{ $label }}
+                                            </span>
+
+                                        {{-- Prioritas 3: Sisanya Alpha --}}
                                         @else
-                                            <span class="badge bg-danger">Alpha/Belum Hadir</span>
+                                            <span class="badge bg-danger">Belum Hadir / Alpha</span>
                                         @endif
                                     </td>
+
+                                    {{-- JAM MASUK --}}
                                     <td class="text-success fw-bold">
                                         {{ $att ? \Carbon\Carbon::parse($att->check_in_time)->format('H:i') : '-' }}
                                     </td>
+
+                                    {{-- JAM PULANG --}}
                                     <td class="text-primary fw-bold">
                                         {{ ($att && $att->check_out_time) ? \Carbon\Carbon::parse($att->check_out_time)->format('H:i') : '-' }}
                                     </td>
+
+                                    {{-- AKSI --}}
                                     <td>
                                         <a href="{{ route('team.branch.employee.history', ['branchId' => $branch->id, 'employeeId' => $emp->id]) }}" 
                                            class="btn btn-outline-primary btn-sm">

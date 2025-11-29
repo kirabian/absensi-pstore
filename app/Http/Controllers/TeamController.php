@@ -70,32 +70,49 @@ class TeamController extends Controller
 
     public function showBranch($id)
     {
-        // 1. Ambil Data Cabang
+        $user = Auth::user();
+
+        // Validasi Akses (Pastikan Audit/Admin berhak lihat cabang ini)
+        if ($user->role == 'audit') {
+            $allowedBranches = $user->branches->pluck('id')->toArray();
+            if (!in_array($id, $allowedBranches)) abort(403);
+        } elseif ($user->role == 'admin' && $user->branch_id) {
+            if ($user->branch_id != $id) abort(403);
+        }
+
         $branch = Branch::findOrFail($id);
 
-        // Opsional: Cek hak akses
-        $user = Auth::user();
-        $myBranchIds = $user->branches()->pluck('branches.id')->toArray();
-        if ($user->branch_id) {
-            $myBranchIds[] = $user->branch_id;
-        }
-
-        if (!in_array($id, $myBranchIds) && $user->role !== 'admin') {
-            abort(403, 'Unauthorized action.');
-        }
-
-        // 2. Ambil Karyawan di Cabang Tersebut
+        // Ambil karyawan di cabang ini
+        // Eager load: attendance hari ini, dan leave request hari ini
         $employees = User::where('branch_id', $id)
+            ->where('role', '!=', 'admin') // Sembunyikan admin
             ->where('is_active', true)
-            ->with([
-                'attendances' => function ($q) {
-                    $q->whereDate('check_in_time', today());
-                },
-                'activeLateStatus',
-                'division'
-            ])
-            ->orderBy('name', 'asc')
+            ->with(['division', 'attendances' => function ($q) {
+                $q->whereDate('check_in_time', today());
+            }])
             ->get();
+
+        // LOGIKA BARU: Attach status Izin/Sakit hari ini ke setiap karyawan
+        // Kita tidak pakai Eager Loading 'leaveRequests' karena butuh filter tanggal yang kompleks
+        foreach ($employees as $emp) {
+            $todayLeave = \App\Models\LeaveRequest::where('user_id', $emp->id)
+                ->where('status', 'approved')
+                ->where('is_active', true)
+                ->where(function ($q) {
+                    $q->where(function ($sub) {
+                        $sub->whereIn('type', ['sakit', 'izin', 'cuti', 'wfh'])
+                            ->whereDate('start_date', '<=', today())
+                            ->whereDate('end_date', '>=', today());
+                    })->orWhere(function ($sub) {
+                        $sub->where('type', 'telat')
+                            ->whereDate('start_date', today());
+                    });
+                })
+                ->first();
+
+            // Simpan ke atribut sementara di object user
+            $emp->today_leave = $todayLeave;
+        }
 
         return view('user_biasa.branch_detail', compact('branch', 'employees'));
     }
