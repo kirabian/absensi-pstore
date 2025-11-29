@@ -22,53 +22,54 @@ class DashboardController extends Controller
 
         // =========================================================================
         // LOGIKA NOMOR ID CARD CUSTOM
-        // Format: YY(Thn Masuk) MM(Bln Masuk) YY(Thn Lahir) [SPASI] MM(Bln Lahir) DD(Tgl Lahir) XXX(Urut ID)
-        // Contoh: 250399 0512001
         // =========================================================================
-        
-        // 1. Ambil Data Tanggal Masuk (Hire Date)
-        // Jika kosong, gunakan waktu sekarang
         $hireDate = $user->hire_date ? Carbon::parse($user->hire_date) : Carbon::now();
-        
-        // 2. Ambil Data Tanggal Lahir
-        // NOTE: Karena kolom 'birth_date' belum ada di schema yang kamu kirim, 
-        // saya beri default ke 1999-12-05 agar kode tidak error.
-        // Jika kamu tambah kolom 'birth_date' di table users, ganti logika ini.
         $birthDate = $user->birth_date ? Carbon::parse($user->birth_date) : Carbon::parse('1999-05-12'); 
 
-        // 3. Pecah Format
-        $yyMasuk = $hireDate->format('y'); // 25 (2 digit tahun)
-        $mmMasuk = $hireDate->format('m'); // 03 (2 digit bulan)
-        
-        $yyLahir = $birthDate->format('y'); // 99 (2 digit tahun)
-        $mmLahir = $birthDate->format('m'); // 05 (2 digit bulan)
-        $ddLahir = $birthDate->format('d'); // 12 (2 digit tanggal)
-        
-        // 4. Nomor Urut (Padding 3 digit, misal ID 1 jadi 001)
+        $yyMasuk = $hireDate->format('y');
+        $mmMasuk = $hireDate->format('m');
+        $yyLahir = $birthDate->format('y');
+        $mmLahir = $birthDate->format('m');
+        $ddLahir = $birthDate->format('d');
         $noUrut  = str_pad($user->id, 3, '0', STR_PAD_LEFT);
 
-        // 5. Gabungkan String
         $data['idCardNumber'] = "{$yyMasuk}{$mmMasuk}{$yyLahir} {$mmLahir}{$ddLahir}{$noUrut}";
         
         // =========================================================================
 
-        // 1. QUERY DASAR (Filter Cabang)
+        // 1. QUERY DASAR (Filter Cabang diperbaiki)
         $attendanceQuery = Attendance::query();
         $userQuery = User::query();
         $divisionQuery = Division::query();
 
-        // Admin melihat semua jika tidak ada branch_id, role lain terkunci di branch
-        if ($user->role != 'admin' || $branch_id != null) {
-            $attendanceQuery->where('branch_id', $branch_id);
-            $userQuery->where('branch_id', $branch_id);
-            $divisionQuery->where('branch_id', $branch_id);
+        // --- PERBAIKAN LOGIKA FILTER CABANG DISINI ---
+        if ($user->role == 'audit') {
+            // Jika Audit, ambil array ID dari tabel pivot cabang
+            $auditBranchIds = $user->branches->pluck('id')->toArray();
+            
+            // Filter Data Berdasarkan BANYAK Cabang
+            $attendanceQuery->whereIn('branch_id', $auditBranchIds);
+            $userQuery->whereIn('branch_id', $auditBranchIds);
+            $divisionQuery->whereIn('branch_id', $auditBranchIds);
+
+        } elseif ($user->role == 'admin' && $branch_id == null) {
+            // Jika Super Admin (Pusat), tidak ada filter (Lihat Semua)
+        } else {
+            // Jika Admin Cabang, Leader, Security, atau User Biasa
+            // Filter Berdasarkan SATU Cabang
+            if ($branch_id) {
+                $attendanceQuery->where('branch_id', $branch_id);
+                $userQuery->where('branch_id', $branch_id);
+                $divisionQuery->where('branch_id', $branch_id);
+            }
         }
+        // ---------------------------------------------
 
         // 2. DATA IZIN & SESI HARI INI (Untuk Semua Role)
         $data['myLeaveToday'] = $this->getTodayLeaveRequest($user->id);
         $data = $this->getCommonDataForAllRoles($user, $data);
 
-        // 3. HITUNG DATA PERSONAL (Wajib ada untuk fitur Absen Mandiri semua role)
+        // 3. HITUNG DATA PERSONAL
         $data['myPendingCount'] = Attendance::where('user_id', $user->id)
             ->where('status', 'pending_verification')
             ->count();
@@ -77,7 +78,6 @@ class DashboardController extends Controller
             ->where('id', '!=', $user->id)
             ->count();
             
-        // Ambil statistik personal untuk tampilan ID Card (User biasa, Security, Audit butuh ini)
         $personalStats = $this->getUserAttendanceStats($user->id, $branch_id); 
 
         // ======================================================
@@ -86,26 +86,28 @@ class DashboardController extends Controller
 
         if ($user->role == 'admin') {
             // --- ADMIN ---
-            // UPDATE: Hanya hitung user yang is_active = true
-            $data['totalUsers'] = $userQuery->where('role', '!=', 'admin')
+            $data['totalUsers'] = (clone $userQuery)->where('role', '!=', 'admin')
                                             ->where('is_active', true) 
                                             ->count();
 
-            $data['totalDivisions'] = $divisionQuery->count();
-            $data['attendancesToday'] = $attendanceQuery->whereDate('check_in_time', today())->count();
-            $data['pendingVerifications'] = $attendanceQuery->where('status', 'pending_verification')->count();
+            $data['totalDivisions'] = (clone $divisionQuery)->count();
+            // Gunakan clone agar query tidak tumpang tindih
+            $data['attendancesToday'] = (clone $attendanceQuery)->whereDate('check_in_time', today())->count();
+            $data['pendingVerifications'] = (clone $attendanceQuery)->where('status', 'pending_verification')->count();
             
-            // Chart Admin (Global)
             $data['stats'] = $this->getAdminAttendanceStats($branch_id); 
             
         } elseif ($user->role == 'audit') {
             // --- AUDIT ---
-            $data['myTeamMembers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])->count();
-            $data['pendingVerifications'] = $attendanceQuery->where('status', 'pending_verification')->count();
-            $data['attendancesToday'] = $attendanceQuery->whereDate('check_in_time', today())->count();
+            $data['myTeamMembers'] = (clone $userQuery)->whereIn('role', ['user_biasa', 'leader'])->count();
             
-            // Chart Audit (Fokus Verifikasi)
-            $data['stats'] = $this->getAuditAttendanceStats($branch_id); 
+            // PERBAIKAN: Gunakan clone agar filter status tidak menempel permanen di object query
+            $data['pendingVerifications'] = (clone $attendanceQuery)->where('status', 'pending_verification')->count();
+            $data['attendancesToday'] = (clone $attendanceQuery)->whereDate('check_in_time', today())->count();
+            
+            // Untuk Chart Audit, kita butuh kirim ID cabang-cabangnya
+            $auditBranchIds = $user->branches->pluck('id')->toArray();
+            $data['stats'] = $this->getAuditAttendanceStats($auditBranchIds); 
             
         } elseif ($user->role == 'security') {
             // --- SECURITY ---
@@ -113,21 +115,17 @@ class DashboardController extends Controller
                 ->whereDate('check_in_time', today())
                 ->count();
             
-            // UPDATE: Hanya hitung user yang is_active = true
-            $data['totalUsers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])
+            $data['totalUsers'] = (clone $userQuery)->whereIn('role', ['user_biasa', 'leader'])
                                             ->where('is_active', true)
                                             ->count();
             
-            // Chart Security (Aktivitas Scan)
             $data['stats'] = $this->getSecurityAttendanceStats($user->id, $branch_id); 
             
         } else {
             // --- USER BIASA / LEADER ---
-            // Chart Personal
             $data['stats'] = $personalStats;
         }
 
-        // Kirim variable attendanceStats juga (Fallback compatibility)
         if (!isset($data['attendanceStats'])) {
             $data['attendanceStats'] = isset($data['stats']) ? $data['stats'] : $personalStats;
         }
@@ -155,7 +153,6 @@ class DashboardController extends Controller
 
     private function getCommonDataForAllRoles($user, $data)
     {
-        // Cari Sesi Aktif (Check In ada, Check Out kosong) - Lookback 24 jam
         $activeSession = Attendance::where('user_id', $user->id)
             ->whereNull('check_out_time')
             ->where('check_in_time', '>=', Carbon::now()->subHours(24))
@@ -165,7 +162,6 @@ class DashboardController extends Controller
         if ($activeSession) {
             $data['myAttendanceToday'] = $activeSession;
         } else {
-            // Jika tidak ada sesi aktif, cari sesi yang SUDAH SELESAI hari ini
             $finishedSession = Attendance::where('user_id', $user->id)
                 ->whereDate('check_in_time', today())
                 ->whereNotNull('check_out_time')
@@ -183,12 +179,11 @@ class DashboardController extends Controller
         $query = Attendance::whereDate('check_in_time', today());
         if ($branch_id) $query->where('branch_id', $branch_id);
 
-        // UPDATE: Tambahkan where is_active = true agar statistik persentase akurat
         $totalUsers = User::when($branch_id, function($q) use ($branch_id) {
             return $q->where('branch_id', $branch_id);
         })
         ->where('role', '!=', 'admin')
-        ->where('is_active', true) // <-- Hanya user aktif
+        ->where('is_active', true)
         ->count();
 
         $presentCount = (clone $query)->count();
@@ -208,10 +203,19 @@ class DashboardController extends Controller
         ];
     }
 
-    private function getAuditAttendanceStats($branch_id = null)
+    // UPDATE: Parameter sekarang bisa menerima array branch IDs
+    private function getAuditAttendanceStats($branchData = null)
     {
         $query = Attendance::whereDate('check_in_time', today());
-        if ($branch_id) $query->where('branch_id', $branch_id);
+        
+        // Logika fleksibel: bisa terima single ID (int) atau Array IDs
+        if ($branchData) {
+            if (is_array($branchData)) {
+                $query->whereIn('branch_id', $branchData);
+            } else {
+                $query->where('branch_id', $branchData);
+            }
+        }
 
         $totalToday = (clone $query)->count();
         $verified = (clone $query)->whereNotNull('verified_by_user_id')->count();
@@ -286,7 +290,9 @@ class DashboardController extends Controller
                 $data['role'] = 'Admin';
                 break;
             case 'audit':
-                $data['stats'] = $this->getAuditAttendanceStats($branch_id);
+                // Ambil array branch IDs untuk audit
+                $auditBranchIds = $user->branches->pluck('id')->toArray();
+                $data['stats'] = $this->getAuditAttendanceStats($auditBranchIds);
                 $data['title'] = 'Laporan Verifikasi Absensi';
                 $data['role'] = 'Audit';
                 break;
