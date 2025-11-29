@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LeaveRequest;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -21,21 +22,20 @@ class LeaveRequestController extends Controller
         if ($user->role == 'admin') {
             // ADMIN: Melihat Semua Data
             // (Tidak ada filter tambahan)
-        } 
-        elseif ($user->role == 'audit') {
+        } elseif ($user->role == 'audit') {
             // AUDIT: Melihat data cabang yang dipegang + Punya sendiri
-            
+
             // 1. Ambil ID Cabang dari Pivot (Multi Branch)
             // Gunakan 'branches.id' atau 'id' tergantung relasi, pakai 'id' lebih aman via Eloquent
             $pivotBranchIds = $user->branches->pluck('id')->toArray();
-            
+
             // 2. Ambil ID Cabang dari Homebase (Single Branch)
             $homebaseBranchId = $user->branch_id ? [$user->branch_id] : [];
-            
+
             // 3. Gabungkan & Hapus Duplikat
             $myBranchIds = array_unique(array_merge($pivotBranchIds, $homebaseBranchId));
 
-            $query->where(function($mainQ) use ($user, $myBranchIds) {
+            $query->where(function ($mainQ) use ($user, $myBranchIds) {
                 // Kondisi A: User yang request ada di cabang yang dipegang Audit
                 if (!empty($myBranchIds)) {
                     $mainQ->whereHas('user', function ($q) use ($myBranchIds) {
@@ -43,14 +43,13 @@ class LeaveRequestController extends Controller
                     });
                 } else {
                     // Jika Audit belum punya cabang, force false untuk kondisi ini
-                    $mainQ->where('id', 0); 
+                    $mainQ->where('id', 0);
                 }
 
                 // Kondisi B: ATAU Melihat request milik diri sendiri (biar gak kosong melompong kalau belum assign cabang)
                 $mainQ->orWhere('user_id', $user->id);
             });
-        } 
-        else {
+        } else {
             // USER BIASA / LEADER / SECURITY: Hanya lihat punya sendiri
             $query->where('user_id', $user->id);
         }
@@ -60,7 +59,7 @@ class LeaveRequestController extends Controller
     }
 
     // ... (Method create, store, dll TETAP SAMA, tidak perlu diubah) ...
-    
+
     // MENAMPILKAN FORM
     public function create()
     {
@@ -74,15 +73,15 @@ class LeaveRequestController extends Controller
         // 1. Update Rule Validasi
         $request->validate([
             // Tambahkan tipe baru ke dalam 'in'
-            'type' => 'required|in:telat,wfh,izin,sakit,cuti', 
-            
+            'type' => 'required|in:telat,wfh,izin,sakit,cuti',
+
             'reason' => 'required|string|max:255',
             'file_proof' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120', // Max 5MB
             'start_date' => 'required|date',
-            
+
             // end_date WAJIB jika BUKAN telat
             'end_date'   => 'required_unless:type,telat|nullable|date|after_or_equal:start_date',
-            
+
             // start_time WAJIB jika telat
             'start_time' => 'required_if:type,telat|nullable|date_format:H:i',
         ], [
@@ -151,5 +150,27 @@ class LeaveRequestController extends Controller
     {
         $leaveRequest->update(['status' => 'rejected', 'is_active' => false]);
         return redirect()->back()->with('success', 'Pengajuan ditolak.');
+    }
+
+    public function finishEarly(LeaveRequest $leaveRequest)
+    {
+        // 1. Validasi kepemilikan
+        if ($leaveRequest->user_id != Auth::id()) {
+            abort(403);
+        }
+
+        // 2. Pastikan tipe pengajuan mendukung (hanya untuk sakit/izin/cuti yang berdurasi)
+        if (!in_array($leaveRequest->type, ['sakit', 'izin', 'cuti', 'wfh'])) {
+            return back()->with('error', 'Tipe izin ini tidak bisa diselesaikan lebih awal.');
+        }
+
+        // 3. Update Tanggal Selesai menjadi KEMARIN
+        // Logikanya: Jika hari ini dia masuk, maka izinnya dianggap selesai kemarin.
+        $leaveRequest->update([
+            'end_date' => Carbon::yesterday(),
+            // Opsional: Tambahkan catatan bahwa user masuk lebih awal jika perlu
+        ]);
+
+        return redirect()->route('dashboard')->with('success', 'Status izin diperbarui. Selamat bekerja kembali!');
     }
 }

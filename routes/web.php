@@ -178,11 +178,14 @@ Route::middleware(['auth', 'active.user'])->group(function () {
     Route::prefix('leave-requests')->name('leave-requests.')->group(function () {
         Route::get('/', [LeaveRequestController::class, 'index'])->name('index');
 
-        // Create & Store
+        // Create & Store & Finish Early (User Actions)
         Route::middleware(['role:user_biasa,leader,audit,security'])->group(function () {
             Route::get('/create', [LeaveRequestController::class, 'create'])->name('create');
             Route::post('/store', [LeaveRequestController::class, 'store'])->name('store');
             Route::patch('/{leaveRequest}/cancel', [LeaveRequestController::class, 'cancel'])->name('cancel');
+            
+            // --- Rute Baru: Selesaikan Izin Lebih Awal ---
+            Route::patch('/{leaveRequest}/finish-early', [LeaveRequestController::class, 'finishEarly'])->name('finish-early');
         });
 
         // Approval

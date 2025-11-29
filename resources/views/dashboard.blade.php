@@ -334,6 +334,24 @@
                                     </div>
                                 </div>
                             </div>
+
+                            {{-- TOMBOL SELESAIKAN IZIN (Hanya jika status approved dan tipe BUKAN telat) --}}
+                            @if ($myLeaveToday->status == 'approved' && $myLeaveToday->type != 'telat')
+                                <div class="mt-3 pt-3 border-top text-center">
+                                    <p class="small text-muted mb-2">Sudah kembali bekerja hari ini?</p>
+                                    <form action="{{ route('leave-requests.finish-early', $myLeaveToday->id) }}"
+                                        method="POST">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn btn-primary btn-sm w-100"
+                                            onclick="return confirm('Apakah Anda yakin ingin mengakhiri izin ini dan melakukan absensi hari ini?');">
+                                            <i class="mdi mdi-briefcase-check me-2"></i>Saya Masuk Kerja Sekarang
+                                        </button>
+                                    </form>
+                                </div>
+                            @endif
+
+                            {{-- TOMBOL IZIN TELAT --}}
                             @if ($myLeaveToday->type == 'telat' && $myLeaveToday->status == 'approved')
                                 <div class="mt-3 pt-3 border-top text-center">
                                     <form action="{{ route('leave-requests.cancel', $myLeaveToday->id) }}" method="POST"
@@ -785,7 +803,8 @@
                                 {{ $stats['absent'] }}
                             ],
                             backgroundColor: ['#00d25b', '#ffab00', '#fc424a', '#0090e7',
-                                '#8c94a3'],
+                                '#8c94a3'
+                            ],
                             borderWidth: 0
                         }]
                     },
@@ -837,7 +856,8 @@
                         labels: ['Scan Masuk', 'Scan Pulang'],
                         datasets: [{
                             data: [{{ $stats['check_in_scans'] }},
-                                {{ $stats['check_out_scans'] }}],
+                                {{ $stats['check_out_scans'] }}
+                            ],
                             backgroundColor: ['#00d25b', '#0090e7'],
                             borderWidth: 0
                         }]
