@@ -8,7 +8,7 @@ use App\Models\WorkSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use App\Traits\SendFcmNotification;
+use App\Traits\SendFcmNotification; 
 use Carbon\Carbon;
 // Import Facade Cloudinary
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
@@ -91,28 +91,32 @@ class SelfAttendanceController extends Controller
             ->first();
 
         // ==========================================================
-        // PROSES UPLOAD KE CLOUDINARY + EFEK MASKER WAJAH
+        // PROSES UPLOAD KE CLOUDINARY (DEBUG MODE)
         // ==========================================================
         try {
-            // --- SETTING PUBLIC ID GAMBAR TOPENG ---
-            // PENTING: Jika topeng ada di folder (misal: assets/topeng_vader), tulis 'assets:topeng_vader'
-            $overlayPublicId = 'topeng_vader';
-
-            // Format Waktu untuk Watermark
+            // Pastikan nama ini SAMA PERSIS dengan di Cloudinary
+            $overlayPublicId = 'topeng_vader'; 
+            
             $timestampText = $currentTime->locale('id')->translatedFormat('d M Y H:i');
 
+            // Kita gunakan Array Syntax standar Cloudinary Laravel
             $uploadedFile = Cloudinary::upload($request->file('photo')->getRealPath(), [
                 'folder' => 'absensi_pstore_effects',
                 'transformation' => [
-                    // --- PERBAIKAN DI SINI (MENGGUNAKAN RAW TRANSFORMATION) ---
-                    // Kita pakai syntax string manual agar urutannya tidak diacak oleh Laravel
-                    // Rumus: l_[ID_GAMBAR]/fl_layer_apply,fl_region_relative,g_faces,w_[UKURAN],y_[POSISI]
-
+                    // LAYER 1: MASKER
                     [
-                        'raw_transformation' => "l_$overlayPublicId/fl_layer_apply,fl_region_relative,g_faces,w_1.3,y_-0.1"
+                        'overlay' => $overlayPublicId,
+                        'gravity' => 'faces',           // Deteksi wajah
+                        'width'   => 1.3,               // Lebar 1.3x wajah
+                        'flags'   => 'region_relative', // Agar ikut ukuran wajah
+                        'crop'    => 'scale'
                     ],
-
-                    // LAYER 2: WATERMARK JAM (Tetap pakai array tidak masalah)
+                    // LAYER 1.5: APPLY LAYER (Penting: Flag layer_apply dipisah agar aman)
+                    [
+                        'flags' => 'layer_apply'
+                    ],
+                    
+                    // LAYER 2: WATERMARK TEXT
                     [
                         'overlay' => [
                             'font_family' => 'Arial',
@@ -120,26 +124,31 @@ class SelfAttendanceController extends Controller
                             'font_weight' => 'bold',
                             'text'        => $timestampText
                         ],
-                        'gravity'    => 'south',    // Posisi Bawah Tengah
-                        'color'      => '#FFFFFF',    // Teks Putih
-                        'background' => '#00000090',  // Background Hitam Transparan
-                        'y'          => 20
+                        'gravity'    => 'south',
+                        'y'          => 20,
+                        'color'      => '#FFFFFF',
+                        'background' => '#00000090'
+                    ],
+                    // LAYER 2.5: APPLY LAYER TEXT
+                    [
+                        'flags' => 'layer_apply'
                     ]
                 ]
             ]);
 
-            // Ambil URL hasil yang sudah ada efeknya
             $path = $uploadedFile->getSecurePath();
+
         } catch (\Exception $e) {
-            Log::error('Cloudinary Upload Error: ' . $e->getMessage());
-            return back()->with('error', 'Gagal memproses efek wajah: ' . $e->getMessage());
+            // --- BAGIAN INI UNTUK MELIHAT ERRORNYA ---
+            dd("STOP! Error terjadi:", $e->getMessage()); 
+            // Nanti kalau sudah benar, kembalikan ke: return back()->with('error', ...);
         }
 
         // ==============================================================
         // LOGIKA ABSEN PULANG (CHECK-OUT)
         // ==============================================================
         if ($attendance) {
-
+            
             $isEarly = false;
             if ($workSchedule && $workSchedule->check_out_start) {
                 $scheduleStart = Carbon::parse($workSchedule->check_out_start);
@@ -243,7 +252,7 @@ class SelfAttendanceController extends Controller
 
         $title = "Izin Telat Masuk";
         $body = "{$user->name} mengajukan izin telat.";
-
+        
         try {
             $this->sendNotificationToBranchRoles(['admin', 'audit'], $user->branch_id, $title, $body);
         } catch (\Exception $e) {
@@ -264,7 +273,7 @@ class SelfAttendanceController extends Controller
             ->first();
 
         if ($notification) {
-            $notification->delete();
+            $notification->delete(); 
             return redirect()->route('dashboard')->with('success', 'Laporan telat dihapus. Anda sekarang bisa melakukan absen.');
         }
 
