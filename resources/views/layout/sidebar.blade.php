@@ -30,6 +30,12 @@
                 <span class="menu-title">Job Desk / Target</span>
             </a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#">
+                <i class="menu-icon mdi mdi-history"></i>
+                <span class="menu-title">Riwayat Divisi / Cabang</span>
+            </a>
+        </li>
 
         {{-- =================================== --}}
         {{--     MENU UNTUK SUPER ADMIN        --}}
@@ -42,18 +48,12 @@
                     <span class="menu-title">Data Cabang</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">
-                    <i class="menu-icon mdi mdi-history"></i>
-                    <span class="menu-title">Riwayat Divisi / Cabang</span>
-                </a>
-            </li>
         @endif
 
         {{-- =================================== --}}
         {{--   MENU UNTUK SUPER ADMIN & AUDIT   --}}
         {{-- =================================== --}}
-        @if ((auth()->user()->role == 'admin') || (auth()->user()->role == 'audit'))
+        @if (auth()->user()->role == 'admin' || auth()->user()->role == 'audit')
             <li class="nav-item nav-category">Manajemen Tim</li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('divisions.index') }}">
