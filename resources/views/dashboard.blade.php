@@ -13,7 +13,7 @@
     {{-- ======================================================================= --}}
     {{-- BAGIAN 1: DASHBOARD PEKERJAAN (KHUSUS ADMIN, AUDIT, SECURITY) --}}
     {{-- ======================================================================= --}}
-    
+
     @if (auth()->user()->role == 'admin')
         {{-- WIDGET ADMIN --}}
         <div class="row mb-4">
@@ -24,8 +24,11 @@
                         <div class="card-bank-icon"><i class="mdi mdi-account-multiple"></i></div>
                         <div class="card-bank-content">
                             <p class="card-bank-label">Total User</p>
+                            {{-- Angka ini sekarang otomatis berkurang jika ada user dinonaktifkan --}}
                             <h2 class="card-bank-value">{{ $totalUsers }}</h2>
-                            <p class="card-bank-desc">Karyawan terdaftar</p>
+
+                            {{-- Ubah teks deskripsi agar lebih akurat --}}
+                            <p class="card-bank-desc">Karyawan Aktif</p>
                         </div>
                         <div class="card-bank-pattern"></div>
                     </div>
@@ -74,7 +77,6 @@
                 </div>
             </div>
         </div>
-
     @elseif (auth()->user()->role == 'audit')
         {{-- WIDGET AUDIT --}}
         <div class="row mb-4">
@@ -124,7 +126,6 @@
                 </div>
             </div>
         </div>
-
     @elseif (auth()->user()->role == 'security')
         {{-- WIDGET SECURITY --}}
         <div class="row mb-4">
@@ -166,7 +167,7 @@
     {{-- ======================================================================= --}}
     {{-- BAGIAN 2: DASHBOARD PERSONAL (ID CARD & ABSEN MANDIRI) --}}
     {{-- ======================================================================= --}}
-    
+
     <div class="row">
         <div class="col-12">
             <h4 class="card-title mb-3"><i class="mdi mdi-account-circle me-2"></i>Absensi Pribadi</h4>
@@ -193,13 +194,14 @@
                             {{ strtoupper(Auth::user()->division->name ?? 'BELUM ADA DIVISI') }}
                         </h4>
                     </div>
-                    
+
                     {{-- BAGIAN FOOTER ID CARD YANG DIUBAH --}}
                     <div class="card-id-footer d-flex justify-content-end align-items-end mt-4">
                         {{-- VALID THRU DIHAPUS, GANTI DENGAN NOMOR ID --}}
                         <div class="text-end">
                             <p class="mb-0 text-white-50" style="font-size: 10px; letter-spacing: 1px;">NOMOR ID</p>
-                            <p class="card-id-card-number mb-0" style="font-size: 22px; letter-spacing: 2px; font-weight: 700;">
+                            <p class="card-id-card-number mb-0"
+                                style="font-size: 22px; letter-spacing: 2px; font-weight: 700;">
                                 {{ $idCardNumber }}
                             </p>
                         </div>
@@ -268,8 +270,8 @@
                                     </div>
                                 </div>
                             </div>
-                        
-                        {{-- SEDANG BEKERJA --}}
+
+                            {{-- SEDANG BEKERJA --}}
                         @else
                             <div class="status-card {{ $isCrossDay ? 'status-warning' : 'status-success' }} mb-3">
                                 <div class="d-flex align-items-center">
@@ -277,12 +279,15 @@
                                         <i class="mdi {{ $isCrossDay ? 'mdi-calendar-clock' : 'mdi-clock-check' }}"></i>
                                     </div>
                                     <div class="flex-grow-1">
-                                        @if($isCrossDay)
+                                        @if ($isCrossDay)
                                             <h5 class="mb-1 fw-bold text-danger">Lembur Lintas Hari</h5>
-                                            <p class="mb-0 small text-dark">Masuk tanggal: <strong>{{ $myAttendanceToday->check_in_time->format('d M Y, H:i') }}</strong></p>
+                                            <p class="mb-0 small text-dark">Masuk tanggal:
+                                                <strong>{{ $myAttendanceToday->check_in_time->format('d M Y, H:i') }}</strong>
+                                            </p>
                                         @else
                                             <h5 class="mb-1 fw-bold">Sedang Bekerja</h5>
-                                            <p class="mb-0">Masuk Pukul: <strong>{{ $myAttendanceToday->check_in_time->format('H:i') }}</strong></p>
+                                            <p class="mb-0">Masuk Pukul:
+                                                <strong>{{ $myAttendanceToday->check_in_time->format('H:i') }}</strong></p>
                                         @endif
                                     </div>
                                 </div>
@@ -299,11 +304,16 @@
                             </div>
                         @endif
 
-                    {{-- IZIN --}}
+                        {{-- IZIN --}}
                     @elseif(isset($myLeaveToday) && $myLeaveToday && $myLeaveToday->user_id == Auth::id())
                         @php
                             $leaveColor = $myLeaveToday->status == 'approved' ? 'status-success' : 'status-warning';
-                            $leaveIcon = $myLeaveToday->type == 'sakit' ? 'mdi-hospital-box' : ($myLeaveToday->type == 'telat' ? 'mdi-clock-alert' : 'mdi-bag-suitcase');
+                            $leaveIcon =
+                                $myLeaveToday->type == 'sakit'
+                                    ? 'mdi-hospital-box'
+                                    : ($myLeaveToday->type == 'telat'
+                                        ? 'mdi-clock-alert'
+                                        : 'mdi-bag-suitcase');
                         @endphp
                         <div class="status-card {{ $leaveColor }} mb-3">
                             <div class="d-flex align-items-start">
@@ -311,12 +321,13 @@
                                 <div class="flex-grow-1">
                                     <div class="d-flex justify-content-between">
                                         <h5 class="mb-1 fw-bold">Izin {{ ucfirst($myLeaveToday->type) }}</h5>
-                                        <span class="badge {{ $myLeaveToday->status == 'approved' ? 'bg-success' : 'bg-warning' }}">
+                                        <span
+                                            class="badge {{ $myLeaveToday->status == 'approved' ? 'bg-success' : 'bg-warning' }}">
                                             {{ strtoupper($myLeaveToday->status) }}
                                         </span>
                                     </div>
                                     <p class="text-muted mb-2 small">
-                                        {{ $myLeaveToday->type == 'telat' ? 'Hadir pukul: '.\Carbon\Carbon::parse($myLeaveToday->start_time)->format('H:i') : 'Sampai: '.\Carbon\Carbon::parse($myLeaveToday->end_date)->format('d M Y') }}
+                                        {{ $myLeaveToday->type == 'telat' ? 'Hadir pukul: ' . \Carbon\Carbon::parse($myLeaveToday->start_time)->format('H:i') : 'Sampai: ' . \Carbon\Carbon::parse($myLeaveToday->end_date)->format('d M Y') }}
                                     </p>
                                     <div class="bg-white p-2 rounded border mb-2">
                                         <span class="fst-italic">"{{ $myLeaveToday->reason }}"</span>
@@ -325,7 +336,8 @@
                             </div>
                             @if ($myLeaveToday->type == 'telat' && $myLeaveToday->status == 'approved')
                                 <div class="mt-3 pt-3 border-top text-center">
-                                    <form action="{{ route('leave-requests.cancel', $myLeaveToday->id) }}" method="POST" class="d-inline">
+                                    <form action="{{ route('leave-requests.cancel', $myLeaveToday->id) }}" method="POST"
+                                        class="d-inline">
                                         @csrf @method('PATCH')
                                         <button type="submit" class="btn btn-dark btn-sm w-100">
                                             <i class="mdi mdi-fingerprint me-2"></i>Absen Sekarang
@@ -335,7 +347,7 @@
                             @endif
                         </div>
 
-                    {{-- BELUM ABSEN --}}
+                        {{-- BELUM ABSEN --}}
                     @else
                         <div class="status-card status-info">
                             <div class="text-center py-4">
@@ -387,67 +399,369 @@
 @push('styles')
     <style>
         /* CSS Card Bank & ID Card */
-        .card-bank { position: relative; min-height: 200px; border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); transition: all 0.3s ease; }
-        .card-bank:hover { transform: translateY(-8px); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); }
-        .card-bank .card-body { position: relative; z-index: 2; padding: 24px; color: white; display: flex; flex-direction: column; justify-content: space-between; }
-        .card-bank-chip { width: 40px; height: 30px; background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); border-radius: 6px; position: relative; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); }
-        .card-bank-chip::before { content: ''; position: absolute; width: 100%; height: 50%; top: 0; left: 0; background: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 100%); border-radius: 6px 6px 0 0; }
-        .card-bank-icon { position: absolute; top: 20px; right: 20px; font-size: 48px; opacity: 0.2; }
-        .card-bank-content { position: relative; z-index: 3; }
-        .card-bank-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; font-weight: 600; }
-        .card-bank-value { font-family: 'Consolas', 'Courier New', monospace; font-size: 36px; font-weight: 700; margin-bottom: 8px; line-height: 1; }
-        .card-bank-desc { font-size: 13px; opacity: 0.85; margin-bottom: 0; }
-        .card-bank-pattern { position: absolute; bottom: -50px; right: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%); border-radius: 50%; z-index: 1; }
-        
-        .gradient-purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .gradient-blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-        .gradient-green { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-        .gradient-orange { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-        .gradient-red { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        .gradient-dark { background: linear-gradient(135deg, #2c3e50 0%, #000000 100%); }
-        .gradient-indigo { background: linear-gradient(135deg, #5f72bd 0%, #9b23ea 100%); }
+        .card-bank {
+            position: relative;
+            min-height: 200px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            transition: all 0.3s ease;
+        }
 
-        .card-id { position: relative; border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); color: white; min-height: 220px; display: flex; flex-direction: column; font-family: 'Roboto', sans-serif; }
-        .card-id .card-body { position: relative; z-index: 2; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1; gap: 15px; }
-        .card-id-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .card-id-logo { display: flex; flex-direction: column; align-items: flex-end; font-size: 10px; font-weight: 700; line-height: 1; }
-        .card-id-logo i { font-size: 38px; margin-bottom: 4px; color: #ffed4e; }
-        .card-id-details { flex-grow: 1; }
-        .card-id-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; opacity: 0.7; margin-bottom: 4px; font-weight: 500; }
-        .card-id-name { font-size: 24px; font-weight: 700; margin-bottom: 12px; line-height: 1.2; word-break: break-word; font-family: 'Consolas', 'Courier New', monospace; }
-        .card-id-division { font-size: 16px; font-weight: 500; opacity: 0.9; word-break: break-word; font-family: 'Consolas', 'Courier New', monospace; }
-        .card-id-footer { margin-top: auto; }
-        .card-id-valid, .card-id-card-number { font-family: 'Consolas', 'Courier New', monospace; }
+        .card-bank:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+        }
 
-        .card-action { border-radius: 16px; border: none; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); transition: all 0.3s ease; height: 100%; }
-        .card-action:hover { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); transform: translateY(-4px); }
-        .card-status { border-radius: 16px; border: none; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); height: 100%; }
-        .status-card { padding: 24px; border-radius: 12px; border: 2px solid; background: #f8fafc; }
-        .status-success { border-color: #10b981; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); }
-        .status-warning { border-color: #f59e0b; background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); }
-        .status-info { border-color: #3b82f6; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); }
-        .status-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 20px; font-size: 28px; flex-shrink: 0; }
-        .status-success .status-icon { background: #10b981; color: white; }
-        .status-warning .status-icon { background: #f59e0b; color: white; }
-        .status-info .status-icon { background: #3b82f6; color: white; }
-        .badge { border-radius: 8px; font-weight: 600; padding: 6px 12px; }
-        .btn-dark { background: #000; border: 2px solid #000; border-radius: 10px; font-weight: 600; padding: 12px 28px; transition: all 0.3s ease; }
-        .btn-dark:hover { background: #1f2937; border-color: #1f2937; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
-        .btn-outline-dark { border: 2px solid #000; color: #000; border-radius: 10px; font-weight: 600; padding: 12px 28px; transition: all 0.3s ease; }
-        .btn-outline-dark:hover { background: #000; color: white; transform: translateY(-2px); }
-        .btn-light { background: rgba(255, 255, 255, 0.95); border: none; color: #1f2937; font-weight: 600; border-radius: 8px; }
-        .btn-light:hover { background: white; color: #000; }
-        .alert { border-radius: 10px; border: none; padding: 16px 20px; }
-        
+        .card-bank .card-body {
+            position: relative;
+            z-index: 2;
+            padding: 24px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-bank-chip {
+            width: 40px;
+            height: 30px;
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            border-radius: 6px;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-bank-chip::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 50%;
+            top: 0;
+            left: 0;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 100%);
+            border-radius: 6px 6px 0 0;
+        }
+
+        .card-bank-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 48px;
+            opacity: 0.2;
+        }
+
+        .card-bank-content {
+            position: relative;
+            z-index: 3;
+        }
+
+        .card-bank-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .card-bank-value {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            line-height: 1;
+        }
+
+        .card-bank-desc {
+            font-size: 13px;
+            opacity: 0.85;
+            margin-bottom: 0;
+        }
+
+        .card-bank-pattern {
+            position: absolute;
+            bottom: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .gradient-purple {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .gradient-blue {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .gradient-green {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .gradient-orange {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .gradient-red {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .gradient-dark {
+            background: linear-gradient(135deg, #2c3e50 0%, #000000 100%);
+        }
+
+        .gradient-indigo {
+            background: linear-gradient(135deg, #5f72bd 0%, #9b23ea 100%);
+        }
+
+        .card-id {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            color: white;
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .card-id .card-body {
+            position: relative;
+            z-index: 2;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            flex-grow: 1;
+            gap: 15px;
+        }
+
+        .card-id-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-id-logo {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .card-id-logo i {
+            font-size: 38px;
+            margin-bottom: 4px;
+            color: #ffed4e;
+        }
+
+        .card-id-details {
+            flex-grow: 1;
+        }
+
+        .card-id-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            opacity: 0.7;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .card-id-name {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            line-height: 1.2;
+            word-break: break-word;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+
+        .card-id-division {
+            font-size: 16px;
+            font-weight: 500;
+            opacity: 0.9;
+            word-break: break-word;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+
+        .card-id-footer {
+            margin-top: auto;
+        }
+
+        .card-id-valid,
+        .card-id-card-number {
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+
+        .card-action {
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .card-action:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            transform: translateY(-4px);
+        }
+
+        .card-status {
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            height: 100%;
+        }
+
+        .status-card {
+            padding: 24px;
+            border-radius: 12px;
+            border: 2px solid;
+            background: #f8fafc;
+        }
+
+        .status-success {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+        }
+
+        .status-warning {
+            border-color: #f59e0b;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        }
+
+        .status-info {
+            border-color: #3b82f6;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        }
+
+        .status-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+
+        .status-success .status-icon {
+            background: #10b981;
+            color: white;
+        }
+
+        .status-warning .status-icon {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .status-info .status-icon {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .badge {
+            border-radius: 8px;
+            font-weight: 600;
+            padding: 6px 12px;
+        }
+
+        .btn-dark {
+            background: #000;
+            border: 2px solid #000;
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 12px 28px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-dark:hover {
+            background: #1f2937;
+            border-color: #1f2937;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-outline-dark {
+            border: 2px solid #000;
+            color: #000;
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 12px 28px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-dark:hover {
+            background: #000;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-light {
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            color: #1f2937;
+            font-weight: 600;
+            border-radius: 8px;
+        }
+
+        .btn-light:hover {
+            background: white;
+            color: #000;
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+            padding: 16px 20px;
+        }
+
         @media (max-width: 768px) {
-            .card-bank-value { font-size: 28px; }
-            .card-bank { min-height: 180px; }
-            .card-id { min-height: 200px; }
-            .card-id .card-body { padding: 20px; gap: 10px; }
-            .card-id-name { font-size: 20px; }
-            .card-id-division { font-size: 14px; }
-            .card-id-logo i { font-size: 32px; }
-            .card-id-card-number { font-size: 18px !important; }
+            .card-bank-value {
+                font-size: 28px;
+            }
+
+            .card-bank {
+                min-height: 180px;
+            }
+
+            .card-id {
+                min-height: 200px;
+            }
+
+            .card-id .card-body {
+                padding: 20px;
+                gap: 10px;
+            }
+
+            .card-id-name {
+                font-size: 20px;
+            }
+
+            .card-id-division {
+                font-size: 14px;
+            }
+
+            .card-id-logo i {
+                font-size: 32px;
+            }
+
+            .card-id-card-number {
+                font-size: 18px !important;
+            }
         }
     </style>
 @endpush
@@ -467,19 +781,29 @@
                         datasets: [{
                             data: [
                                 {{ $stats['on_time'] }}, {{ $stats['late'] }},
-                                {{ $stats['early'] }}, {{ $stats['pending'] }}, {{ $stats['absent'] }}
+                                {{ $stats['early'] }}, {{ $stats['pending'] }},
+                                {{ $stats['absent'] }}
                             ],
-                            backgroundColor: ['#00d25b', '#ffab00', '#fc424a', '#0090e7', '#8c94a3'],
+                            backgroundColor: ['#00d25b', '#ffab00', '#fc424a', '#0090e7',
+                                '#8c94a3'],
                             borderWidth: 0
                         }]
                     },
                     options: {
-                        responsive: true, maintainAspectRatio: false,
-                        plugins: { legend: { position: 'right' }, title: { display: true, text: 'Statistik Kehadiran Hari Ini' } },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Statistik Kehadiran Hari Ini'
+                            }
+                        },
                         cutout: '70%'
                     }
                 });
-
             @elseif (auth()->user()->role == 'audit')
                 // CHART AUDIT
                 new Chart(ctx, {
@@ -487,17 +811,24 @@
                     data: {
                         labels: ['Terverifikasi', 'Pending', 'Terlambat'],
                         datasets: [{
-                            data: [ {{ $stats['verified'] }}, {{ $stats['pending'] }}, {{ $stats['late'] }} ],
+                            data: [{{ $stats['verified'] }}, {{ $stats['pending'] }},
+                                {{ $stats['late'] }}
+                            ],
                             backgroundColor: ['#00d25b', '#ffab00', '#fc424a'],
-                            borderWidth: 2, borderColor: '#ffffff'
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
                         }]
                     },
                     options: {
-                        responsive: true, maintainAspectRatio: false,
-                        plugins: { legend: { position: 'bottom' } }
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
                     }
                 });
-
             @elseif (auth()->user()->role == 'security')
                 // CHART SECURITY
                 new Chart(ctx, {
@@ -505,18 +836,27 @@
                     data: {
                         labels: ['Scan Masuk', 'Scan Pulang'],
                         datasets: [{
-                            data: [ {{ $stats['check_in_scans'] }}, {{ $stats['check_out_scans'] }} ],
+                            data: [{{ $stats['check_in_scans'] }},
+                                {{ $stats['check_out_scans'] }}],
                             backgroundColor: ['#00d25b', '#0090e7'],
                             borderWidth: 0
                         }]
                     },
                     options: {
-                        responsive: true, maintainAspectRatio: false,
+                        responsive: true,
+                        maintainAspectRatio: false,
                         cutout: '60%',
-                        plugins: { legend: { position: 'bottom' }, title: { display: true, text: 'Aktivitas Scan Hari Ini' } }
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Aktivitas Scan Hari Ini'
+                            }
+                        }
                     }
                 });
-
             @else
                 // CHART USER LAIN (PERSONAL)
                 new Chart(ctx, {
@@ -524,14 +864,26 @@
                     data: {
                         labels: ['Tepat Waktu', 'Terlambat', 'Pulang Cepat', 'Pending'],
                         datasets: [{
-                            data: [ {{ $stats['on_time'] }}, {{ $stats['late'] }}, {{ $stats['early'] }}, {{ $stats['pending'] }} ],
+                            data: [{{ $stats['on_time'] }}, {{ $stats['late'] }},
+                                {{ $stats['early'] }}, {{ $stats['pending'] }}
+                            ],
                             backgroundColor: ['#00d25b', '#ffab00', '#fc424a', '#8c94a3'],
-                            borderWidth: 2, borderColor: '#fff'
+                            borderWidth: 2,
+                            borderColor: '#fff'
                         }]
                     },
                     options: {
-                        responsive: true, maintainAspectRatio: false,
-                        plugins: { legend: { position: 'bottom' }, title: { display: true, text: 'Performa Absensi Bulan Ini' } }
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Performa Absensi Bulan Ini'
+                            }
+                        }
                     }
                 });
             @endif

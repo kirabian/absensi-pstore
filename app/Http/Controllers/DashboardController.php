@@ -86,7 +86,11 @@ class DashboardController extends Controller
 
         if ($user->role == 'admin') {
             // --- ADMIN ---
-            $data['totalUsers'] = $userQuery->where('role', '!=', 'admin')->count();
+            // UPDATE: Hanya hitung user yang is_active = true
+            $data['totalUsers'] = $userQuery->where('role', '!=', 'admin')
+                                            ->where('is_active', true) 
+                                            ->count();
+
             $data['totalDivisions'] = $divisionQuery->count();
             $data['attendancesToday'] = $attendanceQuery->whereDate('check_in_time', today())->count();
             $data['pendingVerifications'] = $attendanceQuery->where('status', 'pending_verification')->count();
@@ -108,7 +112,11 @@ class DashboardController extends Controller
             $data['myScansToday'] = Attendance::where('scanned_by_user_id', $user->id)
                 ->whereDate('check_in_time', today())
                 ->count();
-            $data['totalUsers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])->count();
+            
+            // UPDATE: Hanya hitung user yang is_active = true
+            $data['totalUsers'] = $userQuery->whereIn('role', ['user_biasa', 'leader'])
+                                            ->where('is_active', true)
+                                            ->count();
             
             // Chart Security (Aktivitas Scan)
             $data['stats'] = $this->getSecurityAttendanceStats($user->id, $branch_id); 
@@ -175,9 +183,13 @@ class DashboardController extends Controller
         $query = Attendance::whereDate('check_in_time', today());
         if ($branch_id) $query->where('branch_id', $branch_id);
 
+        // UPDATE: Tambahkan where is_active = true agar statistik persentase akurat
         $totalUsers = User::when($branch_id, function($q) use ($branch_id) {
             return $q->where('branch_id', $branch_id);
-        })->where('role', '!=', 'admin')->count();
+        })
+        ->where('role', '!=', 'admin')
+        ->where('is_active', true) // <-- Hanya user aktif
+        ->count();
 
         $presentCount = (clone $query)->count();
         $lateCount = (clone $query)->where('is_late_checkin', true)->count();
