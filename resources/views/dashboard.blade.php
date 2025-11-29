@@ -287,18 +287,41 @@
                                         @else
                                             <h5 class="mb-1 fw-bold">Sedang Bekerja</h5>
                                             <p class="mb-0">Masuk Pukul:
-                                                <strong>{{ $myAttendanceToday->check_in_time->format('H:i') }}</strong></p>
+                                                <strong>{{ $myAttendanceToday->check_in_time->format('H:i') }}</strong>
+                                            </p>
                                         @endif
                                     </div>
                                 </div>
 
-                                {{-- TOMBOL PULANG --}}
+                                {{-- TOMBOL AKSI --}}
                                 @if ($myAttendanceToday->attendance_type == 'self')
                                     <div class="mt-3 pt-3 border-top text-center">
-                                        <a href="{{ route('self.attend.create') }}" class="btn btn-danger btn-sm w-100">
-                                            <i class="mdi mdi-logout me-1"></i>
-                                            {{ $isCrossDay ? 'Absen Pulang (Tutup Sesi)' : 'Absen Pulang Mandiri' }}
-                                        </a>
+
+                                        @if ($isCrossDay)
+                                            {{-- JIKA LINTAS HARI (LUPA PULANG) - TAMPILKAN TOMBOL LEWATI --}}
+                                            <form action="{{ route('self.attend.skip', $myAttendanceToday->id) }}"
+                                                method="POST">
+                                                @csrf
+                                                <button type="submit"
+                                                    class="btn btn-warning btn-sm w-100 text-dark fw-bold"
+                                                    onclick="return confirm('Yakin ingin menutup sesi kemarin tanpa foto? Anda dianggap lupa absen pulang.');">
+                                                    <i class="mdi mdi-skip-next me-1"></i>
+                                                    Lewati (Lupa Absen Pulang)
+                                                </button>
+                                            </form>
+                                            <small class="text-muted d-block mt-2" style="font-size: 11px;">
+                                                Klik tombol di atas untuk menutup sesi kemarin agar Anda bisa absen masuk
+                                                hari ini.
+                                            </small>
+                                        @else
+                                            {{-- JIKA ABSEN NORMAL HARI INI --}}
+                                            <a href="{{ route('self.attend.create') }}"
+                                                class="btn btn-danger btn-sm w-100">
+                                                <i class="mdi mdi-logout me-1"></i>
+                                                Absen Pulang Mandiri
+                                            </a>
+                                        @endif
+
                                     </div>
                                 @endif
                             </div>

@@ -172,6 +172,7 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::post('/', [SelfAttendanceController::class, 'store'])->name('store');
         Route::get('/history', [SelfAttendanceController::class, 'history'])->name('history');
         Route::post('/hapus-telat', [SelfAttendanceController::class, 'deleteLateStatus'])->name('late.status.delete');
+        Route::post('/skip-checkout/{id}', [SelfAttendanceController::class, 'skipCheckOut'])->name('skip');
     });
 
     // === RUTE LEAVE REQUESTS ===

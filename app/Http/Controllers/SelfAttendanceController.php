@@ -8,7 +8,7 @@ use App\Models\WorkSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use App\Traits\SendFcmNotification; 
+use App\Traits\SendFcmNotification;
 use Carbon\Carbon;
 
 class SelfAttendanceController extends Controller
@@ -90,12 +90,12 @@ class SelfAttendanceController extends Controller
 
         // Simpan Foto ke Storage
         $path = $request->file('photo')->store('public/foto_mandiri');
-        
+
         // ==============================================================
         // LOGIKA ABSEN PULANG (CHECK-OUT) - Jika ada sesi HARI INI
         // ==============================================================
         if ($attendanceToday) {
-            
+
             // Cek Pulang Cepat (Early Checkout)
             $isEarly = false;
 
@@ -125,7 +125,7 @@ class SelfAttendanceController extends Controller
         // LOGIKA ABSEN MASUK (CHECK-IN) - Jika TIDAK ada sesi HARI INI
         // ==============================================================
         else {
-            
+
             // --- [FITUR AUTO RESET] ---
             // Cari sesi "Gantung" dari masa lalu (kemarin atau sebelumnya) yang lupa di-checkout
             $hangingSessions = Attendance::where('user_id', $user->id)
@@ -140,7 +140,7 @@ class SelfAttendanceController extends Controller
 
                 $hanging->update([
                     'check_out_time' => $autoOutTime,
-                    'notes' => 'Auto-closed by system (Lupa Absen Pulang)', 
+                    'notes' => 'Auto-closed by system (Lupa Absen Pulang)',
                     // Tidak ada foto pulang
                 ]);
             }
@@ -160,7 +160,7 @@ class SelfAttendanceController extends Controller
             $isLate = false;
             if ($workSchedule && $workSchedule->check_in_end) {
                 $scheduleEnd = Carbon::parse($workSchedule->check_in_end);
-                
+
                 if (Carbon::parse($currentTime->format('H:i:s'))->gt($scheduleEnd)) {
                     $isLate = true;
                 }
@@ -217,7 +217,7 @@ class SelfAttendanceController extends Controller
 
         $title = "Izin Telat Masuk";
         $body = "{$user->name} dari Divisi " . ($user->division->name ?? 'N/A') . " mengajukan izin telat.";
-        
+
         try {
             $this->sendNotificationToBranchRoles(['admin', 'audit'], $user->branch_id, $title, $body);
         } catch (\Exception $e) {
@@ -238,10 +238,41 @@ class SelfAttendanceController extends Controller
             ->first();
 
         if ($notification) {
-            $notification->delete(); 
+            $notification->delete();
             return redirect()->route('dashboard')->with('success', 'Laporan telat dihapus. Anda sekarang bisa melakukan absen.');
         }
 
         return redirect()->route('dashboard')->with('error', 'Laporan telat tidak ditemukan.');
+    }
+
+    /**
+     * Memproses Lewati Absen Pulang (Force Close sesi kemarin)
+     */
+    public function skipCheckOut($id)
+    {
+        $user = Auth::user();
+
+        // Cari data absensi berdasarkan ID yang dikirim
+        $attendance = Attendance::where('id', $id)
+            ->where('user_id', $user->id)
+            ->whereNull('check_out_time') // Pastikan memang belum checkout
+            ->first();
+
+        if ($attendance) {
+            // Set waktu pulang ke akhir hari dari tanggal masuk (23:59:59)
+            // Agar jam kerjanya terhitung full hari itu, tapi tidak nyebrang ke hari ini
+            $autoOutTime = Carbon::parse($attendance->check_in_time)->endOfDay();
+
+            $attendance->update([
+                'check_out_time' => $autoOutTime,
+                'photo_out_path' => null, // Tidak ada foto
+                'notes'          => 'User lupa absen pulang (Sesi ditutup manual via Dashboard)',
+                // Status tidak diubah ke pending, biarkan status terakhir (biasanya present/late)
+            ]);
+
+            return redirect()->route('dashboard')->with('success', 'Sesi kemarin telah ditutup. Silakan absen masuk untuk hari ini.');
+        }
+
+        return redirect()->route('dashboard')->with('error', 'Sesi tidak ditemukan atau sudah ditutup.');
     }
 }
