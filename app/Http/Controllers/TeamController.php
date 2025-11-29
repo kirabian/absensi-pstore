@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LeaveRequest;
 use App\Models\User;
 use App\Models\Branch;
 use App\Models\Attendance;
