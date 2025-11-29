@@ -124,52 +124,63 @@
 
             {{-- RINGKASAN BULANAN --}}
             <div class="row mb-3">
-                <div class="col-md-2 mb-2">
+                {{-- Baris 1 --}}
+                <div class="col-md-3 mb-2">
                     <div class="card bg-primary text-white border-0 shadow-sm">
                         <div class="card-body py-3 text-center">
-                            <h6 class="text-white mb-1 fw-bold">Total</h6>
+                            <h6 class="text-white mb-1 fw-bold">Total Hari</h6>
                             <h2 class="fw-bold text-white mb-0">{{ $summary['total'] }}</h2>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-2 mb-2">
+                <div class="col-md-3 mb-2">
                     <div class="card bg-success text-white border-0 shadow-sm">
                         <div class="card-body py-3 text-center">
-                            <h6 class="text-white mb-1 fw-bold">Terverifikasi</h6>
+                            <h6 class="text-white mb-1 fw-bold">Hadir / WFH</h6>
                             <h2 class="fw-bold text-white mb-0">{{ $summary['hadir'] }}</h2>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-2 mb-2">
-                    <div class="card bg-warning text-white border-0 shadow-sm">
-                        <div class="card-body py-3 text-center">
-                            <h6 class="text-white mb-1 fw-bold">Total Telat</h6>
-                            <h2 class="fw-bold text-white mb-0">{{ $summary['telat'] }}</h2>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-2 mb-2">
-                    <div class="card bg-danger text-white border-0 shadow-sm">
-                        <div class="card-body py-3 text-center">
-                            <h6 class="text-white mb-1 fw-bold">Pulang Cepat</h6>
-                            <h2 class="fw-bold text-white mb-0">{{ $summary['pulang_cepat'] }}</h2>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-2 mb-2">
+                <div class="col-md-3 mb-2">
                     <div class="card bg-info text-white border-0 shadow-sm">
                         <div class="card-body py-3 text-center">
-                            <h6 class="text-white mb-1 fw-bold">Menunggu</h6>
-                            <h2 class="fw-bold text-white mb-0">{{ $summary['pending'] }}</h2>
+                            <h6 class="text-white mb-1 fw-bold">Sakit & Izin</h6>
+                            {{-- Gabungkan Sakit dan Izin disini --}}
+                            <h2 class="fw-bold text-white mb-0">{{ $summary['sakit'] + $summary['izin'] }}</h2>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-2 mb-2">
+                <div class="col-md-3 mb-2">
+                    {{-- Ganti logika Tidak Hadir menjadi Alpha Murni --}}
                     <div class="card bg-secondary text-white border-0 shadow-sm">
                         <div class="card-body py-3 text-center">
-                            <h6 class="text-white mb-1 fw-bold">Tidak Hadir</h6>
-                            <h2 class="fw-bold text-white mb-0">
-                                {{ $summary['total'] - $summary['hadir'] - $summary['pending'] }}</h2>
+                            <h6 class="text-white mb-1 fw-bold">Alpha / Bolos</h6>
+                            <h2 class="fw-bold text-white mb-0">{{ $summary['alpha'] }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Baris 2 (Detail Kecil) --}}
+            <div class="row mb-3">
+                <div class="col-md-4 mb-2">
+                    <div class="card bg-warning text-white border-0 shadow-sm">
+                        <div class="card-body py-2 text-center">
+                            <small class="fw-bold">Terlambat: {{ $summary['telat'] }}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="card bg-danger text-white border-0 shadow-sm">
+                        <div class="card-body py-2 text-center">
+                            <small class="fw-bold">Pulang Cepat: {{ $summary['pulang_cepat'] }}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="card bg-dark text-white border-0 shadow-sm">
+                        <div class="card-body py-2 text-center">
+                            <small class="fw-bold">Menunggu Verifikasi: {{ $summary['pending'] }}</small>
                         </div>
                     </div>
                 </div>
@@ -538,7 +549,8 @@
                                                                         <div class="row mb-3">
                                                                             <div class="col-md-6">
                                                                                 <label class="form-label fw-bold">Jam Masuk
-                                                                                    (Format H:i)</label>
+                                                                                    (Format H:i)
+                                                                                </label>
                                                                                 <input type="time" name="check_in_time"
                                                                                     class="form-control"
                                                                                     value="{{ $att->check_in_time->format('H:i') }}"
@@ -649,7 +661,8 @@
                                                                 <div class="modal-body">
                                                                     <p>Yakin ingin menolak absensi
                                                                         <strong>{{ $employee->name }}</strong> tanggal
-                                                                        {{ $att->check_in_time->format('d M Y') }}?</p>
+                                                                        {{ $att->check_in_time->format('d M Y') }}?
+                                                                    </p>
                                                                     <textarea name="rejection_reason" class="form-control" rows="3" placeholder="Alasan penolakan..." required></textarea>
                                                                 </div>
                                                                 <div class="modal-footer">
