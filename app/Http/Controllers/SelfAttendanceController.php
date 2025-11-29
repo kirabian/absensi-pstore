@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Traits\SendFcmNotification; 
 use Carbon\Carbon;
-// Import Facade Cloudinary
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class SelfAttendanceController extends Controller
@@ -66,7 +65,7 @@ class SelfAttendanceController extends Controller
     }
 
     /**
-     * Memproses Penyimpanan Absen dengan Efek Cloudinary
+     * Memproses Penyimpanan Absen
      */
     public function store(Request $request)
     {
@@ -91,41 +90,37 @@ class SelfAttendanceController extends Controller
             ->first();
 
         // ==========================================================
-        // PROSES UPLOAD KE CLOUDINARY + EFEK MASKER WAJAH
+        // PROSES UPLOAD KE CLOUDINARY + EFEK
         // ==========================================================
         try {
-            // --- SETTING PUBLIC ID GAMBAR TOPENG ---
-            // Pastikan nama ini sesuai dengan yang ada di Media Library Cloudinary Anda
+            // ID Gambar Topeng di Cloudinary (Ganti jika nama file beda)
             $overlayPublicId = 'topeng_vader'; 
             
             // Format Waktu untuk Watermark
             $timestampText = $currentTime->locale('id')->translatedFormat('d M Y H:i');
 
             $uploadedFile = Cloudinary::upload($request->file('photo')->getRealPath(), [
-                'folder' => 'absensi_pstore_effects', // Folder penyimpanan di Cloudinary
+                'folder' => 'absensi_pstore_effects',
                 'transformation' => [
-                    // LAYER 1: MASKER WAJAH
+                    // LAYER 1: MASKER WAJAH (VADER)
+                    // Menggunakan raw_transformation string agar lebih presisi menangani flag wajah
                     [
-                        'overlay' => $overlayPublicId,      // ID Gambar Topeng
-                        'gravity' => 'faces',               // Deteksi Wajah Otomatis
-                        'flags'   => 'region_relative',     // Agar ukuran topeng menyesuaikan ukuran wajah
-                        'width'   => '1.2',                 // Skala topeng (1.2x lebar wajah)
-                        'crop'    => 'scale',               // Mode resize
-                        'y'       => -0.05                  // Geser sedikit ke atas (offset vertikal)
+                        'raw_transformation' => "l_$overlayPublicId/fl_layer_apply,fl_region_relative,g_faces,w_1.2,y_-0.05"
                     ],
-                    // LAYER 2: WATERMARK JAM (Opsional, agar tetap profesional)
+
+                    // LAYER 2: WATERMARK TEXT
                     [
                         'overlay' => [
                             'font_family' => 'Arial',
-                            'font_size'   => 24,
+                            'font_size'   => 28,
                             'font_weight' => 'bold',
                             'text'        => $timestampText
                         ],
-                        'gravity'    => 'south_east', // Pojok Kanan Bawah
-                        'color'      => '#FFFFFF',    // Teks Putih
-                        'background' => '#00000080',  // Background Hitam Transparan
-                        'x'          => 20,
-                        'y'          => 20
+                        'gravity'    => 'south',
+                        'y'          => 20,
+                        'color'      => '#FFFFFF',
+                        'background' => '#00000090',
+                        'flags'      => 'layer_apply'
                     ]
                 ]
             ]);
@@ -134,8 +129,9 @@ class SelfAttendanceController extends Controller
             $path = $uploadedFile->getSecurePath();
 
         } catch (\Exception $e) {
+            // Jika gagal upload (koneksi/config salah), catat log dan beritahu user
             Log::error('Cloudinary Upload Error: ' . $e->getMessage());
-            return back()->with('error', 'Gagal memproses efek wajah. Coba lagi atau cek koneksi internet.');
+            return back()->with('error', 'Gagal memproses upload foto. Pastikan koneksi internet stabil. Error: ' . $e->getMessage());
         }
 
         // ==============================================================
@@ -157,7 +153,7 @@ class SelfAttendanceController extends Controller
             // Update Data Lama
             $attendance->update([
                 'check_out_time'    => $currentTime,
-                'photo_out_path'    => $path,       // URL Foto Cloudinary (Pulang)
+                'photo_out_path'    => $path,       // URL Foto Cloudinary
                 'is_early_checkout' => $isEarly,
             ]);
 
@@ -165,15 +161,15 @@ class SelfAttendanceController extends Controller
             $noteLembur = $isCrossDay ? " (Lembur Lintas Hari)" : "";
 
             $title = "Verifikasi Pulang (Mandiri)";
-            $body = "{$user->name} melakukan absen mandiri (Pulang){$noteLembur} dengan Efek Wajah.";
-            $message = "Berhasil absen pulang{$noteLembur}. Foto efek berhasil disimpan!";
+            $body = "{$user->name} melakukan absen mandiri (Pulang){$noteLembur}.";
+            $message = "Berhasil absen pulang{$noteLembur}.";
         }
 
         // ==============================================================
         // LOGIKA ABSEN MASUK (CHECK-IN)
         // ==============================================================
         else {
-            // Safety check: apakah sudah selesai hari ini?
+            // Safety check
             $alreadyFinished = Attendance::where('user_id', $user->id)
                 ->whereDate('check_in_time', today())
                 ->whereNotNull('check_out_time')
@@ -199,7 +195,7 @@ class SelfAttendanceController extends Controller
                 'check_in_time'     => $currentTime,
                 'status'            => 'pending_verification',
                 'attendance_type'   => 'self',
-                'photo_path'        => $path,          // URL Foto Cloudinary (Masuk)
+                'photo_path'        => $path,          // URL Foto Cloudinary
                 'latitude'          => $request->latitude,
                 'longitude'         => $request->longitude,
                 'work_schedule_id'  => $workSchedule?->id,
@@ -207,8 +203,8 @@ class SelfAttendanceController extends Controller
             ]);
 
             $title = "Verifikasi Masuk (Mandiri)";
-            $body = "{$user->name} melakukan absen mandiri (Masuk) dengan Efek Wajah.";
-            $message = 'Berhasil absen masuk. Foto efek berhasil disimpan! Menunggu verifikasi.';
+            $body = "{$user->name} melakukan absen mandiri (Masuk).";
+            $message = 'Berhasil absen masuk. Menunggu verifikasi.';
         }
 
         // Kirim Notifikasi FCM
@@ -218,7 +214,7 @@ class SelfAttendanceController extends Controller
             Log::error('FCM Error: ' . $e->getMessage());
         }
 
-        // Redirect ke Dashboard dengan membawa URL foto agar bisa dilihat user di alert
+        // Redirect ke Dashboard & Bawa URL foto ke session agar bisa dilihat di alert
         return redirect()->route('dashboard')
             ->with('success', $message)
             ->with('photo_url', $path);
