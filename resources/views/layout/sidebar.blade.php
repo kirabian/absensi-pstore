@@ -15,6 +15,23 @@
         </li>
 
         {{-- =================================== --}}
+        {{--     MENU UNTUK SEMUA ROLE        --}}
+        {{-- =================================== --}}
+        <li class="nav-item nav-category">Menu Umum</li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ route('inventory.index') }}">
+                <i class="menu-icon mdi mdi-package-variant"></i>
+                <span class="menu-title">Inventaris</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ route('job-desk.index') }}">
+                <i class="menu-icon mdi mdi-clipboard-list"></i>
+                <span class="menu-title">Job Desk / Target</span>
+            </a>
+        </li>
+
+        {{-- =================================== --}}
         {{--     MENU UNTUK SUPER ADMIN        --}}
         {{-- =================================== --}}
         @if (auth()->user()->role == 'admin' || auth()->user()->role == 'audit')
@@ -25,12 +42,18 @@
                     <span class="menu-title">Data Cabang</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('branches.history') }}">
+                    <i class="menu-icon mdi mdi-history"></i>
+                    <span class="menu-title">Riwayat Divisi / Cabang</span>
+                </a>
+            </li>
         @endif
 
         {{-- =================================== --}}
         {{--   MENU UNTUK SUPER ADMIN & AUDIT   --}}
         {{-- =================================== --}}
-        @if ((auth()->user()->role == 'admin') | (auth()->user()->role == 'audit'))
+        @if ((auth()->user()->role == 'admin') || (auth()->user()->role == 'audit'))
             <li class="nav-item nav-category">Manajemen Tim</li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('divisions.index') }}">
@@ -71,10 +94,8 @@
                 </a>
             </li>
             <li class="nav-item">
-                {{-- Mengarah ke LeaveRequestController@index --}}
                 <a class="nav-link" href="{{ route('leave-requests.index') }}">
                     <i class="menu-icon mdi mdi-clock-alert-outline"></i>
-                    {{-- Saya sarankan ubah judulnya karena isinya Izin Sakit juga --}}
                     <span class="menu-title">Daftar Izin / Telat</span>
                 </a>
             </li>
@@ -105,39 +126,14 @@
                 </a>
             </li>
 
-            {{-- ================================================ --}}
-            {{--  MENU BARU: CABANG SAYA (KHUSUS HANYA UTK AUDIT) --}}
-            {{-- ================================================ --}}
             @if (auth()->user()->role == 'audit')
                 <li class="nav-item">
-                    {{-- Pastikan route 'team.my-branches' sudah dibuat di web.php --}}
                     <a class="nav-link" href="{{ route('team.my-branches') }}">
                         <i class="menu-icon mdi mdi-office-building-marker"></i>
                         <span class="menu-title">Cabang Saya</span>
                     </a>
                 </li>
             @endif
-            {{-- ================================================ --}}
-
-            {{-- <li class="nav-item">
-                <a class="nav-link" href="{{ route('broadcast.index') }}">
-                    <i class="mdi mdi-bullhorn"></i> Pesan Broadcast
-                </a>
-            </li> --}}
         @endif
-        {{-- @if (auth()->user()->role == 'audit' || auth()->user()->role == 'admin')
-            <li class="nav-item">
-                <a class="nav-link" href="{{ route('audit.missed-checkout.list') }}">
-                    <i class="mdi mdi-clock-alert menu-icon"></i>
-                    <span class="menu-title">Lupa Absen Pulang</span>
-                </a>
-            </li>
-        @endif --}}
     </ul>
 </nav>
-
-{{-- <li class="nav-item">
-        <a class="nav-link" href="{{ route('broadcast.index') }}">
-            <i class="mdi mdi-bullhorn"></i> Pesan Broadcast
-        </a>
-    </li> --}}
