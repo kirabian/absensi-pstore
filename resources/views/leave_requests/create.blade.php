@@ -1,7 +1,7 @@
 @extends('layout.master')
 
 @section('title')
-    Ajukan Izin
+    Ajukan Izin/Cuti/WFH
 @endsection
 
 @section('content')
@@ -29,8 +29,11 @@
                         <label class="fw-bold mb-2">Jenis Pengajuan</label>
                         <select name="type" id="type" class="form-control form-select" required onchange="toggleInputs()">
                             <option value="" disabled selected>-- Pilih Jenis --</option>
-                            <option value="sakit" {{ old('type') == 'sakit' ? 'selected' : '' }}>Sakit / Izin (Cuti)</option>
-                            <option value="telat" {{ old('type') == 'telat' ? 'selected' : '' }}>Datang Terlambat</option>
+                            <option value="telat" {{ old('type') == 'telat' ? 'selected' : '' }}>Izin Telat</option>
+                            <option value="wfh" {{ old('type') == 'wfh' ? 'selected' : '' }}>WFH / Dinas Luar</option>
+                            <option value="izin" {{ old('type') == 'izin' ? 'selected' : '' }}>Libur / Izin</option>
+                            <option value="sakit" {{ old('type') == 'sakit' ? 'selected' : '' }}>Sakit</option>
+                            <option value="cuti" {{ old('type') == 'cuti' ? 'selected' : '' }}>Cuti</option>
                         </select>
                     </div>
 
@@ -42,11 +45,11 @@
                                    value="{{ old('start_date', date('Y-m-d')) }}" required>
                         </div>
 
-                        {{-- Input Tanggal Selesai (Khusus Sakit/Izin) --}}
+                        {{-- Input Tanggal Selesai (Untuk WFH, Izin, Sakit, Cuti) --}}
                         <div class="col-md-6 mb-4" id="end_date_box">
                             <label class="fw-bold mb-2">Sampai Tanggal</label>
                             <input type="date" name="end_date" class="form-control" value="{{ old('end_date') }}">
-                            <small class="text-muted">Kosongkan jika hanya 1 hari.</small>
+                            <small class="text-muted">Pilih tanggal yang sama jika hanya 1 hari.</small>
                         </div>
 
                         {{-- Input Jam (Khusus Telat) --}}
@@ -58,14 +61,15 @@
 
                     {{-- 3. Alasan --}}
                     <div class="mb-4">
-                        <label class="fw-bold mb-2">Alasan</label>
-                        <textarea name="reason" class="form-control" rows="3" required>{{ old('reason') }}</textarea>
+                        <label class="fw-bold mb-2">Alasan / Keterangan</label>
+                        <textarea name="reason" class="form-control" rows="3" required placeholder="Jelaskan alasan pengajuan...">{{ old('reason') }}</textarea>
                     </div>
 
                     {{-- 4. Bukti Foto --}}
                     <div class="mb-4">
-                        <label class="fw-bold mb-2">Bukti Foto (Wajib)</label>
+                        <label class="fw-bold mb-2">Bukti Foto / Dokumen (Wajib)</label>
                         <input type="file" name="file_proof" class="form-control" accept="image/*,.pdf" required>
+                        <small class="text-muted">Upload surat dokter, foto kegiatan dinas, atau bukti kendala di jalan.</small>
                     </div>
 
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -85,16 +89,21 @@
         let timeBox = document.getElementById('time_box');
         let labelDate = document.getElementById('label_start_date');
 
+        // Jika tipe adalah TELAT, tampilkan input JAM, sembunyikan Tanggal Selesai
         if (type === 'telat') {
             endDateBox.classList.add('d-none');
             timeBox.classList.remove('d-none');
             labelDate.innerText = "Tanggal Hari Ini";
-        } else {
+        } 
+        // Untuk WFH, IZIN, SAKIT, CUTI -> Tampilkan Tanggal Selesai, Sembunyikan Jam
+        else {
             endDateBox.classList.remove('d-none');
             timeBox.classList.add('d-none');
             labelDate.innerText = "Tanggal Mulai";
         }
     }
+    
+    // Jalankan saat load agar form sesuai dengan old input jika ada error validasi
     document.addEventListener('DOMContentLoaded', function() { toggleInputs(); });
 </script>
 @endsection

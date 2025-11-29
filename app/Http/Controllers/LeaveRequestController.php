@@ -68,18 +68,27 @@ class LeaveRequestController extends Controller
     }
 
     // MENYIMPAN DATA (User Submit)
+    // MENYIMPAN DATA (User Submit)
     public function store(Request $request)
     {
+        // 1. Update Rule Validasi
         $request->validate([
-            'type' => 'required|in:sakit,izin,telat',
+            // Tambahkan tipe baru ke dalam 'in'
+            'type' => 'required|in:telat,wfh,izin,sakit,cuti', 
+            
             'reason' => 'required|string|max:255',
-            'file_proof' => 'required|file|mimes:jpg,jpeg,png,pdf|max:3072',
+            'file_proof' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120', // Max 5MB
             'start_date' => 'required|date',
-            'end_date'   => 'required_if:type,sakit,izin|nullable|date|after_or_equal:start_date',
+            
+            // end_date WAJIB jika BUKAN telat
+            'end_date'   => 'required_unless:type,telat|nullable|date|after_or_equal:start_date',
+            
+            // start_time WAJIB jika telat
             'start_time' => 'required_if:type,telat|nullable|date_format:H:i',
         ], [
-            'file_proof.required' => 'Bukti foto wajib diupload.',
-            'start_time.required_if' => 'Jam kedatangan wajib diisi jika telat.',
+            'file_proof.required' => 'Bukti foto/dokumen wajib diupload.',
+            'start_time.required_if' => 'Jam kedatangan wajib diisi jika izin terlambat.',
+            'end_date.required_unless' => 'Tanggal selesai wajib diisi untuk pengajuan ini.',
         ]);
 
         $data = [
@@ -91,11 +100,13 @@ class LeaveRequestController extends Controller
             'is_active' => true,
         ];
 
-        // Logika pemisahan input
+        // 2. Logika Mapping Data
         if ($request->type === 'telat') {
+            // Jika Telat: Simpan jam, kosongkan tanggal selesai
             $data['start_time'] = $request->start_time;
             $data['end_date'] = null;
         } else {
+            // Jika WFH, Izin, Sakit, Cuti: Simpan tanggal selesai, kosongkan jam
             $data['end_date'] = $request->end_date;
             $data['start_time'] = null;
         }
