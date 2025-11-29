@@ -25,7 +25,7 @@
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="{{ route('job-desk.index') }}">
+            <a class="nav-link" href="#">
                 <i class="menu-icon mdi mdi-clipboard-list"></i>
                 <span class="menu-title">Job Desk / Target</span>
             </a>
@@ -43,7 +43,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="{{ route('branches.history') }}">
+                <a class="nav-link" href="#">
                     <i class="menu-icon mdi mdi-history"></i>
                     <span class="menu-title">Riwayat Divisi / Cabang</span>
                 </a>
