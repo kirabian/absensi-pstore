@@ -546,26 +546,33 @@
                                                                     method="POST" enctype="multipart/form-data">
                                                                     @csrf @method('PUT')
                                                                     <div class="modal-body">
-                                                                        <div class="alert alert-warning">
-                                                                            <small><i class="mdi mdi-alert me-1"></i> Anda
-                                                                                sedang mengoreksi data absensi. Perubahan
-                                                                                ini akan tercatat.</small>
+                                                                        <div
+                                                                            class="alert alert-warning d-flex align-items-center">
+                                                                            <i class="mdi mdi-alert fs-4 me-2"></i>
+                                                                            <div>
+                                                                                <small class="fw-bold d-block">Perhatian!</small>
+                                                                                <small class="lh-1">Anda sedang
+                                                                                    mengoreksi data. Perubahan ini akan
+                                                                                    tercatat.</small>
+                                                                            </div>
                                                                         </div>
 
-                                                                        <div class="row mb-3">
-                                                                            <div class="col-md-6">
-                                                                                <label class="form-label fw-bold">Jam Masuk
-                                                                                    (Format H:i)
-                                                                                </label>
+                                                                        {{-- Row 1: Time Inputs (Responsive with g-3 and col-12) --}}
+                                                                        <div class="row g-3 mb-3">
+                                                                            <div class="col-12 col-md-6">
+                                                                                <label
+                                                                                    class="form-label fw-bold small text-uppercase text-muted">Jam
+                                                                                    Masuk</label>
                                                                                 <input type="time"
                                                                                     name="check_in_time"
                                                                                     class="form-control"
                                                                                     value="{{ $att->check_in_time->format('H:i') }}"
                                                                                     required>
                                                                             </div>
-                                                                            <div class="col-md-6">
-                                                                                <label class="form-label fw-bold">Jam
-                                                                                    Pulang (Format H:i)</label>
+                                                                            <div class="col-12 col-md-6">
+                                                                                <label
+                                                                                    class="form-label fw-bold small text-uppercase text-muted">Jam
+                                                                                    Pulang</label>
                                                                                 <input type="time"
                                                                                     name="check_out_time"
                                                                                     class="form-control"
@@ -573,10 +580,11 @@
                                                                             </div>
                                                                         </div>
 
-                                                                        <div class="row mb-3">
-                                                                            <div class="col-md-6">
-                                                                                {{-- OPSI STATUS DIPERBARUI DI SINI --}}
-                                                                                <label class="form-label fw-bold">Status
+                                                                        {{-- Row 2: Status & Verification (Responsive) --}}
+                                                                        <div class="row g-3 mb-3">
+                                                                            <div class="col-12 col-md-6">
+                                                                                <label
+                                                                                    class="form-label fw-bold small text-uppercase text-muted">Status
                                                                                     Kehadiran</label>
                                                                                 <select name="presence_status"
                                                                                     class="form-select" required>
@@ -598,7 +606,8 @@
                                                                                             ⏰ Telat (Hadir)</option>
                                                                                     </optgroup>
 
-                                                                                    <optgroup label="Tidak Hadir / Izin">
+                                                                                    <optgroup
+                                                                                        label="Tidak Hadir / Izin">
                                                                                         <option value="Alpha"
                                                                                             {{ $att->presence_status == 'Alpha' ? 'selected' : '' }}>
                                                                                             ❌ Alpha / Belum Hadir</option>
@@ -614,8 +623,9 @@
                                                                                     </optgroup>
                                                                                 </select>
                                                                             </div>
-                                                                            <div class="col-md-6">
-                                                                                <label class="form-label fw-bold">Status
+                                                                            <div class="col-12 col-md-6">
+                                                                                <label
+                                                                                    class="form-label fw-bold small text-uppercase text-muted">Status
                                                                                     Verifikasi</label>
                                                                                 <select name="status" class="form-select"
                                                                                     required>
@@ -632,9 +642,11 @@
                                                                             </div>
                                                                         </div>
 
-                                                                        {{-- INPUT FILE BUKTI AUDIT (File Manager) --}}
+                                                                        {{-- INPUT FILE BUKTI AUDIT --}}
                                                                         <div class="mb-3">
-                                                                            <label class="form-label fw-bold">Upload Bukti
+                                                                            <label
+                                                                                class="form-label fw-bold small text-uppercase text-muted">Upload
+                                                                                Bukti
                                                                                 Koreksi</label>
                                                                             <input type="file" name="audit_photo"
                                                                                 class="form-control" accept="image/*">
@@ -643,14 +655,15 @@
                                                                             @if ($att->audit_photo_path)
                                                                                 <div class="mt-2">
                                                                                     <small class="text-success"><i
-                                                                                            class="mdi mdi-check"></i>
+                                                                                            class="mdi mdi-check me-1"></i>
                                                                                         Bukti saat ini tersedia.</small>
                                                                                 </div>
                                                                             @endif
                                                                         </div>
 
                                                                         <div class="mb-3">
-                                                                            <label class="form-label fw-bold">Catatan
+                                                                            <label
+                                                                                class="form-label fw-bold small text-uppercase text-muted">Catatan
                                                                                 Koreksi</label>
                                                                             <textarea name="audit_note" class="form-control" rows="2" placeholder="Alasan perubahan data...">{{ $att->audit_note }}</textarea>
                                                                         </div>
