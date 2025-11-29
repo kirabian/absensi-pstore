@@ -7,10 +7,9 @@ use App\Models\LateNotification;
 use App\Models\WorkSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use App\Traits\SendFcmNotification;
+use Illuminate\Support\Facades\Storage;
+use App\Traits\SendFcmNotification; 
 use Carbon\Carbon;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class SelfAttendanceController extends Controller
 {
@@ -25,18 +24,20 @@ class SelfAttendanceController extends Controller
         $today = today();
 
         // 1. Cek Sesi Aktif (Lookback 24 jam ke belakang)
+        // Mencari data check-in terakhir yang belum ada check-out-nya
         $activeSession = Attendance::where('user_id', $user->id)
             ->whereNull('check_out_time')
-            ->where('check_in_time', '>=', Carbon::now()->subHours(24))
+            ->where('check_in_time', '>=', Carbon::now()->subHours(24)) // Batas toleransi 24 jam
             ->latest('check_in_time')
             ->first();
 
         if ($activeSession) {
-            // Mode PULANG
+            // Jika ada sesi gantung (belum checkout), paksa mode PULANG
+            // Meskipun hari sudah berganti (lembur)
             $mode = 'pulang';
             $attendance = $activeSession;
         } else {
-            // Cek apakah hari ini SUDAH selesai?
+            // Jika tidak ada sesi aktif, cek apakah hari ini SUDAH selesai (Masuk & Pulang)?
             $finishedToday = Attendance::where('user_id', $user->id)
                 ->whereDate('check_in_time', $today)
                 ->whereNotNull('check_out_time')
@@ -46,18 +47,18 @@ class SelfAttendanceController extends Controller
                 return redirect()->route('dashboard')->with('success', 'Anda sudah menyelesaikan absensi hari ini (Masuk & Pulang).');
             }
 
-            // Mode MASUK
+            // Jika belum ada sesi aktif dan belum selesai hari ini -> Mode MASUK
             $mode = 'masuk';
             $attendance = null;
 
-            // Cek Laporan Telat
+            // Cek Status Laporan Telat (Hanya validasi saat mau Absen Masuk)
             $activeLateStatus = LateNotification::where('user_id', $user->id)
                 ->where('is_active', true)
                 ->whereDate('created_at', $today)
                 ->first();
 
             if ($activeLateStatus) {
-                return redirect()->route('dashboard')->with('error', 'Anda memiliki laporan telat aktif. Harap hapus laporan tersebut setelah tiba di kantor.');
+                return redirect()->route('dashboard')->with('error', 'Anda memiliki laporan telat aktif. Harap hapus laporan tersebut di dashboard setelah tiba di kantor untuk melakukan absen.');
             }
         }
 
@@ -65,130 +66,126 @@ class SelfAttendanceController extends Controller
     }
 
     /**
-     * Memproses Penyimpanan Absen
+     * Memproses Penyimpanan Absen (Masuk & Pulang)
      */
     public function store(Request $request)
     {
-        // 1. CEK APAKAH FILE DITERIMA SERVER ATAU TIDAK
-        if (!$request->hasFile('photo')) {
-            dd("STOP! Server tidak menerima file foto. Kemungkinan ukuran foto terlalu besar melebihi batas 'upload_max_filesize' di PHP Hosting Anda.");
-        }
-
-        // 2. CEK VALIDASI MANUAL (Pakai DD biar ketahuan salahnya)
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'photo' => 'required|image|max:10240', // 10MB
+        // Validasi Input
+        $request->validate([
+            'photo' => 'required|image|max:51200', // Max 5MB
             'latitude' => 'required',
             'longitude' => 'required',
         ]);
 
-        if ($validator->fails()) {
-            dd("STOP! Validasi Gagal:", $validator->errors()->all());
-        }
-
         $user = Auth::user();
         $currentTime = now();
 
-        // ==========================================================
-        // TEST UPLOAD CLOUDINARY (DEBUG MODE)
-        // ==========================================================
-        try {
-            $overlayPublicId = 'topeng_vader.png';
-            $timestampText = $currentTime->locale('id')->translatedFormat('d M Y H:i');
-
-            // Kita coba upload TANPA EFEK dulu untuk memastikan koneksi lancar
-            // Kalau ini berhasil, berarti masalahnya di Transformation
-            // Kalau ini gagal, berarti masalahnya di Kredensial .env
-
-            $uploadedFile = Cloudinary::upload($request->file('photo')->getRealPath(), [
-                'folder' => 'absensi_pstore_effects',
-                'transformation' => [
-                    [
-                        'raw_transformation' => "l_$overlayPublicId/fl_layer_apply,fl_region_relative,g_faces,w_1.2,y_-0.05"
-                    ],
-                    [
-                        'overlay' => [
-                            'font_family' => 'Arial',
-                            'font_size'   => 28,
-                            'font_weight' => 'bold',
-                            'text'        => $timestampText
-                        ],
-                        'gravity'    => 'south',
-                        'y'          => 20,
-                        'color'      => '#FFFFFF',
-                        'background' => '#00000090',
-                        'flags'      => 'layer_apply'
-                    ]
-                ]
-            ]);
-
-            // Jika berhasil sampai sini, matikan dd di bawah dan lanjut
-            // dd("BERHASIL UPLOAD! URL: " . $uploadedFile->getSecurePath());
-
-            $path = $uploadedFile->getSecurePath();
-        } catch (\Exception $e) {
-            // TAMPILKAN ERROR CLOUDINARY DI LAYAR
-            dd("STOP! Error Cloudinary:", $e->getMessage());
-        }
-
-        // ==============================================================
-        // JIKA LOLOS, LANJUT PROSES DATABASE
-        // ==============================================================
-
+        // Ambil Jadwal Kerja User (untuk cek telat/pulang cepat)
         $workSchedule = WorkSchedule::getScheduleForUser($user->id);
 
+        // CARI SESI AKTIF (Sama seperti logika di create)
+        // Cari absen yang check-out-nya masih kosong dalam 24 jam terakhir
         $attendance = Attendance::where('user_id', $user->id)
             ->whereNull('check_out_time')
             ->where('check_in_time', '>=', Carbon::now()->subHours(24))
             ->latest('check_in_time')
             ->first();
 
+        // Simpan Foto ke Storage
+        $path = $request->file('photo')->store('public/foto_mandiri');
+        
+        // ==============================================================
+        // LOGIKA ABSEN PULANG (CHECK-OUT) - Dieksekusi jika ada sesi aktif
+        // ==============================================================
         if ($attendance) {
+            
+            // Cek Pulang Cepat (Early Checkout)
             $isEarly = false;
+
             if ($workSchedule && $workSchedule->check_out_start) {
                 $scheduleStart = Carbon::parse($workSchedule->check_out_start);
                 $checkOutTimeOnly = Carbon::parse($currentTime->format('H:i:s'));
+
+                // Logika: Jika pulang kurang dari jam jadwal, DAN masih di hari yang sama
+                // Jika sudah ganti hari (lewat tengah malam), otomatis TIDAK Early Checkout (karena lembur)
                 $isSameDay = $attendance->check_in_time->isSameDay($currentTime);
+
                 if ($isSameDay && $checkOutTimeOnly->lt($scheduleStart)) {
                     $isEarly = true;
                 }
             }
+
+            // Update Data Lama (Menutup sesi)
             $attendance->update([
                 'check_out_time'    => $currentTime,
-                'photo_out_path'    => $path,
+                'photo_out_path'    => $path,       // Foto Pulang
                 'is_early_checkout' => $isEarly,
+                // Status absensi (Hadir/Telat) tidak berubah saat pulang
             ]);
-            $message = "Berhasil absen pulang (Debug Mode).";
-        } else {
+
+            // Cek apakah ini lembur lintas hari untuk pesan notifikasi
+            $isCrossDay = $attendance->check_in_time->format('Y-m-d') !== $currentTime->format('Y-m-d');
+            $noteLembur = $isCrossDay ? " (Lembur Lintas Hari)" : "";
+
+            $title = "Verifikasi Pulang (Mandiri)";
+            $body = "{$user->name} melakukan absen mandiri (Pulang){$noteLembur}.";
+            $message = "Berhasil absen pulang{$noteLembur}. Hati-hati di jalan!";
+        }
+
+        // ==============================================================
+        // LOGIKA ABSEN MASUK (CHECK-IN) - Dieksekusi jika TIDAK ada sesi aktif
+        // ==============================================================
+        else {
+            
+            // Cek apakah user mencoba absen masuk lagi padahal sudah "Selesai" hari ini?
+            // (Optional safety check)
             $alreadyFinished = Attendance::where('user_id', $user->id)
                 ->whereDate('check_in_time', today())
                 ->whereNotNull('check_out_time')
                 ->exists();
+
             if ($alreadyFinished) {
-                return redirect()->route('dashboard')->with('error', 'Sudah selesai hari ini.');
+                return redirect()->route('dashboard')->with('error', 'Anda sudah menyelesaikan absensi hari ini.');
             }
+
+            // Cek Keterlambatan berdasarkan Work Schedule
             $isLate = false;
             if ($workSchedule && $workSchedule->check_in_end) {
+                // Jika jam sekarang > batas akhir check in
                 $scheduleEnd = Carbon::parse($workSchedule->check_in_end);
+                
                 if (Carbon::parse($currentTime->format('H:i:s'))->gt($scheduleEnd)) {
                     $isLate = true;
                 }
             }
+
+            // Create Data Baru
             Attendance::create([
                 'user_id'           => $user->id,
                 'branch_id'         => $user->branch_id,
                 'check_in_time'     => $currentTime,
-                'status'            => 'pending_verification',
-                'attendance_type'   => 'self',
-                'photo_path'        => $path,
+                'status'            => 'pending_verification', // Default status mandiri
+                'attendance_type'   => 'self',                 // Menandakan ini Selfie Mandiri
+                'photo_path'        => $path,                  // Foto Masuk
                 'latitude'          => $request->latitude,
                 'longitude'         => $request->longitude,
                 'work_schedule_id'  => $workSchedule?->id,
                 'is_late_checkin'   => $isLate,
             ]);
-            $message = 'Berhasil absen masuk (Debug Mode).';
+
+            $title = "Verifikasi Masuk (Mandiri)";
+            $body = "{$user->name} melakukan absen mandiri (Masuk).";
+            $message = 'Berhasil absen masuk. Menunggu verifikasi Audit/Leader.';
         }
 
-        return redirect()->route('dashboard')->with('success', $message)->with('photo_url', $path);
+        // Kirim Notifikasi ke Admin/Audit di Branch yang sama
+        try {
+            $this->sendNotificationToBranchRoles(['admin', 'audit'], $user->branch_id, $title, $body);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('FCM Error: ' . $e->getMessage());
+        }
+
+        return redirect()->route('dashboard')->with('success', $message);
     }
 
     /**
@@ -202,6 +199,7 @@ class SelfAttendanceController extends Controller
 
         $user = Auth::user();
 
+        // Nonaktifkan notifikasi telat sebelumnya jika ada
         LateNotification::where('user_id', $user->id)->update(['is_active' => false]);
 
         LateNotification::create([
@@ -212,19 +210,19 @@ class SelfAttendanceController extends Controller
         ]);
 
         $title = "Izin Telat Masuk";
-        $body = "{$user->name} mengajukan izin telat.";
-
+        $body = "{$user->name} dari Divisi " . ($user->division->name ?? 'N/A') . " mengajukan izin telat.";
+        
         try {
             $this->sendNotificationToBranchRoles(['admin', 'audit'], $user->branch_id, $title, $body);
         } catch (\Exception $e) {
-            Log::error('FCM Error Late: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('FCM Error Late: ' . $e->getMessage());
         }
 
         return redirect()->route('dashboard')->with('success', 'Laporan telat berhasil dikirim.');
     }
 
     /**
-     * Menghapus Status Laporan Telat
+     * Menghapus Status Laporan Telat (Agar bisa absen)
      */
     public function deleteLateStatus()
     {
@@ -234,7 +232,7 @@ class SelfAttendanceController extends Controller
             ->first();
 
         if ($notification) {
-            $notification->delete();
+            $notification->delete(); 
             return redirect()->route('dashboard')->with('success', 'Laporan telat dihapus. Anda sekarang bisa melakukan absen.');
         }
 
