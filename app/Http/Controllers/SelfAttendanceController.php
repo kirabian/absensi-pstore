@@ -92,7 +92,7 @@ class SelfAttendanceController extends Controller
         // TEST UPLOAD CLOUDINARY (DEBUG MODE)
         // ==========================================================
         try {
-            $overlayPublicId = 'topeng_vader';
+            $overlayPublicId = 'topeng_vader.png';
             $timestampText = $currentTime->locale('id')->translatedFormat('d M Y H:i');
 
             // Kita coba upload TANPA EFEK dulu untuk memastikan koneksi lancar
