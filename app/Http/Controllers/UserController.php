@@ -5,8 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Division;
 use App\Models\Branch;
-use App\Models\Attendance; // <--- INI WAJIB ADA
-use App\Models\WorkHistory; // Opsional jika Anda punya model ini
+use App\Models\Attendance;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -97,7 +96,6 @@ class UserController extends Controller
             'whatsapp' => 'nullable|string|max:20',
         ]);
 
-        // Logic Cek Role & Branch (Disingkat agar rapi, logika sama seperti sebelumnya)
         $allowedRoles = $this->getAllowedRoles($user);
         if (!in_array($request->role, $allowedRoles)) {
             return back()->withErrors(['role' => 'Role tidak diizinkan.'])->withInput();
@@ -105,7 +103,6 @@ class UserController extends Controller
 
         $data = $request->except(['password', 'profile_photo_path', 'multi_branches', 'multi_divisions']);
 
-        // Assign Division & Branch
         $data['division_id'] = ($request->has('multi_divisions') && count($request->multi_divisions) > 0) ? $request->multi_divisions[0] : null;
 
         if ($user->role == 'admin' && $user->branch_id != null) {
@@ -142,7 +139,6 @@ class UserController extends Controller
         $user->load(['branches', 'divisions']);
         $auth_user = Auth::user();
 
-        // Validasi akses edit (sama seperti sebelumnya)
         if ($auth_user->role == 'audit') {
             $allowedBranchIds = $auth_user->branches->pluck('id')->toArray();
             if (!in_array($user->branch_id, $allowedBranchIds)) abort(403);
@@ -151,7 +147,6 @@ class UserController extends Controller
             if ($user->branch_id != $auth_user->branch_id) abort(403);
         }
 
-        // Data Dropdown
         if ($auth_user->role == 'admin' && $auth_user->branch_id != null) {
             $branches = Branch::where('id', $auth_user->branch_id)->get();
             $allowedRoles = ['leader', 'security', 'user_biasa'];
@@ -171,7 +166,6 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $auth_user = Auth::user();
-        // Validasi dasar akses update
         if ($auth_user->role == 'admin' && $auth_user->branch_id != null) {
             if ($user->branch_id != $auth_user->branch_id) abort(403);
         }
@@ -197,11 +191,9 @@ class UserController extends Controller
             $data['division_id'] = null;
         }
 
-        // Admin Cabang force branch sendiri
         if ($auth_user->role == 'admin' && $auth_user->branch_id != null) {
             $data['branch_id'] = $auth_user->branch_id;
         }
-        // Super admin jadi null branch
         if ($request->role == 'admin') {
             $data['branch_id'] = null;
             $data['division_id'] = null;
@@ -221,7 +213,6 @@ class UserController extends Controller
 
         $user->update($data);
 
-        // Sync Pivot Logic
         if ($request->role == 'audit') {
             $user->branches()->sync($request->multi_branches ?? []);
             $user->divisions()->detach();
@@ -236,9 +227,18 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', 'Data user berhasil diperbarui.');
     }
 
+    // --- PERBAIKAN DISINI: Menambahkan Logika Block Audit ---
     public function destroy(User $user)
     {
-        if ($user->id == auth()->id()) return back()->with('error', 'Tidak bisa hapus akun sendiri.');
+        // 1. Cek jika Audit mencoba menghapus
+        if (Auth::user()->role == 'audit') {
+            return back()->with('error', 'Akses Ditolak: Role Audit tidak diizinkan menghapus data user.');
+        }
+
+        // 2. Cek jika user menghapus diri sendiri
+        if ($user->id == auth()->id()) {
+            return back()->with('error', 'Tidak bisa hapus akun sendiri.');
+        }
 
         try {
             if ($user->profile_photo_path) Storage::disk('public')->delete($user->profile_photo_path);
@@ -251,14 +251,10 @@ class UserController extends Controller
         }
     }
 
-    /**
-     * Show User Detail (Fix Error Class Not Found disini)
-     */
     public function show(User $user)
     {
         $auth_user = Auth::user();
 
-        // Validasi akses lihat
         if ($auth_user->role == 'admin' && $auth_user->branch_id != null) {
             if ($user->branch_id != $auth_user->branch_id) abort(403);
         }
@@ -267,17 +263,8 @@ class UserController extends Controller
             if (!in_array($user->branch_id, $allowedBranchIds)) abort(403);
         }
 
-        // Eager load relasi
         $user->load(['branch', 'division', 'branches', 'divisions']);
-
-        // Jika ada relasi workHistories, tambahkan di load. Jika belum ada modelnya, hapus dari load.
-        // $user->load('workHistories'); 
-
-        // Ambil statistik
         $stats = $this->getSpecificUserStats($user->id);
-
-        // Ambil 5 riwayat terakhir
-        // Pastikan 'Attendance' sudah di-use di paling atas
         $recentAttendance = Attendance::where('user_id', $user->id)
             ->latest('check_in_time')
             ->take(5)
@@ -286,9 +273,7 @@ class UserController extends Controller
         return view('users.user_show', compact('user', 'stats', 'recentAttendance'));
     }
 
-    // Helper Statistik User
-    // Helper Statistik User
-  // Helper Statistik User
+    // Helper Statistik User (MENGGUNAKAN VERSI PERBAIKAN SEBELUMNYA)
     private function getSpecificUserStats($user_id)
     {
         // 1. Filter Waktu (Bulan Ini)
@@ -296,15 +281,12 @@ class UserController extends Controller
             ->whereMonth('check_in_time', Carbon::now()->month)
             ->whereYear('check_in_time', Carbon::now()->year);
 
-        // --- PERBAIKAN UTAMA ADA DISINI ---
-
         // Hitung Total Hadir (Valid):
-        // Masukkan status 'verified', 'present', dan 'late' sebagai kehadiran sah.
         $presentCount = (clone $query)
-            ->whereIn('status', ['verified', 'present', 'late']) // <--- INI PERUBAHANNYA
+            ->whereIn('status', ['verified', 'present', 'late'])
             ->where(function($q) {
                 $q->where('presence_status', '!=', 'Alpha')
-                  ->orWhereNull('presence_status'); // Jaga-jaga jika null
+                  ->orWhereNull('presence_status');
             })
             ->count();
 
@@ -313,24 +295,19 @@ class UserController extends Controller
             ->where('presence_status', 'Alpha')
             ->count();
 
-        // ----------------------------------
-
         $late = (clone $query)->where('is_late_checkin', true)->count();
         $early = (clone $query)->where('is_early_checkout', true)->count();
         $pending = (clone $query)->where('status', 'pending_verification')->count();
 
-        // On Time = Total Hadir - Terlambat
-        // Menggunakan max(0, ...) untuk mencegah angka minus jika data tidak konsisten
         $onTime = max($presentCount - $late, 0);
 
-        // Persentase
         $totalPresentRecords = $presentCount; 
 
         $onTimePercentage = $totalPresentRecords > 0 ? round(($onTime / $totalPresentRecords) * 100) : 0;
         $latePercentage = $totalPresentRecords > 0 ? round(($late / $totalPresentRecords) * 100) : 0;
 
         return [
-            'total' => $presentCount, // Total Statistik Utama
+            'total' => $presentCount,
             'present' => $presentCount,
             'alpha' => $alphaCount,
             'late' => $late,
@@ -345,31 +322,24 @@ class UserController extends Controller
 
     public function toggleStatus(User $user)
     {
-        // 1. Cek apakah user mencoba menonaktifkan diri sendiri
         if ($user->id == auth()->id()) {
             return back()->with('error', 'Anda tidak dapat menonaktifkan akun sendiri saat sedang login.');
         }
 
-        // 2. Validasi Hak Akses (Opsional: Admin Cabang tidak boleh matikan Admin Pusat)
         $currentUser = auth()->user();
         if ($currentUser->role == 'admin' && $currentUser->branch_id != null) {
-            // Jika admin cabang mencoba edit user beda cabang
             if ($user->branch_id != $currentUser->branch_id) {
                 return back()->with('error', 'Anda tidak memiliki akses ke user ini.');
             }
-            // Jika admin cabang mencoba mematikan Super Admin
             if ($user->role == 'admin' && $user->branch_id == null) {
                 return back()->with('error', 'Anda tidak dapat menonaktifkan Super Admin.');
             }
         }
 
-        // 3. Lakukan Perubahan Status
-        // Jika 1 jadi 0, jika 0 jadi 1
         $user->is_active = !$user->is_active;
         $user->save();
 
         $statusText = $user->is_active ? 'diaktifkan' : 'dinonaktifkan';
-
         return back()->with('success', "User {$user->name} berhasil {$statusText}.");
     }
 

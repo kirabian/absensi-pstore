@@ -171,8 +171,9 @@
                                                 <i class="mdi mdi-pencil"></i>
                                             </a>
 
-                                            {{-- Hapus (Kecuali diri sendiri) --}}
-                                            @if ($user->id != auth()->id())
+                                            {{-- Hapus (Kecuali diri sendiri DAN bukan role audit) --}}
+                                            {{-- INI PERUBAHANNYA: Tambah cek role != audit --}}
+                                            @if ($user->id != auth()->id() && auth()->user()->role != 'audit')
                                                 <form action="{{ route('users.destroy', $user->id) }}" method="POST"
                                                     class="d-inline"
                                                     onsubmit="return confirm('Yakin ingin menghapus user ini?');">
@@ -183,9 +184,10 @@
                                                         <i class="mdi mdi-delete"></i>
                                                     </button>
                                                 </form>
+                                            @endif
 
-                                                {{-- TOMBOL TOGGLE STATUS (Nonaktifkan/Aktifkan) --}}
-                                                {{-- PERBAIKAN: Menggunakan route users.toggle-status --}}
+                                            {{-- TOMBOL TOGGLE STATUS (Nonaktifkan/Aktifkan) --}}
+                                            @if ($user->id != auth()->id())
                                                 <form action="{{ route('users.toggle-status', $user->id) }}" method="POST"
                                                     class="d-inline">
                                                     @csrf
