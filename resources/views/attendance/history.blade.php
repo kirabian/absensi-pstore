@@ -236,7 +236,8 @@
                                             <td>
                                                 <div class="d-flex align-items-center">
                                                     <i class="mdi mdi-login text-success me-2"></i>
-                                                    <span class="{{ $att->is_late_checkin ? 'text-danger fw-bold' : '' }}">
+                                                    <span
+                                                        class="{{ $att->is_late_checkin ? 'text-danger fw-bold' : '' }}">
                                                         {{ $att->check_in_time->format('H:i') }}
                                                     </span>
                                                     @if ($att->is_late_checkin)
@@ -295,7 +296,7 @@
                                                 @endif
                                             </td>
 
-                                            {{-- STATUS KEHADIRAN --}}
+                                            {{-- STATUS KEHADIRAN (FIXED MATCH) --}}
                                             <td>
                                                 @if ($att->presence_status)
                                                     @php
@@ -304,10 +305,12 @@
 
                                                         $badgeColor = match (true) {
                                                             $statusLower == 'masuk' => 'bg-success',
-                                                            $statusLower == 'wfh' || str_contains($statusLower, 'dinas')
+                                                            $statusLower == 'wfh' ||
+                                                            str_contains($statusLower, 'wfh') ||
+                                                            str_contains($statusLower, 'dinas')
                                                                 => 'bg-info',
                                                             $statusLower == 'izin telat' ||
-                                                                str_contains($statusLower, 'telat')
+                                                            str_contains($statusLower, 'telat')
                                                                 => 'bg-warning text-dark',
                                                             $statusLower == 'sakit' => 'bg-primary',
                                                             $statusLower == 'cuti' || $statusLower == 'izin'
@@ -318,8 +321,12 @@
 
                                                         // Format tampilan teks agar rapi (Huruf Besar Awal)
                                                         $displayText = ucwords($att->presence_status);
-                                                        if (str_contains(strtolower($displayText), 'Wfh')) {
-                                                            $displayText = str_replace('Wfh', 'WFH', $displayText);
+                                                        if (str_contains(strtolower($displayText), 'wfh')) {
+                                                            $displayText = str_replace(
+                                                                ['Wfh', 'wfh'],
+                                                                'WFH',
+                                                                $displayText,
+                                                            );
                                                         }
                                                     @endphp
                                                     <span class="badge {{ $badgeColor }}">
@@ -330,9 +337,7 @@
                                                 @endif
                                             </td>
 
-                                            {{-- ========================================================= --}}
-                                            {{-- KOLOM VERIFIKASI (LOGIKA UTAMA YANG DIMINTA) --}}
-                                            {{-- ========================================================= --}}
+                                            {{-- KOLOM VERIFIKASI --}}
                                             <td>
                                                 @if ($att->status == 'verified')
                                                     {{-- KASUS 1: ALPHA (System Auto) --}}
@@ -384,7 +389,6 @@
                                                         Diverifikasi</span>
                                                 @endif
                                             </td>
-                                            {{-- ========================================================= --}}
 
                                             {{-- BUKTI AUDIT --}}
                                             <td>
@@ -412,6 +416,8 @@
                                                     <span class="badge badge-outline-danger">System</span>
                                                 @elseif($att->attendance_type == 'manual')
                                                     <span class="badge badge-outline-warning">Audit Edit</span>
+                                                @elseif($att->attendance_type == 'leave')
+                                                    <span class="badge badge-outline-secondary">Surat Izin</span>
                                                 @endif
                                             </td>
 
@@ -551,7 +557,8 @@
                                                                                 <label class="form-label fw-bold">Jam Masuk
                                                                                     (Format H:i)
                                                                                 </label>
-                                                                                <input type="time" name="check_in_time"
+                                                                                <input type="time"
+                                                                                    name="check_in_time"
                                                                                     class="form-control"
                                                                                     value="{{ $att->check_in_time->format('H:i') }}"
                                                                                     required>
@@ -568,25 +575,43 @@
 
                                                                         <div class="row mb-3">
                                                                             <div class="col-md-6">
+                                                                                {{-- OPSI STATUS DIPERBARUI DI SINI --}}
                                                                                 <label class="form-label fw-bold">Status
                                                                                     Kehadiran</label>
                                                                                 <select name="presence_status"
                                                                                     class="form-select" required>
-                                                                                    <option value="Masuk"
-                                                                                        {{ $att->presence_status == 'Masuk' ? 'selected' : '' }}>
-                                                                                        ✅ Masuk</option>
-                                                                                    <option value="Sakit"
-                                                                                        {{ $att->presence_status == 'Sakit' ? 'selected' : '' }}>
-                                                                                        🤒 Sakit</option>
-                                                                                    <option value="Cuti"
-                                                                                        {{ $att->presence_status == 'Cuti' ? 'selected' : '' }}>
-                                                                                        🏖️ Cuti</option>
-                                                                                    <option value="Izin Telat"
-                                                                                        {{ $att->presence_status == 'Izin Telat' ? 'selected' : '' }}>
-                                                                                        ⏰ Izin Telat</option>
-                                                                                    <option value="Alpha"
-                                                                                        {{ $att->presence_status == 'Alpha' ? 'selected' : '' }}>
-                                                                                        ❌ Alpha</option>
+                                                                                    <option value="" disabled>--
+                                                                                        Pilih Status --</option>
+
+                                                                                    <optgroup label="Hadir / Bekerja">
+                                                                                        <option value="Masuk"
+                                                                                            {{ $att->presence_status == 'Masuk' ? 'selected' : '' }}>
+                                                                                            ✅ Masuk (Normal)</option>
+                                                                                        <option value="Izin Telat"
+                                                                                            {{ $att->presence_status == 'Izin Telat' ? 'selected' : '' }}>
+                                                                                            📨 Izin Telat</option>
+                                                                                        <option value="WFH / Dinas Luar"
+                                                                                            {{ stripos($att->presence_status, 'WFH') !== false || stripos($att->presence_status, 'Dinas') !== false ? 'selected' : '' }}>
+                                                                                            🏠 WFH / Dinas Luar</option>
+                                                                                        <option value="Telat"
+                                                                                            {{ $att->presence_status == 'Telat' ? 'selected' : '' }}>
+                                                                                            ⏰ Telat (Hadir)</option>
+                                                                                    </optgroup>
+
+                                                                                    <optgroup label="Tidak Hadir / Izin">
+                                                                                        <option value="Alpha"
+                                                                                            {{ $att->presence_status == 'Alpha' ? 'selected' : '' }}>
+                                                                                            ❌ Alpha / Belum Hadir</option>
+                                                                                        <option value="Izin"
+                                                                                            {{ $att->presence_status == 'Izin' ? 'selected' : '' }}>
+                                                                                            📝 Libur / Izin</option>
+                                                                                        <option value="Sakit"
+                                                                                            {{ $att->presence_status == 'Sakit' ? 'selected' : '' }}>
+                                                                                            🤒 Sakit</option>
+                                                                                        <option value="Cuti"
+                                                                                            {{ $att->presence_status == 'Cuti' ? 'selected' : '' }}>
+                                                                                            🏖️ Cuti</option>
+                                                                                    </optgroup>
                                                                                 </select>
                                                                             </div>
                                                                             <div class="col-md-6">
