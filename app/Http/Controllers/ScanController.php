@@ -18,7 +18,7 @@ class ScanController extends Controller
         return view('security.scan');
     }
 
-    // FUNGSI 1: Cek QR Code dan Kembalikan Data User (Tanpa Absen Dulu)
+    // FUNGSI 1: Cek QR Code dan Kembalikan Status HARI INI
     public function checkUser(Request $request)
     {
         $request->validate(['qr_code' => 'required|string']);
@@ -34,17 +34,18 @@ class ScanController extends Controller
             ], 404);
         }
 
-        // LOGIKA BARU: Prioritaskan mencari Sesi Aktif (Belum Checkout) dalam 24 jam terakhir
+        // Cek Sesi HARI INI
+        // Kita hanya mencari sesi check-in HARI INI yang belum checkout.
         $attendanceSession = Attendance::where('user_id', $user->id)
             ->whereNull('check_out_time')
-            ->where('check_in_time', '>=', Carbon::now()->subHours(24))
-            ->latest('check_in_time')
+            ->whereDate('check_in_time', today()) // Strict Today
             ->first();
 
-        // Jika tidak ada sesi aktif, ambil data hari ini (misal sudah selesai kerja/belum masuk sama sekali)
+        // Jika tidak ada sesi aktif, ambil history hari ini (jika sudah pulang)
         if (!$attendanceSession) {
             $attendanceSession = Attendance::where('user_id', $user->id)
                 ->whereDate('check_in_time', today())
+                ->latest('check_in_time')
                 ->first();
         }
 
@@ -80,7 +81,7 @@ class ScanController extends Controller
         ]);
     }
 
-    // FUNGSI 2: Simpan Absensi dengan Foto Real-time & Validasi Work Schedule
+    // FUNGSI 2: Simpan Absensi (Auto Close Yesterday & Create Today)
     public function storeAttendance(Request $request)
     {
         $request->validate([
@@ -98,11 +99,8 @@ class ScanController extends Controller
         $image = $request->image;
         $image = str_replace('data:image/png;base64,', '', $image);
         $image = str_replace(' ', '+', $image);
-
-        // Nama file unik (bedakan masuk/pulang)
         $typeLabel = $request->type;
         $imageName = 'attendance/capture_' . $typeLabel . '_' . time() . '_' . $user->id . '.png';
-
         Storage::disk('public')->put($imageName, base64_decode($image));
 
         // ==============================================================
@@ -110,17 +108,33 @@ class ScanController extends Controller
         // ==============================================================
         if ($request->type == 'masuk') {
             
-            // Cek double login HARI INI (Standard)
-            $exists = Attendance::where('user_id', $user->id)
+            // --- [FITUR AUTO RESET] ---
+            // Cek sesi lama yang lupa di-checkout (sebelum hari ini)
+            $hangingSessions = Attendance::where('user_id', $user->id)
+                ->whereNull('check_out_time')
+                ->whereDate('check_in_time', '<', today())
+                ->get();
+
+            foreach ($hangingSessions as $hanging) {
+                // Auto Close session kemarin
+                $hanging->update([
+                    'check_out_time' => Carbon::parse($hanging->check_in_time)->endOfDay(),
+                    'notes' => 'Auto-closed by Security Scan (Lupa Pulang)',
+                ]);
+            }
+            // --------------------------
+
+            // Cek double login HARI INI
+            $existsToday = Attendance::where('user_id', $user->id)
                 ->whereDate('check_in_time', today())
                 ->whereNull('check_out_time')
                 ->exists();
 
-            if ($exists) {
+            if ($existsToday) {
                 return response()->json(['status' => 'error', 'message' => 'Karyawan ini sudah absen masuk hari ini!'], 409);
             }
 
-            // Validasi Keterlambatan (LATE)
+            // Validasi Keterlambatan
             $isLate = false;
             $status = 'present';
 
@@ -134,6 +148,7 @@ class ScanController extends Controller
                 }
             }
 
+            // Create Absen Baru
             Attendance::create([
                 'user_id' => $user->id,
                 'branch_id' => $user->branch_id,
@@ -154,31 +169,25 @@ class ScanController extends Controller
         // ==============================================================
         elseif ($request->type == 'pulang') {
             
-            // CARI Sesi Aktif (Lookback 24 jam)
-            // Agar bisa mendeteksi absen masuk kemarin sore
+            // Cari Sesi Aktif HARI INI
             $attendance = Attendance::where('user_id', $user->id)
                 ->whereNull('check_out_time')
-                ->where('check_in_time', '>=', Carbon::now()->subHours(24))
-                ->latest('check_in_time')
+                ->whereDate('check_in_time', today()) // Harus hari ini
                 ->first();
 
             if (!$attendance) {
-                return response()->json(['status' => 'error', 'message' => 'Karyawan ini belum absen masuk (atau sesi sudah kadaluarsa > 24 jam)!'], 404);
+                return response()->json(['status' => 'error', 'message' => 'Karyawan ini belum absen masuk hari ini!'], 404);
             }
 
-            // Validasi Pulang Cepat (EARLY CHECKOUT)
+            // Validasi Pulang Cepat
             $isEarlyCheckout = false;
-
             if ($workSchedule) {
                 $checkOutTime = Carbon::parse($currentTime);
                 $scheduleStart = Carbon::parse($workSchedule->check_out_start);
                 
-                // Logika: Cek apakah tanggalnya sama?
-                $isSameDay = $attendance->check_in_time->isSameDay($currentTime);
-
-                // Jika tanggal SAMA dan Jam Sekarang < Jam Pulang Jadwal => Early Checkout
-                // Jika tanggal BEDA (sudah lewat tengah malam), otomatis dianggap Lembur (Bukan Early Checkout)
-                if ($isSameDay && $checkOutTime->lt($scheduleStart)) {
+                // Cek hanya jamnya saja
+                $coTime = Carbon::parse($currentTime->format('H:i:s'));
+                if ($coTime->lt($scheduleStart)) {
                     $isEarlyCheckout = true;
                 }
             }
@@ -190,15 +199,7 @@ class ScanController extends Controller
                 'is_early_checkout' => $isEarlyCheckout,
             ]);
 
-            // Cek lembur lintas hari untuk pesan
-            $isCrossDay = $attendance->check_in_time->format('Y-m-d') !== $currentTime->format('Y-m-d');
-            $note = $isCrossDay ? " (Lembur Lintas Hari)" : "";
-
-            if ($isEarlyCheckout) {
-                $msg = "Absen PULANG Berhasil (PULANG CEPAT)";
-            } else {
-                $msg = "Absen PULANG Berhasil" . $note;
-            }
+            $msg = $isEarlyCheckout ? "Absen PULANG Berhasil (PULANG CEPAT)" : "Absen PULANG Berhasil";
         }
 
         return response()->json([
@@ -221,7 +222,7 @@ class ScanController extends Controller
         ]);
     }
 
-    // FUNGSI 3: Get Attendance Statistics (Untuk Dashboard Security)
+    // FUNGSI 3: Get Stats (SAMA SEPERTI SEBELUMNYA)
     public function getStats(Request $request)
     {
         $securityUser = Auth::user();
@@ -236,7 +237,7 @@ class ScanController extends Controller
                 ->whereNotNull('check_in_time')
                 ->count(),
             'check_out_count' => Attendance::where('scanned_by_user_id', $securityUser->id)
-                ->whereDate('check_in_time', $today) // Menghitung checkout yang dilakukan pada record hari ini
+                ->whereDate('check_in_time', $today)
                 ->whereNotNull('check_out_time')
                 ->count(),
             'late_count' => Attendance::where('scanned_by_user_id', $securityUser->id)
