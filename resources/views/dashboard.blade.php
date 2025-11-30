@@ -295,26 +295,41 @@
 
                                 {{-- TOMBOL AKSI --}}
                                 @if ($myAttendanceToday->attendance_type == 'self')
-                                    <div class="mt-3 pt-3 border-top text-center">
+                                    <div class="mt-3 pt-3 border-top">
 
                                         @if ($isCrossDay)
-                                            {{-- JIKA LINTAS HARI (LUPA PULANG) - TAMPILKAN TOMBOL LEWATI --}}
-                                            <form action="{{ route('self.attend.skip', $myAttendanceToday->id) }}"
-                                                method="POST">
-                                                @csrf
-                                                <button type="submit"
-                                                    class="btn btn-warning btn-sm w-100 text-dark fw-bold"
-                                                    onclick="return confirm('Yakin ingin menutup sesi kemarin tanpa foto? Anda dianggap lupa absen pulang.');">
-                                                    <i class="mdi mdi-skip-next me-1"></i>
-                                                    Lewati (Lupa Absen Pulang)
-                                                </button>
-                                            </form>
-                                            <small class="text-muted d-block mt-2" style="font-size: 11px;">
-                                                Klik tombol di atas untuk menutup sesi kemarin agar Anda bisa absen masuk
-                                                hari ini.
-                                            </small>
+                                            {{-- === KONDISI LINTAS HARI (ADA 2 PILIHAN) === --}}
+
+                                            <p class="text-center text-muted mb-3 small">
+                                                Anda belum absen pulang kemarin. Pilih tindakan:
+                                            </p>
+
+                                            <div class="row g-2">
+                                                {{-- OPSI 1: LEMBUR (TETAP FOTO) --}}
+                                                <div class="col-6">
+                                                    <a href="{{ route('self.attend.create') }}"
+                                                        class="btn btn-primary btn-sm w-100 h-100 d-flex align-items-center justify-content-center flex-column py-2">
+                                                        <i class="mdi mdi-camera-party-mode fs-4 mb-1"></i>
+                                                        <span>Pulang (Lembur)</span>
+                                                    </a>
+                                                </div>
+
+                                                {{-- OPSI 2: LEWATI (LUPA ABSEN, TANPA FOTO) --}}
+                                                <div class="col-6">
+                                                    <form action="{{ route('self.attend.skip', $myAttendanceToday->id) }}"
+                                                        method="POST" class="h-100">
+                                                        @csrf
+                                                        <button type="submit"
+                                                            class="btn btn-warning btn-sm w-100 h-100 d-flex align-items-center justify-content-center flex-column py-2 text-dark"
+                                                            onclick="return confirm('Pilih ini jika Anda KEMARIN LUPA absen pulang.\nSesi kemarin akan ditutup otomatis tanpa foto.\n\nLanjutkan?');">
+                                                            <i class="mdi mdi-skip-forward fs-4 mb-1"></i>
+                                                            <span>Lewati (Lupa)</span>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
                                         @else
-                                            {{-- JIKA ABSEN NORMAL HARI INI --}}
+                                            {{-- === KONDISI ABSEN NORMAL HARI INI === --}}
                                             <a href="{{ route('self.attend.create') }}"
                                                 class="btn btn-danger btn-sm w-100">
                                                 <i class="mdi mdi-logout me-1"></i>

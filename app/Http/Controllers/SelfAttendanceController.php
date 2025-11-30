@@ -247,32 +247,30 @@ class SelfAttendanceController extends Controller
 
     /**
      * Memproses Lewati Absen Pulang (Force Close sesi kemarin)
+     * Tanpa Foto, Tanpa Verifikasi
      */
     public function skipCheckOut($id)
     {
         $user = Auth::user();
 
-        // Cari data absensi berdasarkan ID yang dikirim
         $attendance = Attendance::where('id', $id)
             ->where('user_id', $user->id)
-            ->whereNull('check_out_time') // Pastikan memang belum checkout
+            ->whereNull('check_out_time')
             ->first();
 
         if ($attendance) {
-            // Set waktu pulang ke akhir hari dari tanggal masuk (23:59:59)
-            // Agar jam kerjanya terhitung full hari itu, tapi tidak nyebrang ke hari ini
+            // Set jam pulang otomatis ke 23:59:59 di hari check-in tersebut
             $autoOutTime = Carbon::parse($attendance->check_in_time)->endOfDay();
 
             $attendance->update([
                 'check_out_time' => $autoOutTime,
-                'photo_out_path' => null, // Tidak ada foto
-                'notes'          => 'User lupa absen pulang (Sesi ditutup manual via Dashboard)',
-                // Status tidak diubah ke pending, biarkan status terakhir (biasanya present/late)
+                'photo_out_path' => null, // Pastikan null karena dilewati
+                'notes'          => 'User lupa absen pulang (Sesi ditutup via tombol Lewati)',
             ]);
 
-            return redirect()->route('dashboard')->with('success', 'Sesi kemarin telah ditutup. Silakan absen masuk untuk hari ini.');
+            return redirect()->route('dashboard')->with('success', 'Sesi kemarin ditutup (Lupa Absen). Silakan Absen Masuk untuk hari ini.');
         }
 
-        return redirect()->route('dashboard')->with('error', 'Sesi tidak ditemukan atau sudah ditutup.');
+        return redirect()->route('dashboard')->with('error', 'Sesi tidak valid.');
     }
 }
